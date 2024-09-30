@@ -21,6 +21,8 @@ app.use(cors({
     credentials: true, 
 }));
 
+
+
 app.options('*', cors()); 
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerOptions));
