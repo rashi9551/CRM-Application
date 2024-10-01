@@ -6,6 +6,7 @@ import logger from 'morgan'
 import cors from 'cors'
 import swaggerUi from 'swagger-ui-express';
 import swaggerOptions from "./swaggrOptions";
+import 'reflect-metadata';
 
 dotenv.config();
 

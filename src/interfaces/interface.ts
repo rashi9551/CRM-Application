@@ -3,6 +3,7 @@ import { User } from "../entity/User";
 export interface PromiseReturn{
     status: number; 
     User?:User
+    user?:User[]
     message?:string
     token?:string
 
@@ -28,6 +29,7 @@ export interface UserData {
     password: string;  
     roles: RoleName[]; 
     teamOwner?: number;
+    parentId:number;
 
 }
 export interface UserLoginData {

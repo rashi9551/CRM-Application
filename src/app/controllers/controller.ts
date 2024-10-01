@@ -13,7 +13,7 @@ export default new class Controller{
             res.status(createUserResponse.status).json(createUserResponse)
         } catch (error) {
             console.log(error);
-            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
         }
     }
     login=async(req:Request,res:Response)=>{
@@ -22,6 +22,27 @@ export default new class Controller{
             console.log("user login...");
             const loginResponse=await useCase.login(loginData)
            res.status(loginResponse.status).json(loginResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
+        }
+    }
+    getAllUser=async(req:Request,res:Response)=>{
+        try {
+            console.log("geeting getAllUser...");
+            const getUserResponse=await useCase.getAllUser()
+           res.status(getUserResponse.status).json(getUserResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
+        }
+    }
+    getUser=async(req:Request,res:Response)=>{
+        try {
+            console.log("geeting a single user...");
+            const userId = +req.params.id;
+            const getUserResponse = await useCase.getUser(userId);
+           res.status(getUserResponse.status).json(getUserResponse)
         } catch (error) {
             console.log(error);
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 

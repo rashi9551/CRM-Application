@@ -17,7 +17,7 @@ export const AppDataSource = new DataSource({
     port: 3306,
     username: process.env.USERNAME,
     password: process.env.PASSWORD,
-    database: "typeOrm",  // Change this to your actual database name if needed
+    database: "user",  // Change this to your actual database name if needed
     synchronize: false,  // Set to true for initial sync (not recommended for production)
     logging: false,
     entities: [

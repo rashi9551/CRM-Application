@@ -16,6 +16,6 @@ export class Role {
     @JoinColumn({ name: 'user_id' }) // Optional: specify the foreign key column name
     user: User;
 
-    @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 }

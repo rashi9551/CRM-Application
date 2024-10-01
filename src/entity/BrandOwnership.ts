@@ -14,6 +14,6 @@ export class BrandOwnership {
     @ManyToOne(() => User, user => user.brandOwnerships)
     boUser: User;
 
-    @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 }

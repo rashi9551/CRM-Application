@@ -14,6 +14,6 @@ export class UserTeam {
     @ManyToOne(() => Team, team => team.id)
     team: Team;
 
-    @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 }

@@ -1,30 +1,43 @@
-// src/entities/User.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    OneToMany,
+    ManyToOne,
+    JoinColumn,
+    BeforeInsert,
+    BeforeUpdate,
+    Index
+} from 'typeorm';
+import { IsEmail, IsNotEmpty } from 'class-validator';
 import { Role } from './Role';
 import { UserTeam } from './UserTeam';
 import { BrandOwnership } from './BrandOwnership';
 
 @Entity()
 export class User {
-    @PrimaryGeneratedColumn() // This will create an auto-incrementing integer ID
+    @PrimaryGeneratedColumn() 
     id: number;
 
     @Column()
+    @IsNotEmpty({ message: 'Name should not be empty.' })
     name: string;
 
     @Column()
+    @IsNotEmpty({ message: 'Department should not be empty.' })
     department: string;
 
     @Column({ name: 'phone_number' })
     phoneNumber: string;
 
     @Column({ unique: true })
+    @IsEmail({}, { message: 'Email is not valid.' })
     email: string;
 
     @Column()
-    password: string;  // Added password field
+    password: string;
 
-    @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
     @OneToMany(() => Role, role => role.user)
@@ -33,8 +46,12 @@ export class User {
     @OneToMany(() => UserTeam, userTeam => userTeam.user)
     userTeams: UserTeam[];
 
-    @ManyToOne(() => User, user => user.children)
-    @JoinColumn({ name: 'parent_id' })  // This column references the parent user
+    @Column({ name: 'parentId', nullable: true })
+    parentId: number;
+
+
+    @ManyToOne(() => User, user => user.children, { nullable: true, onDelete: 'SET NULL' })
+    @Index() 
     parent: User;
 
     @OneToMany(() => User, user => user.parent)
@@ -42,4 +59,12 @@ export class User {
 
     @OneToMany(() => BrandOwnership, brandOwnership => brandOwnership.boUser)
     brandOwnerships: BrandOwnership[];
+
+    @BeforeInsert()
+    @BeforeUpdate()
+    validateEmail() {
+        if (!this.email || this.email.trim() === '') {
+            throw new Error('Email cannot be empty.');
+        }
+    }
 }

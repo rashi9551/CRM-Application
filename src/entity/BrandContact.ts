@@ -19,6 +19,6 @@ export class BrandContact {
     @Column({ name: 'contact_person_email' })
     contactPersonEmail: string;
 
-    @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 }

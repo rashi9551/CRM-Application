@@ -17,7 +17,7 @@ export class Brand {
     @Column({ name: 'deal_closed_value', type: 'decimal' })
     dealClosedValue: number;
 
-    @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
     @OneToMany(() => BrandContact, brandContact => brandContact.brand)
