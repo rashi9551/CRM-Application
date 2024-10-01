@@ -5,8 +5,8 @@ import { BrandOwnership } from './BrandOwnership';
 
 @Entity()
 export class Brand {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn() // This will create an auto-incrementing integer ID
+    id: number;
 
     @Column({ name: 'brand_name' })
     brandName: string;

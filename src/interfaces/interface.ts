@@ -13,13 +13,20 @@ export enum Department {
     HR = 'HR'
 }
 
+export enum RoleName {
+    ADMIN = 'ADMIN',
+    PO = 'PO',
+    BO = 'BO',
+    TO = 'TO',
+}
+
 export interface UserData {
     name: string;
     department: Department; 
     phoneNumber: string;
     email: string;
     password: string;  
-    roles: ('ADMIN' | 'PO' | 'BO' | 'TO')[]; 
+    roles: RoleName[]; 
     teamOwner?: number;
 
 }

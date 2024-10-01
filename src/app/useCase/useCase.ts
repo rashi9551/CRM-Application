@@ -1,4 +1,4 @@
-import { PromiseReturn, UserData, UserLoginData } from '../../interfaces/interface';
+import { PromiseReturn, RoleName, UserData, UserLoginData } from '../../interfaces/interface';
 import { createToken } from '../../utils/jwt';
 import userRepo from '../repository/UserRepo';
 
@@ -6,35 +6,28 @@ export default new class UseCase {
     
     createUser = async (userData: UserData): Promise<PromiseReturn> => {
         try {
+            // Validate that at least one role is assigned
+            if (!userData.roles || userData.roles.length === 0) {
+                return { status: 400, message: "At least one role must be assigned." };
+            }
             // Check if the user already exists based on email
             const existingUser = await userRepo.findUserByEmail(userData.email);
             if (existingUser) {
                 return { status: 400, message: "User with this email already exists." };
             }
     
-            // Validate that at least one role is assigned
-            if (!userData.roles || userData.roles.length === 0) {
-                return { status: 400, message: "At least one role must be assigned." };
-            }
     
             // Ensure the TO role is assigned if the PO role is included
-            if (userData.roles.includes("PO") && !userData.teamOwner) {
+            if (userData.roles.includes(RoleName.PO) && !userData.teamOwner) {
                 return { status: 400, message: "A TO must be selected if a PO role is assigned." };
             }
     
             // Create the user
-            // const newUser = userRepo.create(userData);
-    
-            // Automatically create a team if the user has the TO role
-            if (userData.roles.includes("TO")) {
-                // const team = teamRepo.create({ toUserId: newUser.id });
-                // await teamRepo.save(team);
-            }
-    
+            const newUser = await userRepo.createUser(userData);
             // Save the new user to the database
-            // const savedUser = await userRepo.save(newUser);
+            const savedUser = await userRepo.saveUser(newUser,userData.roles,userData.teamOwner);
     
-            return { status: 201, message: "User created successfully.",  };
+            return { status: 201, message: "User created successfully.", User: newUser };
     
         } catch (error) {
             console.error("Error during user creation:", error);
@@ -52,7 +45,7 @@ export default new class UseCase {
                 if(user.password === loginData.password){
                     console.log("login successfully");
                     const roles=user?.roles.map((item)=>item.roleName)
-                    const token=await createToken(user.id,roles,"1d")
+                    const token=await createToken(user.id.toString(),roles,"1d")
                     return { status: 200, User:user,token,message: "user logged succesfully." }; 
                 }else{
                     return { status: 400, message: "Invalid password." }; 

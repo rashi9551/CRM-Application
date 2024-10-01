@@ -4,8 +4,8 @@ import { User } from './User';
 
 @Entity()
 export class Team {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn() // This will create an auto-incrementing integer ID
+    id: number;
 
     @ManyToOne(() => User, user => user.userTeams)
     toUser: User;

@@ -4,8 +4,8 @@ import { Brand } from './Brand';
 
 @Entity()
 export class BrandContact {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn() // This will create an auto-incrementing integer ID
+    id: number;
 
     @ManyToOne(() => Brand, brand => brand.contacts)
     brand: Brand;

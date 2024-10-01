@@ -5,8 +5,8 @@ import { User } from './User';
 
 @Entity()
 export class BrandOwnership {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn() // This will create an auto-incrementing integer ID
+    id: number;
 
     @ManyToOne(() => Brand, brand => brand.brandOwnerships)
     brand: Brand;
