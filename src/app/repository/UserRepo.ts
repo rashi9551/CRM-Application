@@ -1,32 +1,59 @@
-import { Repository } from 'typeorm';
+import { In, Like, Repository } from 'typeorm';
 import { AppDataSource } from '../../data-source';
 import { User } from '../../entity/User';
-import { Role } from '../../entity/Role';
 import { Team } from '../../entity/Team';
-import { UserTeam } from '../../entity/UserTeam';
 import { RoleName, UserData } from '../../interfaces/interface';
+import { buildTree } from '../../middleware/buildTree';
 
 
 export default new class UserRepo {
 
     private UserRepo: Repository<User>;
-    private RoleRepo: Repository<Role>;
     private TeamRepo: Repository<Team>;
-    private UserTeamRepo: Repository<UserTeam>;
 
     constructor() {
         this.UserRepo = AppDataSource.getRepository(User);
-        this.RoleRepo = AppDataSource.getRepository(Role);
         this.TeamRepo = AppDataSource.getRepository(Team);
-        this.UserTeamRepo = AppDataSource.getRepository(UserTeam);
     }
+
+    findUserById = async (userId: number): Promise<User | null> => {
+        return await this.UserRepo.findOne({ where: { id: userId } });
+    };
+    saveUser = async (updatedData: User): Promise<User | null> => {
+        try {
+            
+            if (updatedData.roles.includes(RoleName.TO)) {
+                const team = this.TeamRepo.create({ toUserId: updatedData.id });
+                const savedTeam = await this.TeamRepo.save(team);
+                updatedData.teamId = savedTeam.id;
+                await this.UserRepo.save(updatedData);
+            } else if (updatedData.teamId !== undefined) {
+                const existingTeam = await this.TeamRepo.findOne({ where: { id: updatedData.teamId } });
+                console.log(existingTeam,"=-=-=-");
+                
+                if (!existingTeam) {
+                    console.log("tem id deosnteixst");
+                    throw new Error("Specified team does not exist.");
+                }
+                updatedData.teamId = existingTeam.id;
+                await this.UserRepo.save(updatedData);
+            }else{
+                throw new Error("even TO role not will be there and the teamOwner will not be there wil violate the tre");
+
+            }
+            
+            return updatedData;
+        } catch (error) {
+            throw new Error("Failed to save user: " + error.message);
+        }
+    };
+    
 
     // Find a user by email
     async findUserByEmail(email: string): Promise<User | null> {
         try {
             const user = await this.UserRepo.findOne({
                 where: { email },
-                relations: ['roles'], // Fetch the associated roles
             });
     
             return user; 
@@ -45,60 +72,43 @@ export default new class UserRepo {
                 department: userData.department,
                 phoneNumber: userData.phoneNumber,
                 email: userData.email,
-                password: userData.password ,// You should hash the password here
-                parentId:userData.parentId
+                password: userData.password, // You should hash the password here
+                parentId: userData.parentId,
+                roles: userData.roles,
             });
-
-            // Save the user and roles
-
-            return user
+    
+            // Save the user
+            const savedUser = await this.UserRepo.save(user);
+    
+            // Check if the user has the TO role
+            if (userData.roles.includes(RoleName.TO)) {
+                // Create a new team and assign this user as the team owner
+                const team = this.TeamRepo.create({ toUserId: savedUser.id }); // Store team owner ID
+                const savedTeam = await this.TeamRepo.save(team);
+                // Assign the team ID to the user
+                savedUser.teamId = savedTeam.id; // Assuming you have a `teamId` field in User entity
+                await this.UserRepo.save(savedUser); // Update the user with the team reference
+            } else if (userData.teamId !== undefined){
+                // If not a TO user, check for an existing team ID and assign it to the user
+                const existingTeam = await this.TeamRepo.findOne({ where: { id: userData.teamId } });
+                if (!existingTeam) {
+                    throw new Error("Specified team does not exist.");
+                }
+                savedUser.teamId = existingTeam.id; // Assign the existing team's ID to the user
+                await this.UserRepo.save(savedUser); // Update the user with the team reference
+            }
+    
+            return savedUser; // Return the saved user
         } catch (error) {
             console.error("Error creating user by data:", error);
             throw error; 
         }
     }
-
+    
     // Save user and assign roles
-    async saveUser(user: User, roles: RoleName[],teamOwner:number): Promise<void> {
-        try {
-            // Save the user first
-            const savedUser = await this.UserRepo.save(user);
     
-            // Create role entities
-            const rolesToSave = roles.map(roleName => ({
-                roleName,
-                user: savedUser,
-            }));
     
-            // Batch insert roles
-            await this.RoleRepo.save(rolesToSave);
     
-            let savedTeam:Team;
-
-            // Automatically create a team if the user has the TO role
-            if (roles.includes(RoleName.TO)) {
-                const team = this.TeamRepo.create({ toUser: savedUser });
-                savedTeam = await this.TeamRepo.save(team);
-            } else if(teamOwner){
-                // If no TO role, fetch the existing team using teamOwner
-                savedTeam = await this.TeamRepo.findOne({ where: { id: teamOwner } });
-                if (!savedTeam) {
-                    throw new Error("Specified team does not exist for the user.");
-                }
-            }
-            // Add user to their team
-            const userTeam = this.UserTeamRepo.create({
-                user: savedUser,
-                team: savedTeam,
-            });
-            await this.UserTeamRepo.save(userTeam);
-        } catch (error) {
-            console.error("Error saving user and assigning roles:", error);
-            throw new Error("Failed to save user and assign roles.");
-        }
-    }
-
-
     async userExist(userId: number): Promise<User> {
         try {
             const user = await this.UserRepo.findOne({ where: { id: userId } });
@@ -135,27 +145,58 @@ export default new class UserRepo {
 
     findUserByRole = async (roleName: RoleName): Promise<User | null> => {
         const user = await this.UserRepo.findOne({
-            relations: ["roles"], // Ensure to load roles
             where: {
-                roles: {
-                    roleName, // Assuming 'roleName' is the correct field in the 'roles' relationship
-                },
+                roles: In([roleName]), // Check if roleName is included in the roles array
             },
         });
-    
+        
         return user;
     };
+    
     getUserById = async (id: number): Promise<User | null> => {
         try {
             return await this.UserRepo.findOne({
                 where: { id },
-                relations: ['roles', 'userTeams', 'brandOwnerships', 'parent', 'children'] // Load related entities
-            });
+                relations: [
+                    'team',
+                    'team.teamOwner',         // Fetch the owner of the team correctly
+                    'brandOwnerships',
+                    'parent',
+                    'children'
+                ] });
         } catch (error) {
             console.error(`Error fetching user with ID ${id}:`, error);
             throw new Error('Error fetching user data');
         }
     };
+
+    async checkForCycle(userId: number, newParentId: number): Promise<boolean> {
+        const users = await this.UserRepo.find(); // Fetch the user tree similar to fetching the full organization tree
+        // Step 2: Create a map of users for easy lookup
+        const userMap = new Map<number, User>();
+        users.forEach(user => userMap.set(user.id, user));
+    
+        // Step 3: Check if newParentId is a descendant of userId
+        const isDescendant = (currentUserId: number | null): boolean => {
+            if (currentUserId === null) return false; // No parent
+    
+            const currentUser = userMap.get(currentUserId);
+            if (!currentUser) return false; // User not found
+    
+            // If currentUserId is the new parent, cycle detected
+            if (currentUserId === newParentId) {
+                return true; // Cycle detected
+            }
+    
+            // Recursively check the parent
+            return isDescendant(currentUser.parentId);
+        };
+    
+        // Step 4: Perform the check starting from the new parent
+        return isDescendant(newParentId); // Check if newParentId is a descendant of userId
+    }
+    
+    
     
     
     

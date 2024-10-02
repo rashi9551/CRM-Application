@@ -9,6 +9,7 @@ router.post('/login',Controller.login);
 
 // only for admin 
 router.post('/createUser',verifyToken,isAdmin,Controller.createUser);
+router.post('/updateUser',verifyToken,isAdmin,Controller.updateUser);
 router.get('/getAllUser',verifyToken,isAdmin,Controller.getAllUser);
 router.get('/getAllTeam',verifyToken,isAdmin,Controller.getAllUser);
 router.get('/getUser/:id',verifyToken,isAdmin,Controller.getUser);

@@ -1,9 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { User } from "./entity/User";                // Adjust the path based on your project structure
-import { Role } from "./entity/Role";
 import { Team } from "./entity/Team";
-import { UserTeam } from "./entity/UserTeam";
 import { Brand } from "./entity/Brand";
 import { BrandContact } from "./entity/BrandContact";
 import { BrandOwnership } from "./entity/BrandOwnership";
@@ -22,13 +20,16 @@ export const AppDataSource = new DataSource({
     logging: false,
     entities: [
         User,
-        Role,
         Team,
-        UserTeam,
         Brand,
         BrandContact,
         BrandOwnership
     ],
     migrations: ["./src/migration/*.ts"],
     subscribers: [],
+    extra: {
+        connectionLimit: 10, // Maximum number of connections in the pool
+        queueLimit: 0,       // No limit on how many pending connections can be queued
+        waitForConnections: true, // Block requests when reaching the max limit
+    },
 });

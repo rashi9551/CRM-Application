@@ -48,5 +48,16 @@ export default new class Controller{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
         }
     }
+    updateUser=async(req:Request,res:Response)=>{
+        try {
+            console.log("updating a  single user...");
+            const updateingData=req.body
+            const updateUserResponse = await useCase.updateUser(updateingData);
+           res.status(updateUserResponse.status).json(updateUserResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
+        }
+    }
    
 }

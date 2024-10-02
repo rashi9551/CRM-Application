@@ -4,19 +4,19 @@ import {
     Column,
     OneToMany,
     ManyToOne,
-    JoinColumn,
     BeforeInsert,
     BeforeUpdate,
-    Index
+    Index,
+    JoinColumn
 } from 'typeorm';
 import { IsEmail, IsNotEmpty } from 'class-validator';
-import { Role } from './Role';
-import { UserTeam } from './UserTeam';
 import { BrandOwnership } from './BrandOwnership';
+import { RoleName } from '../interfaces/interface';
+import { Team } from './Team'; // Import the Team entity
 
 @Entity()
 export class User {
-    @PrimaryGeneratedColumn() 
+    @PrimaryGeneratedColumn()
     id: number;
 
     @Column()
@@ -40,18 +40,14 @@ export class User {
     @Column({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
-    @OneToMany(() => Role, role => role.user)
-    roles: Role[];
-
-    @OneToMany(() => UserTeam, userTeam => userTeam.user)
-    userTeams: UserTeam[];
+    @Column('simple-array', { nullable: true })
+    roles: RoleName[];
 
     @Column({ name: 'parentId', nullable: true })
     parentId: number;
 
-
     @ManyToOne(() => User, user => user.children, { nullable: true, onDelete: 'SET NULL' })
-    @Index() 
+    @Index()
     parent: User;
 
     @OneToMany(() => User, user => user.parent)
@@ -59,6 +55,16 @@ export class User {
 
     @OneToMany(() => BrandOwnership, brandOwnership => brandOwnership.boUser)
     brandOwnerships: BrandOwnership[];
+
+    @Column({ name: 'team_id', nullable: true })
+    teamId: number; // This will store the team ID
+
+    @ManyToOne(() => Team, team => team.users, { nullable: true, onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'team_id' }) // This specifies the foreign key column in the User table
+    team: Team;
+
+    @OneToMany(() => Team, team => team.teamOwner) // Relation to owned teams
+    userTeams: Team[]; // Teams owned by this user
 
     @BeforeInsert()
     @BeforeUpdate()

@@ -28,7 +28,19 @@ export interface UserData {
     email: string;
     password: string;  
     roles: RoleName[]; 
-    teamOwner?: number;
+    teamId?: number;
+    parentId:number;
+
+}
+export interface updatingUserData {
+    id:number
+    name: string;
+    department: Department; 
+    phoneNumber: string;
+    email: string;
+    password: string;  
+    roles: RoleName[]; 
+    teamId?: number;
     parentId:number;
 
 }
