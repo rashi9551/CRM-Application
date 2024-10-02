@@ -23,21 +23,6 @@ export default new class UserRepo {
      findUserById = async (userId: number): Promise<User | null> => {
         return await this.UserRepo.findOne({ where: { id: userId } });
     };
-
-    // Method to create a brand instance
-    createBrand = (brandData: Partial<Brand>): Brand => {
-        return this.BrandRepo.create(brandData);
-    };
-
-    // Method to save the brand to the database with error handling
-    saveBrand = async (brand: Brand): Promise<Brand | null> => {
-        try {
-            return await this.BrandRepo.save(brand);
-        } catch (error) {
-            console.error("Error saving brand:", error);
-            throw new Error("Failed to save brand");
-        }
-    };
     saveUser = async (updatedData: User,isExistingTo?:boolean): Promise<User | null> => {
         try {
             
@@ -66,8 +51,6 @@ export default new class UserRepo {
             throw new Error("Failed to save user: " + error.message);
         }
     };
-    
-
     // Find a user by email
     async findUserByEmail(email: string): Promise<User | null> {
         try {
@@ -81,7 +64,6 @@ export default new class UserRepo {
             throw error; 
         }
     }
-
     // Create new user and validate roles
     async createUser(userData: UserData): Promise<User> {
         try {
@@ -123,11 +105,6 @@ export default new class UserRepo {
             throw error; 
         }
     }
-    
-    // Save user and assign roles
-    
-    
-    
     async userExist(userId: number): Promise<User> {
         try {
             const user = await this.UserRepo.findOne({ where: { id: userId } });
@@ -241,6 +218,71 @@ export default new class UserRepo {
         // Step 4: Perform the check starting from the new parent
         return isDescendant(newParentId); // Check if newParentId is a descendant of userId
     }
+
+    // Method to create a brand instance
+    createBrand = (brandData: Partial<Brand>): Brand => {
+        return this.BrandRepo.create(brandData);
+    };
+
+    // Method to save the brand to the database with error handling
+    saveBrand = async (brand: Brand): Promise<Brand | null> => {
+        try {
+            return await this.BrandRepo.save(brand);
+        } catch (error) {
+            console.error("Error saving brand:", error);
+            throw new Error("Failed to save brand");
+        }
+    };
+    // Method to save the brand to the database with error handling
+    findBrandByName = async (brandName: string): Promise<Brand | null> => {
+        try {
+            const lowerCaseBrandName = brandName.toLowerCase();
+
+            return await this.BrandRepo.createQueryBuilder("brand")
+                .where("LOWER(brand.brandName) = LOWER(:name)", { name: lowerCaseBrandName })
+                .getOne();
+        } catch (error) {
+            console.error("Error finding brand by name:", error);
+            throw new Error("Failed to find brand by name");
+        }
+    };
+    findBrandByID = async (id: number): Promise<Brand | null> => {
+        try {
+            // Find the brand by ID
+            const brand = await this.BrandRepo.findOne({ where: { id } });
+            return brand || null; // Return the brand if found, otherwise null
+        } catch (error) {
+            console.error("Error finding brand by ID:", error);
+            throw new Error("Failed to find brand");
+        }
+    };
+    getAllBrand = async (): Promise<Brand[] | null> => {
+        try {
+            // Retrieve all brands along with their related BrandContact and BrandOwnership
+            const brands = await this.BrandRepo.find({
+                relations: ['contacts', 'brandOwnerships'],
+            });
+
+            return brands; // Return the list of brands
+        } catch (error) {
+            console.error("Error fetching all brands:", error);
+            throw new Error("Failed to fetch all brands");
+        }
+    };
+    getBrand = async (id: number): Promise<Brand | null> => {
+        try {
+            // Retrieve a single brand by ID along with its related BrandContact and BrandOwnership
+            const brand = await this.BrandRepo.findOne({
+                where: { id }, // Use the where clause to specify the ID
+                relations: ['contacts', 'brandOwnerships'], // Include relations
+            });
+    
+            return brand; // Return the single brand or null if not found
+        } catch (error) {
+            console.error("Error fetching brand:", error);
+            throw new Error("Failed to fetch brand");
+        }
+    };
     
     
     

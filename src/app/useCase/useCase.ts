@@ -1,3 +1,4 @@
+import { Brand } from '../../entity/Brand';
 import { Team } from '../../entity/Team';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
@@ -208,13 +209,22 @@ export default new class UseCase {
     }
     createBrand = async (brandData: BrandData): Promise<PromiseReturn> => {
         try {
-            const brand = UserRepo.createBrand(brandData);
+            // Check if the brand already exists with the same name (case-sensitive)
+            const existingBrand = await UserRepo.findBrandByName(brandData.brandName);
+            if (existingBrand) {
+                return {
+                    status: StatusCode.Conflict as number,
+                    message: "Brand already exists with the same name",
+                };
+            }
     
+            // Create and save the new brand
+            const brand = UserRepo.createBrand(brandData);
             const savedBrand = await UserRepo.saveBrand(brand);
     
             return { 
                 status: StatusCode.OK as number, 
-                brand: savedBrand, // Return the created brand object
+                Brand: savedBrand, // Return the created brand object
                 message: "Brand created successfully" 
             };
         } catch (error) {
@@ -224,6 +234,63 @@ export default new class UseCase {
                 message: "Error when creating brand" 
             };
         }
+    };
+    updateBrand = async (brandData: BrandData): Promise<PromiseReturn> => {
+        try {    
+            // Check if another brand already exists with the same name (case-insensitive)
+            const existingBrand = await UserRepo.findBrandByName(brandData.brandName);
+            if (existingBrand && existingBrand.id !== brandData.id) {
+                return {
+                    status: StatusCode.Conflict as number,
+                    message: "Brand already exists with the same name",
+                };
+            }
+    
+            // Find the brand to update
+            const brandToUpdate = await UserRepo.findBrandByID(brandData.id);
+            if (!brandToUpdate) {
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: "Brand not found",
+                };
+            }
+            // Update the brand's properties
+            Object.assign(brandToUpdate, brandData);
+            // Save the updated brand
+            const savedBrand = await UserRepo.saveBrand(brandToUpdate);
+    
+            return { 
+                status: StatusCode.OK as number, 
+                Brand: savedBrand, // Return the updated brand object
+                message: "Brand updated successfully" 
+            };
+        } catch (error) {
+            console.error("Error during updating brand:", error);
+            return { 
+                status: StatusCode.InternalServerError as number, 
+                message: "Error when updating brand" 
+            };
+        }
+    };
+    getAllBrand = async (): Promise<PromiseReturn > => {
+        try {
+           const getAllBrand:Brand[]=await userRepo.getAllBrand()
+           return { status: StatusCode.OK as number, brand:getAllBrand, message: "all Brand fetched success fully" };
+        } catch (error) {
+            console.error("Error during fetching tree:", error);
+            return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
+        }
     }
+    getBrand = async (id:number): Promise<PromiseReturn > => {
+        try {
+           const getBrand:Brand=await userRepo.getBrand(id)
+           return { status: StatusCode.OK as number, Brand:getBrand, message: "single brand fetched success fully" };
+        } catch (error) {
+            console.error("Error during fetching tree:", error);
+            return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
+        }
+    }
+    
+    
 
 };

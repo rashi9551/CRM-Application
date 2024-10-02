@@ -9,7 +9,8 @@ export interface PromiseReturn{
     message?:string
     token?:string
     team?:Team[]
-    brand?:Brand
+    brand?:Brand[]
+    Brand?:Brand
 
 }
 export enum Department {
@@ -37,6 +38,7 @@ export interface UserData {
 
 }
 export interface BrandData {
+    id:number
     brandName: string;        
     revenue: number;         
     dealClosedValue: number;  

@@ -16,9 +16,9 @@ router.get('/getAllTo',verifyToken,isAdmin,Controller.getAllTo)
 router.get('/getAllTeam',verifyToken,isAdmin,Controller.getAllTeam)
 
 router.post('/createBrand',verifyToken,isAdminOrBO,Controller.createBrand);
-router.put('/updateBrand');
-router.get('/getBrand/:id');
-router.get('/getAllBrand');
+router.put('/updateBrand',verifyToken,isAdminOrBO,Controller.updateBrand);
+router.get('/getAllBrand',verifyToken,isAdminOrBO,Controller.getAllBrand);
+router.get('/getBrand',verifyToken,isAdminOrBO,Controller.getBrand);
 
 router.post('/addBrandContact');
 router.put('/updateBrandContact');
