@@ -1,3 +1,5 @@
+import { Brand } from "../entity/Brand";
+import { Team } from "../entity/Team";
 import { User } from "../entity/User";
 
 export interface PromiseReturn{
@@ -6,6 +8,8 @@ export interface PromiseReturn{
     user?:User[]
     message?:string
     token?:string
+    team?:Team[]
+    brand?:Brand
 
 }
 export enum Department {
@@ -30,6 +34,12 @@ export interface UserData {
     roles: RoleName[]; 
     teamId?: number;
     parentId:number;
+
+}
+export interface BrandData {
+    brandName: string;        
+    revenue: number;         
+    dealClosedValue: number;  
 
 }
 export interface updatingUserData {

@@ -1,7 +1,7 @@
 import {Response,Request} from 'express'
 import { StatusCode } from '../../interfaces/enum'
 import useCase from '../useCase/useCase'
-import { UserData, UserLoginData } from '../../interfaces/interface'
+import { UserData, UserLoginData ,BrandData} from '../../interfaces/interface'
 
 export default new class Controller{
 
@@ -48,6 +48,26 @@ export default new class Controller{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
         }
     }
+    getAllTo=async(req:Request,res:Response)=>{
+        try {
+            console.log("geeting a all TO role user...");
+            const getAllToResponse = await useCase.getAllTo();
+           res.status(getAllToResponse.status).json(getAllToResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
+        }
+    }
+    getAllTeam=async(req:Request,res:Response)=>{
+        try {
+            console.log("geeting a all team  ...");
+            const getAllTeamResponse = await useCase.getAllTeam();
+           res.status(getAllTeamResponse.status).json(getAllTeamResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
+        }
+    }
     updateUser=async(req:Request,res:Response)=>{
         try {
             console.log("updating a  single user...");
@@ -59,5 +79,19 @@ export default new class Controller{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
         }
     }
+
+
+    createBrand=async(req:Request,res:Response)=>{
+        try {
+            console.log("admin creating  a brand...");
+            const BrandData:BrandData=req.body
+            const createBrandResponse=await useCase.createBrand(BrandData)
+            res.status(createBrandResponse.status).json(createBrandResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
+
    
 }

@@ -64,3 +64,12 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
     next();
 };
 
+export const isAdminOrBO = (req: Request, res: Response, next: NextFunction) => {
+    // Check if the role includes 'ADMIN' or 'BO' (case-insensitive comparison)
+    if (!req.role || (!req.role.includes("ADMIN") && !req.role.includes("BO"))) {
+        return res.status(401).json({ message: 'Only an admin or a brand owner can perform this action' });
+    }
+
+    next();
+};
+

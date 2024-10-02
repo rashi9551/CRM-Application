@@ -1,8 +1,10 @@
+import { Team } from '../../entity/Team';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
-import { PromiseReturn, RoleName, updatingUserData, UserData, UserLoginData } from '../../interfaces/interface';
+import { BrandData, PromiseReturn, RoleName, updatingUserData, UserData, UserLoginData } from '../../interfaces/interface';
 import { buildTree } from '../../middleware/buildTree';
 import { createToken } from '../../utils/jwt';
+import UserRepo from '../repository/UserRepo';
 import userRepo from '../repository/UserRepo';
 
 export default new class UseCase {
@@ -64,6 +66,13 @@ export default new class UseCase {
             if (!existingUser) {
                 return { status: StatusCode.NotFound as number, message: "User not found." };
             }
+
+            const hasTO = existingUser.roles.includes(RoleName.TO);
+
+            // If the user is trying to remove the "TO" role
+            if (!userData.roles.includes(RoleName.TO) && hasTO) {
+                    return { status: StatusCode.BadRequest as number, message: "Cannot remove TO role;" };
+            }
     
             // Email uniqueness check (if email is being updated)
             if (userData.email && userData.email !== existingUser.email) {
@@ -122,7 +131,7 @@ export default new class UseCase {
             });
     
             // Proceed to save user with updated details
-            const updatedUser = await userRepo.saveUser(existingUser);
+            const updatedUser = await userRepo.saveUser(existingUser,hasTO);
             return { status: StatusCode.OK as number, message: "User updated successfully.",User:updatedUser };
     
         } catch (error) {
@@ -159,7 +168,25 @@ export default new class UseCase {
         try {
            const getAllUser:User[]=await userRepo.getUserTree()
             const User=buildTree(getAllUser)
-           return { status: StatusCode.OK as number, user:User, message: "Tree fetched success fully" };
+           return { status: StatusCode.OK as number, user:User, message: "all users fetched success fully" };
+        } catch (error) {
+            console.error("Error during fetching tree:", error);
+            return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
+        }
+    }
+    getAllTo = async (): Promise<PromiseReturn > => {
+        try {
+           const getAllTo:User[]=await userRepo.getUsersWithRoleTO(RoleName.TO)
+           return { status: StatusCode.OK as number, user:getAllTo, message: "all to  fetched success fully" };
+        } catch (error) {
+            console.error("Error during fetching tree:", error);
+            return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
+        }
+    }
+    getAllTeam = async (): Promise<PromiseReturn > => {
+        try {
+           const getAllTeam:Team[]=await userRepo.getAllTeam()
+           return { status: StatusCode.OK as number, team:getAllTeam, message: "all team fetched success fully" };
         } catch (error) {
             console.error("Error during fetching tree:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
@@ -179,10 +206,24 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
         }
     }
-
-
+    createBrand = async (brandData: BrandData): Promise<PromiseReturn> => {
+        try {
+            const brand = UserRepo.createBrand(brandData);
     
+            const savedBrand = await UserRepo.saveBrand(brand);
+    
+            return { 
+                status: StatusCode.OK as number, 
+                brand: savedBrand, // Return the created brand object
+                message: "Brand created successfully" 
+            };
+        } catch (error) {
+            console.error("Error during creating brand:", error);
+            return { 
+                status: StatusCode.InternalServerError as number, 
+                message: "Error when creating brand" 
+            };
+        }
+    }
 
-    
-    
 };

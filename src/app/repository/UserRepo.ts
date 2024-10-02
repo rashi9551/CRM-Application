@@ -2,6 +2,7 @@ import { In, Like, Repository } from 'typeorm';
 import { AppDataSource } from '../../data-source';
 import { User } from '../../entity/User';
 import { Team } from '../../entity/Team';
+import { Brand } from '../../entity/Brand';
 import { RoleName, UserData } from '../../interfaces/interface';
 import { buildTree } from '../../middleware/buildTree';
 
@@ -10,19 +11,37 @@ export default new class UserRepo {
 
     private UserRepo: Repository<User>;
     private TeamRepo: Repository<Team>;
+    private BrandRepo: Repository<Brand>;
 
     constructor() {
         this.UserRepo = AppDataSource.getRepository(User);
         this.TeamRepo = AppDataSource.getRepository(Team);
+        this.BrandRepo = AppDataSource.getRepository(Brand);
     }
 
-    findUserById = async (userId: number): Promise<User | null> => {
+     // Existing method to find a user by ID
+     findUserById = async (userId: number): Promise<User | null> => {
         return await this.UserRepo.findOne({ where: { id: userId } });
     };
-    saveUser = async (updatedData: User): Promise<User | null> => {
+
+    // Method to create a brand instance
+    createBrand = (brandData: Partial<Brand>): Brand => {
+        return this.BrandRepo.create(brandData);
+    };
+
+    // Method to save the brand to the database with error handling
+    saveBrand = async (brand: Brand): Promise<Brand | null> => {
+        try {
+            return await this.BrandRepo.save(brand);
+        } catch (error) {
+            console.error("Error saving brand:", error);
+            throw new Error("Failed to save brand");
+        }
+    };
+    saveUser = async (updatedData: User,isExistingTo?:boolean): Promise<User | null> => {
         try {
             
-            if (updatedData.roles.includes(RoleName.TO)) {
+            if (updatedData.roles.includes(RoleName.TO) && !isExistingTo) {
                 const team = this.TeamRepo.create({ toUserId: updatedData.id });
                 const savedTeam = await this.TeamRepo.save(team);
                 updatedData.teamId = savedTeam.id;
@@ -152,6 +171,33 @@ export default new class UserRepo {
         
         return user;
     };
+    getAllTeam = async (): Promise<Team[] | null> => {
+        try {
+            const teams = await this.TeamRepo
+                .createQueryBuilder('team')
+                .leftJoinAndSelect('team.users', 'user') // Join with users to get team members
+                .leftJoinAndSelect('team.teamOwner', 'owner') // Join with team owner
+                .getMany(); // Fetch all teams with their details
+
+            return teams;
+        } catch (error) {
+            console.error("Error fetching teams:", error);
+            throw new Error("Failed to retrieve teams");
+        }
+    };
+    async getUsersWithRoleTO(roleName:RoleName): Promise<User[]> {
+        try {
+            const usersWithToRole = await this.UserRepo
+            .createQueryBuilder('user')
+                .where('user.roles LIKE :role', { role: '%TO%' }) // Using LIKE for simple array
+                .getMany();
+
+            return usersWithToRole;
+        } catch (error) {
+            console.error(`Error fetching users with role ${roleName}:`, error);
+            throw new Error(`Failed to retrieve users with role ${roleName}`);
+        }
+    }
     
     getUserById = async (id: number): Promise<User | null> => {
         try {
