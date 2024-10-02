@@ -3,8 +3,9 @@ import { AppDataSource } from '../../data-source';
 import { User } from '../../entity/User';
 import { Team } from '../../entity/Team';
 import { Brand } from '../../entity/Brand';
-import { RoleName, UserData } from '../../interfaces/interface';
+import { BrandContactData, BrandData, RoleName, UserData } from '../../interfaces/interface';
 import { buildTree } from '../../middleware/buildTree';
+import { BrandContact } from '../../entity/BrandContact';
 
 
 export default new class UserRepo {
@@ -12,11 +13,13 @@ export default new class UserRepo {
     private UserRepo: Repository<User>;
     private TeamRepo: Repository<Team>;
     private BrandRepo: Repository<Brand>;
+    private BrandContactRepo: Repository<BrandContact>;
 
     constructor() {
         this.UserRepo = AppDataSource.getRepository(User);
         this.TeamRepo = AppDataSource.getRepository(Team);
         this.BrandRepo = AppDataSource.getRepository(Brand);
+        this.BrandContactRepo = AppDataSource.getRepository(BrandContact);
     }
 
      // Existing method to find a user by ID
@@ -281,6 +284,47 @@ export default new class UserRepo {
         } catch (error) {
             console.error("Error fetching brand:", error);
             throw new Error("Failed to fetch brand");
+        }
+    };
+    addingBrandContact = async (brandContactData: BrandContactData): Promise<BrandContact | null> => {
+        try {
+            // Create a new BrandContact entity
+            const brandContact = this.BrandContactRepo.create({
+                contactPersonName: brandContactData.contactPersonName,
+                contactPersonPhone: brandContactData.contactPersonPhone,
+                contactPersonEmail: brandContactData.contactPersonEmail,
+                brand: { id: brandContactData.brandId }, // Set the associated brand
+            });
+
+            // Save the BrandContact entity
+            const savedBrandContact = await this.BrandContactRepo.save(brandContact);
+
+            return savedBrandContact; // Return the saved entity
+        } catch (error) {
+            console.error("Error adding brand contact:", error);
+            throw new Error("Failed to add brand contact");
+        }
+    }
+
+    getBrandContactById = async (id: number): Promise<BrandContact | null> => {
+        try {
+            const brandContact = await this.BrandContactRepo.findOne({ where: { id } });
+            return brandContact;
+        } catch (error) {
+            console.error("Error fetching brand contact by ID:", error);
+            throw new Error("Failed to fetch brand contact");
+        }
+    };
+
+    // Update the brand contact
+    updateBrandContact = async (brandContact: BrandContact): Promise<BrandContact | null> => {
+        try {
+            // Save the updated brand contact
+            const updatedBrandContact = await this.BrandContactRepo.save(brandContact);
+            return updatedBrandContact;
+        } catch (error) {
+            console.error("Error updating brand contact:", error);
+            throw new Error("Failed to update brand contact");
         }
     };
     

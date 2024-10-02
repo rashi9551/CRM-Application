@@ -1,8 +1,9 @@
 import { Brand } from '../../entity/Brand';
+import { BrandContact } from '../../entity/BrandContact';
 import { Team } from '../../entity/Team';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
-import { BrandData, PromiseReturn, RoleName, updatingUserData, UserData, UserLoginData } from '../../interfaces/interface';
+import { BrandContactData, BrandData, PromiseReturn, RoleName, updatingUserData, UserData, UserLoginData } from '../../interfaces/interface';
 import { buildTree } from '../../middleware/buildTree';
 import { createToken } from '../../utils/jwt';
 import UserRepo from '../repository/UserRepo';
@@ -290,6 +291,58 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
         }
     }
+    addingBrandContact = async (brandContactData: BrandContactData): Promise<PromiseReturn> => {
+        try {
+            // Call the repository method to add a brand contact
+            const addingBrandContact = await UserRepo.addingBrandContact(brandContactData);
+
+            // Return success response if saved successfully
+            return {
+                status: StatusCode.OK as number,
+                BrandContact: addingBrandContact,
+                message: "Brand contact added successfully",
+            };
+        } catch (error) {
+            console.error("Error during adding brand contact:", error);
+            return {
+                status: StatusCode.InternalServerError as number,
+                message: "Error when adding brand contact",
+            };
+        }
+    };
+    updateBrandContact = async (brandContactData: BrandContactData): Promise<PromiseReturn> => {
+        try {
+            // Fetch the existing brand contact by ID
+            const existingBrandContact = await UserRepo.getBrandContactById(brandContactData.id);
+            
+            // If the brand contact doesn't exist, return a 404 error
+            if (!existingBrandContact) {
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: "Brand contact not found",
+                };
+            }
+
+            // Update the fields of the existing brand contact
+            Object.assign(existingBrandContact, brandContactData);
+
+            // Save the updated brand contact in the repository
+            const updatedBrandContact = await UserRepo.updateBrandContact(existingBrandContact);
+
+            // Return success response if updated successfully
+            return {
+                status: StatusCode.OK as number,
+                BrandContact: updatedBrandContact,
+                message: "Brand contact updated successfully",
+            };
+        } catch (error) {
+            console.error("Error during updating brand contact:", error);
+            return {
+                status: StatusCode.InternalServerError as number,
+                message: "Error when updating brand contact",
+            };
+        }
+    };
     
     
 

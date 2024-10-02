@@ -20,8 +20,8 @@ router.put('/updateBrand',verifyToken,isAdminOrBO,Controller.updateBrand);
 router.get('/getAllBrand',verifyToken,isAdminOrBO,Controller.getAllBrand);
 router.get('/getBrand',verifyToken,isAdminOrBO,Controller.getBrand);
 
-router.post('/addBrandContact');
-router.put('/updateBrandContact');
+router.post('/addBrandContact',verifyToken,isAdminOrBO,Controller.addBrandContact);
+router.put('/updateBrandContact',verifyToken,isAdminOrBO,Controller.updateBrandContact);
 
 
 

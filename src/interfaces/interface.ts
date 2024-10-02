@@ -1,18 +1,8 @@
 import { Brand } from "../entity/Brand";
+import { BrandContact } from "../entity/BrandContact";
 import { Team } from "../entity/Team";
 import { User } from "../entity/User";
 
-export interface PromiseReturn{
-    status: number; 
-    User?:User
-    user?:User[]
-    message?:string
-    token?:string
-    team?:Team[]
-    brand?:Brand[]
-    Brand?:Brand
-
-}
 export enum Department {
     DEVELOPMENT = 'Development',
     DESIGN = 'Design',
@@ -24,6 +14,19 @@ export enum RoleName {
     PO = 'PO',
     BO = 'BO',
     TO = 'TO',
+}
+
+export interface PromiseReturn{
+    status: number; 
+    User?:User
+    user?:User[]
+    message?:string
+    token?:string
+    team?:Team[]
+    brand?:Brand[]
+    Brand?:Brand
+    BrandContact?:BrandContact
+
 }
 
 export interface UserData {
@@ -43,6 +46,13 @@ export interface BrandData {
     revenue: number;         
     dealClosedValue: number;  
 
+}
+export interface BrandContactData {
+    id?:number
+    contactPersonName: string;    // The name of the contact person
+    contactPersonPhone: string;   // The phone number of the contact person
+    contactPersonEmail: string;   // The email address of the contact person
+    brandId: number;              // The ID of the associated brand (foreign key to Brand)
 }
 export interface updatingUserData {
     id:number

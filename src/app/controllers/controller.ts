@@ -124,6 +124,28 @@ export default new class Controller{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
         }
     }
+    addBrandContact=async(req:Request,res:Response)=>{
+        try {
+            console.log("admin or bo  adding  a brand contact...");
+            const BrandContact=req.body
+            const  addingBrandContactResponse=await useCase.addingBrandContact(BrandContact)
+            res.status(addingBrandContactResponse.status).json(addingBrandContactResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
+    updateBrandContact=async(req:Request,res:Response)=>{
+        try {
+            console.log("admin or bo  updating  a brand contact...");
+            const BrandContact=req.body
+            const  updatingBrandContactResponse=await useCase.updateBrandContact(BrandContact)
+            res.status(updatingBrandContactResponse.status).json(updatingBrandContactResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
 
    
 }
