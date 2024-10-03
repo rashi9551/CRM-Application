@@ -1,6 +1,6 @@
 import { Router } from "express";
 import Controller from "../controllers/controller";
-import { isAdmin, isAdminOrBO, verifyToken } from "../../utils/jwt";
+import { isAdmin, isAdminOrBO, isPoAndTo, verifyToken } from "../../utils/jwt";
 
 const router=Router()
 
@@ -22,9 +22,11 @@ router.get('/getBrand',verifyToken,isAdminOrBO,Controller.getBrand);
 
 router.post('/addBrandContact',verifyToken,isAdminOrBO,Controller.addBrandContact);
 router.put('/updateBrandContact',verifyToken,isAdminOrBO,Controller.updateBrandContact);
+router.get('/getBrandDetail',verifyToken,isPoAndTo,Controller.getBrandDetail)
 
+router.post('/addBrandOwnership',verifyToken,isAdmin,Controller.addBrandOwnership)
 
-
+router.get('/searchUser',verifyToken,Controller.searchUser)
 
 
 

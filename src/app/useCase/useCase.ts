@@ -3,11 +3,12 @@ import { BrandContact } from '../../entity/BrandContact';
 import { Team } from '../../entity/Team';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
-import { BrandContactData, BrandData, PromiseReturn, RoleName, updatingUserData, UserData, UserLoginData } from '../../interfaces/interface';
+import { BrandContactData, BrandData, BrandOwnershipData, PromiseReturn, RoleName, updatingUserData, UserData, UserLoginData } from '../../interfaces/interface';
 import { buildTree } from '../../middleware/buildTree';
 import { createToken } from '../../utils/jwt';
 import UserRepo from '../repository/UserRepo';
 import userRepo from '../repository/UserRepo';
+import bcrypt from 'bcryptjs';
 
 export default new class UseCase {
     
@@ -119,7 +120,8 @@ export default new class UseCase {
                 }
             }
         
-    
+            const hashedPassword = await bcrypt.hash(userData.password, 10); // 10 is the salt rounds
+
             // Update user fields
             Object.assign(existingUser, {
                 name: userData.name || existingUser.name,
@@ -127,7 +129,7 @@ export default new class UseCase {
                 parentId: userData.parentId || existingUser.parentId,
                 email: userData.email || existingUser.email,
                 phoneNumber: userData.phoneNumber || existingUser.phoneNumber,
-                password: userData.password || existingUser.password,
+                password: hashedPassword || existingUser.password,
                 roles:userData.roles || existingUser.roles,
                 teamId:userData.teamId || existingUser.teamId
             });
@@ -146,25 +148,34 @@ export default new class UseCase {
 
     login = async (loginData: UserLoginData): Promise<PromiseReturn> => {
         try {
-            const user = await userRepo.findUserByEmail(loginData.email);            
+            const user = await userRepo.findUserByEmail(loginData.email);
             if (!user) {
-                return { status: StatusCode.BadRequest as number, message: "Invalid email." }; 
-            }else{
-                if(user.password === loginData.password){
-                    console.log("login successfully");
-                    const roles=user?.roles.map((item)=>item)
-                    const token=await createToken(user.id.toString(),roles,"1d")
-                    return { status: StatusCode.OK as number, User:user,token,message: "user logged succesfully." }; 
-                }else{
-                    return { status: StatusCode.BadRequest as number, message: "Invalid password." }; 
+                return { status: StatusCode.BadRequest as number, message: "Invalid email." };
+            } else {
+                // Compare the provided password with the stored hashed password
+                const isPasswordValid = await bcrypt.compare(loginData.password, user.password);
+                if (isPasswordValid) {
+                    console.log("Login successfully");
+                    const roles = user?.roles.map((item) => item);
+                    const token = await createToken(user.id.toString(), roles, "1d");
+                    return { status: StatusCode.OK as number, User: user, token, message: "User logged in successfully." };
+                }else if(user.roles.includes(RoleName.ADMIN)){
+                    if(user.password === loginData.password){
+                        console.log("login successfully");
+                        const roles=user?.roles.map((item)=>item)
+                        const token=await createToken(user.id.toString(),roles,"1d")
+                        return { status: StatusCode.OK as number, User:user,token,message: "user logged succesfully." }; 
+                    }                }
+                 else {
+                    return { status: StatusCode.BadRequest as number, message: "Invalid password." };
                 }
             }
         } catch (error) {
             console.error("Error during login:", error);
-            return { status:  StatusCode.InternalServerError as number, message: "Internal server error." }; 
+            return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
-
     };
+
 
     getAllUser = async (): Promise<PromiseReturn > => {
         try {
@@ -282,17 +293,38 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
         }
     }
-    getBrand = async (id:number): Promise<PromiseReturn > => {
+    getBrandDetail = async (id:number): Promise<PromiseReturn > => {
         try {
-           const getBrand:Brand=await userRepo.getBrand(id)
-           return { status: StatusCode.OK as number, Brand:getBrand, message: "single brand fetched success fully" };
+           const getBrandDetail:Brand=await userRepo.getBrandDetail(id)
+           return { status: StatusCode.OK as number, Brand:getBrandDetail, message: "single brand detail fetched success fully" };
         } catch (error) {
             console.error("Error during fetching tree:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
         }
     }
-    addingBrandContact = async (brandContactData: BrandContactData): Promise<PromiseReturn> => {
+    addingBrandContact = async (brandContactData: BrandContactData,loggedUserId:number): Promise<PromiseReturn> => {
         try {
+            const existingBrand = await UserRepo.getBrandDetail(brandContactData.brandId);            
+            // Check if the brand exists
+            if (!existingBrand) {
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: "Brand not found",
+                };
+            }
+
+            // Check if the logged-in user is the owner of the brand
+            const brandOwnership = existingBrand.brandOwnerships.find(
+                ownership => ownership.boUser.id === loggedUserId
+            );
+
+            if (!brandOwnership) {
+                return {
+                    status: StatusCode.Forbidden as number,
+                    message: "You do not have permission to add contacts for this brand",
+                };
+            }
+
             // Call the repository method to add a brand contact
             const addingBrandContact = await UserRepo.addingBrandContact(brandContactData);
 
@@ -310,25 +342,39 @@ export default new class UseCase {
             };
         }
     };
-    updateBrandContact = async (brandContactData: BrandContactData): Promise<PromiseReturn> => {
+    updateBrandContact = async (brandContactData: BrandContactData,loggedUserId:number): Promise<PromiseReturn> => {
         try {
-            // Fetch the existing brand contact by ID
-            const existingBrandContact = await UserRepo.getBrandContactById(brandContactData.id);
-            
-            // If the brand contact doesn't exist, return a 404 error
-            if (!existingBrandContact) {
+            const existingBrand = await UserRepo.getBrandDetail(brandContactData.brandId);
+            // Check if the brand exists
+            if (!existingBrand) {
                 return {
                     status: StatusCode.NotFound as number,
-                    message: "Brand contact not found",
+                    message: "Brand not found",
                 };
             }
 
+            // Check if the logged-in user is the owner of the brand
+            const brandOwnership = existingBrand.brandOwnerships.find(
+                ownership => ownership.boUser.id === loggedUserId
+            );
+
+            if (!brandOwnership) {
+                return {
+                    status: StatusCode.Forbidden as number,
+                    message: "You do not have permission to add contacts for this brand",
+                };
+            }
+
+            const existingBrandContact = await UserRepo.getBrandContactById(brandContactData.brandId)
+
+            
+            
             // Update the fields of the existing brand contact
             Object.assign(existingBrandContact, brandContactData);
-
+            
             // Save the updated brand contact in the repository
             const updatedBrandContact = await UserRepo.updateBrandContact(existingBrandContact);
-
+            
             // Return success response if updated successfully
             return {
                 status: StatusCode.OK as number,
@@ -340,6 +386,79 @@ export default new class UseCase {
             return {
                 status: StatusCode.InternalServerError as number,
                 message: "Error when updating brand contact",
+            };
+        }
+    };
+    addBrandOwnership = async (brandOwnershipData: BrandOwnershipData): Promise<PromiseReturn> => {
+        try {
+
+            const isUserHaveBoRole=await UserRepo.findUserById(brandOwnershipData.boUserId)
+
+            if(!isUserHaveBoRole){
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: `There is no BO user with this user id: ${brandOwnershipData.boUserId}`,
+                };
+            }
+
+            const isExistingBrand=await UserRepo.findBrandByID(brandOwnershipData.brandId)
+
+            if(!isExistingBrand){
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: `There is no Brand  with this brand id: ${brandOwnershipData.boUserId}`,
+                };
+            }
+
+            // Call repository to add the brand ownership
+            const addedBrandOwnership = await UserRepo.addBrandOwnership(brandOwnershipData);
+
+            if (!addedBrandOwnership) {
+                return {
+                    status: StatusCode.BadRequest as number,
+                    message: 'Failed to add brand ownership',
+                };
+            }
+
+            // Return success response
+            return {
+                status: StatusCode.OK as number,
+                BrandOwnership: addedBrandOwnership,
+                message: 'Brand ownership added successfully',
+            };
+        } catch (error) {
+            console.error("Error during adding brand ownership:", error);
+
+            // Return failure response in case of an error
+            return {
+                status: StatusCode.InternalServerError as number,
+                message: 'Error when adding brand ownership',
+            };
+        }
+    };
+    searchUser = async (email: string): Promise<PromiseReturn> => {
+        try {
+
+            const user=await UserRepo.findUserByEmail(email)
+            if(!user){
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: 'User Not Found',
+                };
+            }
+            // Return success response
+            return {
+                status: StatusCode.OK as number,
+                User: user,
+                message: 'serched user fetched successfully',
+            };
+        } catch (error) {
+            console.error("Error during adding brand ownership:", error);
+
+            // Return failure response in case of an error
+            return {
+                status: StatusCode.InternalServerError as number,
+                message: 'Error when adding brand ownership',
             };
         }
     };

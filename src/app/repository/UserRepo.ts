@@ -3,9 +3,11 @@ import { AppDataSource } from '../../data-source';
 import { User } from '../../entity/User';
 import { Team } from '../../entity/Team';
 import { Brand } from '../../entity/Brand';
-import { BrandContactData, BrandData, RoleName, UserData } from '../../interfaces/interface';
+import { BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData } from '../../interfaces/interface';
 import { buildTree } from '../../middleware/buildTree';
 import { BrandContact } from '../../entity/BrandContact';
+import { BrandOwnership } from '../../entity/BrandOwnership';
+import bcrypt from 'bcryptjs';
 
 
 export default new class UserRepo {
@@ -14,12 +16,14 @@ export default new class UserRepo {
     private TeamRepo: Repository<Team>;
     private BrandRepo: Repository<Brand>;
     private BrandContactRepo: Repository<BrandContact>;
+    private BrandOwnershipRepo: Repository<BrandOwnership>;
 
     constructor() {
         this.UserRepo = AppDataSource.getRepository(User);
         this.TeamRepo = AppDataSource.getRepository(Team);
         this.BrandRepo = AppDataSource.getRepository(Brand);
         this.BrandContactRepo = AppDataSource.getRepository(BrandContact);
+        this.BrandOwnershipRepo = AppDataSource.getRepository(BrandOwnership);
     }
 
      // Existing method to find a user by ID
@@ -70,13 +74,17 @@ export default new class UserRepo {
     // Create new user and validate roles
     async createUser(userData: UserData): Promise<User> {
         try {
+
+
+            const hashedPassword = await bcrypt.hash(userData.password, 10); // 10 is the salt rounds
+
             // Create the new user entity
             const user = this.UserRepo.create({
                 name: userData.name,
                 department: userData.department,
                 phoneNumber: userData.phoneNumber,
                 email: userData.email,
-                password: userData.password, // You should hash the password here
+                password: hashedPassword, // You should hash the password here
                 parentId: userData.parentId,
                 roles: userData.roles,
             });
@@ -272,12 +280,25 @@ export default new class UserRepo {
             throw new Error("Failed to fetch all brands");
         }
     };
+    getBrandDetail = async (id: number): Promise<Brand | null> => {
+        try {
+            // Retrieve a single brand by ID along with its related BrandContact and BrandOwnership
+            const brand = await this.BrandRepo.findOne({
+                where: { id }, // Use the where clause to specify the ID
+                relations: ['contacts', 'brandOwnerships.boUser'], // Include relations
+            });
+    
+            return brand; // Return the single brand or null if not found
+        } catch (error) {
+            console.error("Error fetching brand:", error);
+            throw new Error("Failed to fetch brand");
+        }
+    };
     getBrand = async (id: number): Promise<Brand | null> => {
         try {
             // Retrieve a single brand by ID along with its related BrandContact and BrandOwnership
             const brand = await this.BrandRepo.findOne({
                 where: { id }, // Use the where clause to specify the ID
-                relations: ['contacts', 'brandOwnerships'], // Include relations
             });
     
             return brand; // Return the single brand or null if not found
@@ -325,6 +346,24 @@ export default new class UserRepo {
         } catch (error) {
             console.error("Error updating brand contact:", error);
             throw new Error("Failed to update brand contact");
+        }
+    };
+
+    addBrandOwnership = async (brandOwnershipData: BrandOwnershipData): Promise<BrandOwnership | null> => {
+        try {
+            // Create a new BrandOwnership entity
+            const brandOwnership = this.BrandOwnershipRepo.create({
+                brand: { id: brandOwnershipData.brandId },  // Associate with the brand
+                boUser: { id: brandOwnershipData.boUserId }, // Associate with the user (BO)
+            });
+
+            // Save the BrandOwnership entity
+            const savedBrandOwnership = await this.BrandOwnershipRepo.save(brandOwnership);
+
+            return savedBrandOwnership; // Return the saved entity
+        } catch (error) {
+            console.error("Error adding brand ownership:", error);
+            throw new Error("Failed to add brand ownership");
         }
     };
     

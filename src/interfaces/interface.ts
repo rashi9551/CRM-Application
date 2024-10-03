@@ -1,5 +1,6 @@
 import { Brand } from "../entity/Brand";
 import { BrandContact } from "../entity/BrandContact";
+import { BrandOwnership } from "../entity/BrandOwnership";
 import { Team } from "../entity/Team";
 import { User } from "../entity/User";
 
@@ -26,7 +27,7 @@ export interface PromiseReturn{
     brand?:Brand[]
     Brand?:Brand
     BrandContact?:BrandContact
-
+    BrandOwnership?:BrandOwnership
 }
 
 export interface UserData {
@@ -45,6 +46,11 @@ export interface BrandData {
     brandName: string;        
     revenue: number;         
     dealClosedValue: number;  
+
+}
+export interface BrandOwnershipData {
+    brandId:number
+    boUserId: number;        
 
 }
 export interface BrandContactData {

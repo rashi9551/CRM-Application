@@ -117,7 +117,18 @@ export default new class Controller{
         try {
             console.log("admin or bo  getting  a brand...");
             const {id}=req.body
-            const  getBrandResponse=await useCase.getBrand(id)
+            const  getBrandResponse=await useCase.getBrandDetail(id)
+            res.status(getBrandResponse.status).json(getBrandResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
+    getBrandDetail=async(req:Request,res:Response)=>{
+        try {
+            console.log("admin or bo  getting  a brand details...");
+            const {id}=req.body
+            const  getBrandResponse=await useCase.getBrandDetail(id)
             res.status(getBrandResponse.status).json(getBrandResponse)
         } catch (error) {
             console.log(error);
@@ -128,7 +139,7 @@ export default new class Controller{
         try {
             console.log("admin or bo  adding  a brand contact...");
             const BrandContact=req.body
-            const  addingBrandContactResponse=await useCase.addingBrandContact(BrandContact)
+            const  addingBrandContactResponse=await useCase.addingBrandContact(BrandContact,req.id)
             res.status(addingBrandContactResponse.status).json(addingBrandContactResponse)
         } catch (error) {
             console.log(error);
@@ -139,8 +150,30 @@ export default new class Controller{
         try {
             console.log("admin or bo  updating  a brand contact...");
             const BrandContact=req.body
-            const  updatingBrandContactResponse=await useCase.updateBrandContact(BrandContact)
+            const  updatingBrandContactResponse=await useCase.updateBrandContact(BrandContact,req.id)
             res.status(updatingBrandContactResponse.status).json(updatingBrandContactResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
+    addBrandOwnership=async(req:Request,res:Response)=>{
+        try {
+            console.log("admin or bo  updating  a brand ownership...");
+            const BrandOwnershipData=req.body
+            const  addBrandOwnershipResponse=await useCase.addBrandOwnership(BrandOwnershipData)
+            res.status(addBrandOwnershipResponse.status).json(addBrandOwnershipResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
+    searchUser=async(req:Request,res:Response)=>{
+        try {
+            console.log("admin or bo  updating  a brand ownership...");
+            const {email}=req.body
+            const  searchUserResponse=await useCase.searchUser(email)
+            res.status(searchUserResponse.status).json(searchUserResponse)
         } catch (error) {
             console.log(error);
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
