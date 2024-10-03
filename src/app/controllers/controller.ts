@@ -79,6 +79,17 @@ export default new class Controller{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
         }
     }
+    deleteUser=async(req:Request,res:Response)=>{
+        try {
+            console.log("deleting a  single user...");
+            const {id}=req.params
+            const deleteUserResponse = await useCase.deleteUser(+id);
+           res.status(deleteUserResponse.status).json(deleteUserResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
+        }
+    }
 
 
     createBrand=async(req:Request,res:Response)=>{

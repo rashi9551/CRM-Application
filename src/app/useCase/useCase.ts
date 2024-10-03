@@ -219,6 +219,32 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
         }
     }
+    deleteUser = async (id: number): Promise<PromiseReturn> => {
+        try {
+            // Fetch the user to be deleted
+            const user: User = await userRepo.getUserById(id);
+            if (!user) {
+                return { status: StatusCode.NotFound as number, message: "User Not Found" };
+            }
+    
+            // Fetch the children of the user in one query
+            const {children} = await userRepo.getUserById(id); // Implement this method to get children
+    
+            if (children.length > 0) {
+                // Update the parent ID for all children to the user's parent ID
+                await userRepo.updateChildrenParentId(children, user.parentId); // Implement this method to bulk update
+            }
+    
+            // Delete the user
+            await userRepo.deleteUserById(id); // Implement this method to delete the user
+    
+            return { status: StatusCode.OK as number, message: "User deleted successfully" };
+    
+        } catch (error) {
+            console.error("Error during user deletion:", error);
+            return { status: StatusCode.InternalServerError as number, message: "Error when deleting user" };
+        }
+    }
     createBrand = async (brandData: BrandData): Promise<PromiseReturn> => {
         try {
             // Check if the brand already exists with the same name (case-sensitive)

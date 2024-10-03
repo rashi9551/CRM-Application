@@ -204,6 +204,26 @@ export default new class UserRepo {
         }
     };
 
+    async updateChildrenParentId(children: User[], newParentId: number): Promise<void> {
+        const childIds = children.map(child => child.id); // Extract child IDs for the update
+    
+        await this.UserRepo.createQueryBuilder()
+            .update(User)
+            .set({ parentId: newParentId }) // Set the new parent ID
+            .where("id IN (:...ids)", { ids: childIds }) // Update only for the selected IDs
+            .execute();
+    }
+
+    async deleteUserById(id: number): Promise<void> {
+        try {
+            await this.UserRepo.delete(id);
+        } catch (error) {
+            console.error(`Error during deletion of user with ID ${id}:`, error);
+            throw new Error('Failed to delete user.'); // You can customize the error message as needed
+        }
+    }
+    
+
     async checkForCycle(userId: number, newParentId: number): Promise<boolean> {
         const users = await this.UserRepo.find(); // Fetch the user tree similar to fetching the full organization tree
         // Step 2: Create a map of users for easy lookup
