@@ -75,6 +75,7 @@ const swaggerOptions = {
               properties: {
                 name: {
                   type: "string",
+                  example:"Rashid"
                 },
                 department: {
                   type: "string",
@@ -86,7 +87,7 @@ const swaggerOptions = {
                 },
                 email: {
                   type: "string",
-                  example: "rasddi@gmail.com",
+                  example: "rashid@gmail.com",
                 },
                 password: {
                   type: "string",
@@ -105,7 +106,7 @@ const swaggerOptions = {
                 },
                 parentId: {
                   type: "integer",
-                  example: 3,
+                  example: 1,
                 },
               },
             },
@@ -145,7 +146,7 @@ const swaggerOptions = {
                   items: {
                     type: "string",
                   },
-                  example: ["BO"],
+                  example: ["BO","TO"],
                 },
                 name: {
                   type: "string",
@@ -153,7 +154,7 @@ const swaggerOptions = {
                 },
                 email: {
                   type: "string",
-                  example: "rsassdsmi@gmail.com",
+                  example: "raashid@gmail.com",
                 },
                 parentId: {
                   type: "integer",
@@ -161,7 +162,7 @@ const swaggerOptions = {
                 },
                 teamId: {
                   type: "integer",
-                  example: 1,
+                  example: null,
                 },
               },
             },
@@ -317,7 +318,7 @@ const swaggerOptions = {
               properties: {
                 brandName: {
                   type: "string",
-                  example: "AdisDas",
+                  example: "co-co-cola",
                 },
                 revenue: {
                   type: "number",
@@ -357,11 +358,11 @@ const swaggerOptions = {
               properties: {
                 id: {
                   type: "integer",
-                  example: 2,
+                  example: 1,
                 },
                 brandName: {
                   type: "string",
-                  example: "AdisDas",
+                  example: "pepsi",
                 },
                 revenue: {
                   type: "number",
@@ -521,7 +522,7 @@ const swaggerOptions = {
                 },
                 email: {
                   type: "string",
-                  example: "john.doe@example.com",
+                  example: "rashi@example.com",
                 },
                 phone: {
                   type: "string",
@@ -541,50 +542,45 @@ const swaggerOptions = {
         },
       },
     },
-    "/getBrandDetail": {
-      post: {
-        summary: "Get brand details",
-        description: "Retrieves details of a specific brand by its ID.",
-        consumes: ["application/json"],
-        produces: ["application/json"],
-        parameters: [
-          {
-            name: "body",
-            in: "body",
-            required: true,
-            schema: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "integer",
-                  example: 1,
-                },
-              },
+    "/getBrandDetail/{id}": {
+  post: {
+    summary: "Get brand details",
+    description: "Retrieves details of a specific brand by its ID.",
+    consumes: ["application/json"],
+    produces: ["application/json"],
+    parameters: [
+      {
+        name: "id",
+        in: "path",
+        required: true,
+        type: "integer",
+        description: "ID of the brand to retrieve",
+        example: 1,
+      },
+    ],
+    responses: {
+      200: {
+        description: "Brand details retrieved successfully",
+        schema: {
+          type: "object",
+          properties: {
+            id: {
+              type: "integer",
             },
-          },
-        ],
-        responses: {
-          200: {
-            description: "Brand details retrieved successfully",
-            schema: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "integer",
-                },
-                name: {
-                  type: "string",
-                },
-                // Add other brand properties as needed
-              },
+            name: {
+              type: "string",
             },
-          },
-          404: {
-            description: "Brand not found",
+            // Add other brand properties as needed
           },
         },
       },
+      404: {
+        description: "Brand not found",
+      },
     },
+  },
+},
+
     "/addBrandOwnership": {
       post: {
         summary: "Add brand ownership",
@@ -646,7 +642,7 @@ const swaggerOptions = {
               properties: {
                 email: {
                   type: "string",
-                  example: "rsasmi@gmail.com",
+                  example: "raashid@gmail.com",
                 },
               },
             },

@@ -18,11 +18,11 @@ router.get('/getAllTeam',verifyToken,isAdmin,Controller.getAllTeam)
 router.post('/createBrand',verifyToken,isAdminOrBO,Controller.createBrand);
 router.put('/updateBrand',verifyToken,isAdminOrBO,Controller.updateBrand);
 router.get('/getAllBrand',verifyToken,isAdminOrBO,Controller.getAllBrand);
-router.get('/getBrand',verifyToken,isAdminOrBO,Controller.getBrand);
+router.get('/getBrand/:id',verifyToken,isAdminOrBO,Controller.getBrand);
 
 router.post('/addBrandContact',verifyToken,isAdminOrBO,Controller.addBrandContact);
 router.put('/updateBrandContact',verifyToken,isAdminOrBO,Controller.updateBrandContact);
-router.get('/getBrandDetail',verifyToken,isPoAndTo,Controller.getBrandDetail)
+router.get('/getBrandDetail/:id',verifyToken,isPoAndTo,Controller.getBrandDetail)
 
 router.post('/addBrandOwnership',verifyToken,isAdmin,Controller.addBrandOwnership)
 
