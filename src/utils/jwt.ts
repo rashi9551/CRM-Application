@@ -28,12 +28,13 @@ export const createToken = async (userId: string, roles: string[], expire: strin
 
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
     const token = req.headers['authorization']?.split(' ')[1];
-
+    console.log(token,"=-=-=-=-");
+    
     if (!token) {
         return res.status(403).json({ message: 'A token is required for authentication' });
     }
 
-    const jwtSecretKey: string = process.env.SECRET_KEY || "Rashid";
+    const jwtSecretKey: string = process.env.SECRET_KEY || "Rashidd";
 
     jwt.verify(token, jwtSecretKey, (err, decoded: { userId: string; roles: string[] }) => {
         if (err) {
