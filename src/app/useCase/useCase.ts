@@ -43,11 +43,13 @@ export default new class UseCase {
             if (userData.roles.includes(RoleName.BO)&&!userData.roles.includes(RoleName.TO)) {
                 // Check if a TO role exists in the system
                 const hasTO = await userRepo.findUserByRole(RoleName.TO); // Check for any existing TO users
+                console.log(hasTO,"=-=-=");
+                
                 if (!hasTO) {
                     return { status: StatusCode.BadRequest as number, message: "A TO role must be created before creating a BO." };
                 }
             }
-            if (!userData.roles.includes(RoleName.TO)&&!userData.teamId) {
+            if (!userData.roles.includes(RoleName.TO)&&!userData.teamOwner) {
                 return { status: StatusCode.BadRequest as number, message: "A team owner must be provided, or a TO role must be included." };
             }
 
@@ -120,8 +122,6 @@ export default new class UseCase {
                 }
             }
         
-            const hashedPassword = await bcrypt.hash(userData.password, 10); // 10 is the salt rounds
-
             // Update user fields
             Object.assign(existingUser, {
                 name: userData.name || existingUser.name,
@@ -129,7 +129,7 @@ export default new class UseCase {
                 parentId: userData.parentId || existingUser.parentId,
                 email: userData.email || existingUser.email,
                 phoneNumber: userData.phoneNumber || existingUser.phoneNumber,
-                password: hashedPassword || existingUser.password,
+                password: userData.password ? await bcrypt.hash(userData.password, 10) : existingUser.password,
                 roles:userData.roles || existingUser.roles,
                 teamId:userData.teamId || existingUser.teamId
             });
@@ -226,18 +226,22 @@ export default new class UseCase {
             if (!user) {
                 return { status: StatusCode.NotFound as number, message: "User Not Found" };
             }
-    
-            // Fetch the children of the user in one query
-            const {children} = await userRepo.getUserById(id); // Implement this method to get children
-    
-            if (children.length > 0) {
+
+            if (user.roles.includes(RoleName.TO)) {
+                return { status: StatusCode.BadRequest as number, message: "Cannot remove TO role;" };
+            }
+            
+            console.log(user,"=-=-=-");
+            if (user.children.length > 0) {
                 // Update the parent ID for all children to the user's parent ID
-                await userRepo.updateChildrenParentId(children, user.parentId); // Implement this method to bulk update
+                await userRepo.updateChildrenParentId(user.children, user.parentId); // Implement this method to bulk update
             }
     
-            // Delete the user
-            await userRepo.deleteUserById(id); // Implement this method to delete the user
+            if(user.roles.includes(RoleName.BO)){
+                await userRepo.deleteUserById(id); // Implement this method to delete the user
+            }
     
+
             return { status: StatusCode.OK as number, message: "User deleted successfully" };
     
         } catch (error) {

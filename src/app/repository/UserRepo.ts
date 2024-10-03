@@ -100,9 +100,9 @@ export default new class UserRepo {
                 // Assign the team ID to the user
                 savedUser.teamId = savedTeam.id; // Assuming you have a `teamId` field in User entity
                 await this.UserRepo.save(savedUser); // Update the user with the team reference
-            } else if (userData.teamId !== undefined){
+            } else if (userData.teamOwner !== undefined){
                 // If not a TO user, check for an existing team ID and assign it to the user
-                const existingTeam = await this.TeamRepo.findOne({ where: { id: userData.teamId } });
+                const existingTeam = await this.TeamRepo.findOne({ where: { id: userData.teamOwner } });
                 if (!existingTeam) {
                     throw new Error("Specified team does not exist.");
                 }
@@ -225,20 +225,19 @@ export default new class UserRepo {
     
 
     async checkForCycle(userId: number, newParentId: number): Promise<boolean> {
-        const users = await this.UserRepo.find(); // Fetch the user tree similar to fetching the full organization tree
-        // Step 2: Create a map of users for easy lookup
+        const users = await this.UserRepo.find(); // Fetch all users
         const userMap = new Map<number, User>();
         users.forEach(user => userMap.set(user.id, user));
     
-        // Step 3: Check if newParentId is a descendant of userId
+        // Step 3: Check if userId is a descendant of newParentId
         const isDescendant = (currentUserId: number | null): boolean => {
             if (currentUserId === null) return false; // No parent
     
             const currentUser = userMap.get(currentUserId);
             if (!currentUser) return false; // User not found
     
-            // If currentUserId is the new parent, cycle detected
-            if (currentUserId === newParentId) {
+            // If currentUserId is the user we are trying to update, cycle detected
+            if (currentUserId === userId) {
                 return true; // Cycle detected
             }
     
@@ -247,8 +246,9 @@ export default new class UserRepo {
         };
     
         // Step 4: Perform the check starting from the new parent
-        return isDescendant(newParentId); // Check if newParentId is a descendant of userId
+        return isDescendant(newParentId); // Check if userId is a descendant of newParentId
     }
+    
 
     // Method to create a brand instance
     createBrand = (brandData: Partial<Brand>): Brand => {

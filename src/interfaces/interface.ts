@@ -37,7 +37,7 @@ export interface UserData {
     email: string;
     password: string;  
     roles: RoleName[]; 
-    teamId?: number;
+    teamOwner?: number;
     parentId:number;
 
 }
