@@ -280,6 +280,16 @@ export default new class UserRepo {
             throw new Error("Failed to fetch all brands");
         }
     };
+    async deleteBrand(id: number): Promise<void> {
+        try {
+            // Delete the brand; related entities (BrandContact, BrandOwnership) will be deleted due to cascade
+            await this.BrandRepo.delete(id);
+        } catch (error) {
+            console.error('Error during brand deletion in repository:', error);
+            throw new Error('Failed to delete brand and its related entities.');
+        }
+    }
+    
     getBrandDetail = async (id: number): Promise<Brand | null> => {
         try {
             // Retrieve a single brand by ID along with its related BrandContact and BrandOwnership

@@ -1,4 +1,3 @@
-// src/entities/Brand.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { BrandContact } from './BrandContact';
 import { BrandOwnership } from './BrandOwnership';
@@ -20,9 +19,11 @@ export class Brand {
     @Column({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
-    @OneToMany(() => BrandContact, brandContact => brandContact.brand)
+    // Cascade delete on BrandContact entities
+    @OneToMany(() => BrandContact, brandContact => brandContact.brand, { cascade: true, onDelete: 'CASCADE' })
     contacts: BrandContact[];
 
-    @OneToMany(() => BrandOwnership, brandOwnership => brandOwnership.brand)
+    // Cascade delete on BrandOwnership entities
+    @OneToMany(() => BrandOwnership, brandOwnership => brandOwnership.brand, { cascade: true, onDelete: 'CASCADE' })
     brandOwnerships: BrandOwnership[];
 }

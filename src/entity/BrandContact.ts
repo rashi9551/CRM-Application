@@ -1,4 +1,3 @@
-// src/entities/BrandContact.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Brand } from './Brand';
 
@@ -7,7 +6,7 @@ export class BrandContact {
     @PrimaryGeneratedColumn() // This will create an auto-incrementing integer ID
     id: number;
 
-    @ManyToOne(() => Brand, brand => brand.contacts)
+    @ManyToOne(() => Brand, brand => brand.contacts, { onDelete: 'CASCADE' })
     brand: Brand;
 
     @Column({ name: 'contact_person_name' })

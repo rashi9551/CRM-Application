@@ -103,6 +103,17 @@ export default new class Controller{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
         }
     }
+    deleteBrand=async(req:Request,res:Response)=>{
+        try {
+            console.log("admin or bo  deleting  a brand...");
+            const {id}=req.params
+            const deleteBrandesponse=await useCase.deleteBrand(+id)
+            res.status(deleteBrandesponse.status).json(deleteBrandesponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
     getAllBrand=async(req:Request,res:Response)=>{
         try {
             console.log("admin or bo  getting  all brand...");

@@ -293,6 +293,28 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
         }
     }
+    deleteBrand = async (id: number): Promise<PromiseReturn> => {
+        try {
+            const isBrandExist=await UserRepo.findBrandByID(id)
+
+            if(!isBrandExist){
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: "Brand not found",
+                };
+            }
+            // Try deleting the brand using the repository method
+            await UserRepo.deleteBrand(id);
+            
+            // Return success response if deletion is successful
+            return { status: StatusCode.OK as number, message: 'Brand deleted successfully' };
+        
+        } catch (error) {
+            // Log the error and return an error response
+            console.error('Error during brand deletion:', error);
+            return { status: StatusCode.InternalServerError as number, message: error.message || 'Error during brand deletion' };
+        }
+    }
     getBrandDetail = async (id:number): Promise<PromiseReturn > => {
         try {
            const getBrandDetail:Brand=await userRepo.getBrandDetail(id)
