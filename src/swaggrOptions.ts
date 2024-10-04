@@ -75,7 +75,7 @@ const swaggerOptions = {
               properties: {
                 name: {
                   type: "string",
-                  example:"Rashid"
+                  example: "Rashid",
                 },
                 department: {
                   type: "string",
@@ -146,7 +146,7 @@ const swaggerOptions = {
                   items: {
                     type: "string",
                   },
-                  example: ["BO","TO"],
+                  example: ["BO", "TO"],
                 },
                 name: {
                   type: "string",
@@ -543,43 +543,43 @@ const swaggerOptions = {
       },
     },
     "/getBrandDetail/{id}": {
-  post: {
-    summary: "Get brand details",
-    description: "Retrieves details of a specific brand by its ID.",
-    consumes: ["application/json"],
-    produces: ["application/json"],
-    parameters: [
-      {
-        name: "id",
-        in: "path",
-        required: true,
-        type: "integer",
-        description: "ID of the brand to retrieve",
-        example: 1,
-      },
-    ],
-    responses: {
-      200: {
-        description: "Brand details retrieved successfully",
-        schema: {
-          type: "object",
-          properties: {
-            id: {
-              type: "integer",
+      post: {
+        summary: "Get brand details",
+        description: "Retrieves details of a specific brand by its ID.",
+        consumes: ["application/json"],
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            type: "integer",
+            description: "ID of the brand to retrieve",
+            example: 1,
+          },
+        ],
+        responses: {
+          200: {
+            description: "Brand details retrieved successfully",
+            schema: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "integer",
+                },
+                name: {
+                  type: "string",
+                },
+                // Add other brand properties as needed
+              },
             },
-            name: {
-              type: "string",
-            },
-            // Add other brand properties as needed
+          },
+          404: {
+            description: "Brand not found",
           },
         },
       },
-      404: {
-        description: "Brand not found",
-      },
     },
-  },
-},
 
     "/addBrandOwnership": {
       post: {
@@ -669,6 +669,62 @@ const swaggerOptions = {
           },
           404: {
             description: "User not found",
+          },
+        },
+      },
+    },
+    "/deleteUser/{id}": {
+      delete: {
+        summary: "Delete a user by ID",
+        description:
+          "Deletes a user based on their ID and adjusts child relationships as needed.",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            type: "integer",
+            description: "ID of the user to delete",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "User deleted successfully",
+          },
+          "400": {
+            description: "Cannot remove TO role",
+          },
+          "404": {
+            description: "User not found",
+          },
+          "500": {
+            description: "Error when deleting user",
+          },
+        },
+      },
+    },
+    "/deleteBrand/{id}": {
+      delete: {
+        summary: "Delete a brand by ID",
+        description: "Deletes a brand based on its ID.",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            type: "integer",
+            description: "ID of the brand to delete",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Brand deleted successfully",
+          },
+          "404": {
+            description: "Brand not found",
+          },
+          "500": {
+            description: "Error during brand deletion",
           },
         },
       },

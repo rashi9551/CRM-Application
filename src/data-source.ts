@@ -12,7 +12,7 @@ dotenv.config();
 export const AppDataSource = new DataSource({
     type: 'mysql',
     url: process.env.MYSQL_PUBLIC_URL,  // Use the public URL for Railway
-    synchronize: false,
+    synchronize: true,
     logging: false,
     entities: [
         User,
