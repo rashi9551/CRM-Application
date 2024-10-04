@@ -34,25 +34,25 @@ export default new class UseCase {
             if (userData.roles.includes(RoleName.PO) && !userData.roles.includes(RoleName.TO)) {
                 return { status: StatusCode.BadRequest as number, message: "A TO must be selected if a PO role is assigned." };
             }
+
+            if (!userData.roles.includes(RoleName.TO) && !userData.teamOwner) {
+                return { status: StatusCode.BadRequest as number, message: "A team owner must be provided, or a TO role must be included." };
+            }
+
             // checking parent already exist
             const parentExists = await userRepo.userExist(userData.parentId);
             if (!parentExists) {
                 return { status: StatusCode.NotFound as number, message: `Parent node with ID ${userData.parentId} does not exist.` };
             }
 
-            if (userData.roles.includes(RoleName.BO)&&!userData.roles.includes(RoleName.TO)) {
+            if (userData.roles.includes(RoleName.BO) && !userData.roles.includes(RoleName.TO)) {
                 // Check if a TO role exists in the system
-                const hasTO = await userRepo.findUserByRole(RoleName.TO); // Check for any existing TO users
-                console.log(hasTO,"=-=-=");
-                
-                if (!hasTO) {
-                    return { status: StatusCode.BadRequest as number, message: "A TO role must be created before creating a BO." };
-                }
+                const toUsers = await userRepo.findUserByRole(RoleName.TO); // Check for any existing TO users
+                console.log(toUsers, "=-=-="); // This should give you the array of TO users
+                return { status: StatusCode.BadRequest as number, message: "A TO role must be created before creating a BO." };
             }
-            if (!userData.roles.includes(RoleName.TO)&&!userData.teamOwner) {
-                return { status: StatusCode.BadRequest as number, message: "A team owner must be provided, or a TO role must be included." };
-            }
-
+            
+           
     
             // Create the user
             const newUser = await userRepo.createUser(userData);

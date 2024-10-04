@@ -31,6 +31,7 @@ export interface PromiseReturn{
 }
 
 export interface UserData {
+    id?:number,
     name: string;
     department: Department; 
     phoneNumber: string;
@@ -38,7 +39,7 @@ export interface UserData {
     password: string;  
     roles: RoleName[]; 
     teamOwner?: number;
-    parentId:number;
+    parentId?:number;
 
 }
 export interface BrandData {

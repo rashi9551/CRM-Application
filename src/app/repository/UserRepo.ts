@@ -116,7 +116,7 @@ export default new class UserRepo {
             throw error; 
         }
     }
-    async userExist(userId: number): Promise<User> {
+    async userExist(userId: number): Promise<User |null> {
         try {
             const user = await this.UserRepo.findOne({ where: { id: userId } });
             return user; // Return true if the user exists, false otherwise
