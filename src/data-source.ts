@@ -9,13 +9,12 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const isProduction = process.env.NODE_ENV === 'production';
-console.log(isProduction);
+const isProduction = process.env.NODE_ENV === 'pro';
 
 export const AppDataSource = new DataSource({
     type: 'mysql',
     url: isProduction ? process.env.MYSQL_PUBLIC_URL : `mysql://${process.env.USERNAME}:${process.env.PASSWORD}@${process.env.HOST}:${process.env.DB_PORT}/${process.env.DATABASE}`,
-    synchronize: true,
+    synchronize: true ,
     logging: false,
     entities: [
         User,

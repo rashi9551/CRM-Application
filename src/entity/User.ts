@@ -63,7 +63,7 @@ export class User {
     @JoinColumn({ name: 'team_id' }) // This specifies the foreign key column in the User table
     team: Team;
 
-    @OneToMany(() => Team, team => team.teamOwner) // Relation to owned teams
+    @OneToMany(() => Team, team => team.teamId) // Relation to owned teams
     userTeams: Team[]; // Teams owned by this user
 
     

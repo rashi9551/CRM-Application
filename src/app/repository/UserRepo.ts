@@ -52,7 +52,7 @@ export default new class UserRepo {
                 updatedData.teamId = existingTeam.id;
                 await this.UserRepo.save(updatedData);
             }else{
-                throw new Error("even TO role not will be there and the teamOwner will not be there wil violate the tre");
+                throw new Error("even TO role not will be there and the teamId will not be there wil violate the tre");
 
             }
             
@@ -87,7 +87,7 @@ export default new class UserRepo {
                 password: hashedPassword, // You should hash the password here
                 parentId: userData.parentId,
                 roles: userData.roles,
-                teamId:userData.teamOwner
+                teamId:userData.teamId
             });
     
             // Save the user
@@ -99,14 +99,14 @@ export default new class UserRepo {
                 const team = this.TeamRepo.create({ toUserId: savedUser.id }); // Store team owner ID
                 const savedTeam = await this.TeamRepo.save(team);
                 // Assign the team ID to the user
-                if(!userData.teamOwner){
+                if(!userData.teamId){
                     savedUser.teamId = savedTeam.id; // Assuming you have a `teamId` field in User entity
                 }
                 await this.UserRepo.save(savedUser); // Update the user with the team reference
-            } else if (userData.teamOwner !== undefined){
+            } else if (userData.teamId !== undefined){
                 // If not a TO user, check for an existing team ID and assign it to the user
-                const existingTeam = await this.TeamRepo.findOne({ where: { id: userData.teamOwner } });
-                if(!userData.teamOwner){
+                const existingTeam = await this.TeamRepo.findOne({ where: { id: userData.teamId } });
+                if(!userData.teamId){
                     savedUser.teamId = existingTeam.id; // Assuming you have a `teamId` field in User entity
                 }              
                 await this.UserRepo.save(savedUser); // Update the user with the team reference
@@ -156,7 +156,7 @@ export default new class UserRepo {
             const teams = await this.TeamRepo
                 .createQueryBuilder('team')
                 .leftJoinAndSelect('team.users', 'user') // Join with users to get team members
-                .leftJoinAndSelect('team.teamOwner', 'owner') // Join with team owner
+                .leftJoinAndSelect('team.teamId', 'owner') // Join with team owner
                 .getMany(); // Fetch all teams with their details
 
             return teams;
@@ -185,12 +185,13 @@ export default new class UserRepo {
                 where: { id },
                 relations: [
                     'team',
-                    'team.teamOwner',         // Fetch the owner of the team correctly
+                    'team.teamId',         // Fetch the owner of the team correctly
                     'brandOwnerships',
                     "brandOwnerships.brand",
                     'parent',
                     'children'
                 ] });
+                
         } catch (error) {
             console.error(`Error fetching user with ID ${id}:`, error);
             throw new Error('Error fetching user data');

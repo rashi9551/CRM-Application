@@ -28,8 +28,8 @@ export default new class UseCase {
             if (!userData.parentId) {
                 return { status: StatusCode.BadRequest as number, message: "Parent ID must be provided." };
             }
-            if (userData.teamOwner) {
-                const existingTeam=await userRepo.findTeamById(userData.teamOwner)
+            if (userData.teamId) {
+                const existingTeam=await userRepo.findTeamById(userData.teamId)
                 if(!existingTeam){
 
                     return { status: StatusCode.BadRequest as number, message: "There is no team with this id." };
@@ -42,7 +42,7 @@ export default new class UseCase {
                 return { status: StatusCode.BadRequest as number, message: "A TO must be selected if a PO role is assigned." };
             }
 
-            if (!userData.roles.includes(RoleName.TO) && !userData.teamOwner) {
+            if (!userData.roles.includes(RoleName.TO) && !userData.teamId) {
                 return { status: StatusCode.BadRequest as number, message: "A team owner must be provided, or a TO role must be included." };
             }
 
@@ -60,10 +60,6 @@ export default new class UseCase {
                     return { status: StatusCode.BadRequest as number, message: "A TO role must be created before creating a BO." };
                 }
             }
-            if(userData.roles.includes(RoleName.TO)&& userData.teamOwner){
-                return { status: StatusCode.BadRequest as number, message: "the to role cannot explicitly assign ateamOwner" };
-            }
-
             
             // Create the user
             const newUser = await userRepo.createUser(userData);
@@ -375,6 +371,15 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when getting brand" };
         }
     }
+    getBrand = async (id:number): Promise<PromiseReturn > => {
+        try {
+           const getBrandDetail:Brand=await userRepo.getBrand(id)
+           return { status: StatusCode.OK as number, Brand:getBrandDetail, message: "single brand detail fetched success fully" };
+        } catch (error) {
+            console.error("Error during fetching tree:", error);
+            return { status: StatusCode.InternalServerError as number, message: "Error when getting brand" };
+        }
+    }
     addingBrandContact = async (brandContactData: BrandContactData,loggedUserId:number): Promise<PromiseReturn> => {
         try {
             const existingBrand = await UserRepo.getBrandDetail(brandContactData.brandId);            
@@ -475,7 +480,7 @@ export default new class UseCase {
             }else if(!isUserHaveBoRole.roles.includes(RoleName.BO)){
                 return {
                     status: StatusCode.NotFound as number,
-                    message: `There is no BO user with this user id: ${brandOwnershipData.boUserId}`,
+                    message: `There is no BO user with this user id: ${brandOwnershipData.brandId}`,
                 };
 
             }
@@ -483,7 +488,7 @@ export default new class UseCase {
             if(isUserHaveBoRole.team.toUserId!=loggedUserId){
                 return {
                     status: StatusCode.NotFound as number,
-                    message: `you have no permission to add thi bo to brand because you not teamOwne of the this BO user`,
+                    message: `you have no permission to add this BO to brand because your not teamOwner of the this BO user`,
                 };
 
             }

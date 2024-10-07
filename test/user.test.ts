@@ -19,7 +19,7 @@ describe('User API - createUser', () => {
         email: "test@example.com",
         password: "securePassword123",
         roles: [RoleName.TO],
-        teamOwner: 1,
+        teamId: 1,
         parentId: 1,
     };
 
@@ -508,14 +508,14 @@ describe('Team API - getAllTeam', () => {
         {
             id: 1,
             toUserId: 1, // Assuming this corresponds to a valid User ID
-            teamOwner: new User,
+            teamId: new User,
             users: [], // Initially, no users in this team
             createdAt: new Date(),
         },
         {
             id: 2,
             toUserId: 2, // Assuming this corresponds to a valid User ID
-            teamOwner: new User,
+            teamId: new User,
             users: [], // Initially, no users in this team
             createdAt: new Date(),
         },
@@ -999,14 +999,14 @@ describe('Team API - getAllTeam', () => {
         {
             id: 1,
             toUserId: 1, // Assuming this corresponds to a valid User ID
-            teamOwner: new User,
+            teamId: new User,
             users: [], // Initially, no users in this team
             createdAt: new Date(),
         },
         {
             id: 2,
             toUserId: 2, // Assuming this corresponds to a valid User ID
-            teamOwner: new User,
+            teamId: new User,
             users: [], // Initially, no users in this team
             createdAt: new Date(),
         },

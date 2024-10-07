@@ -22,9 +22,9 @@ router.delete('/deleteBrand/:id',verifyToken,isAdmin,Controller.deleteBrand);
 router.get('/getAllBrand',verifyToken,isAdminOrBO,Controller.getAllBrand);
 router.get('/getBrand/:id',verifyToken,isAdminOrBO,Controller.getBrand);
 
+router.get('/getBrandDetail/:id',verifyToken,isPoAndToOrBo,Controller.getBrandDetail)
 router.post('/addBrandContact',verifyToken,isAdminOrBO,Controller.addBrandContact);
 router.put('/updateBrandContact',verifyToken,isAdminOrBO,Controller.updateBrandContact);
-router.get('/getBrandDetail/:id',verifyToken,isPoAndToOrBo,Controller.getBrandDetail)
 
 router.post('/addBrandOwnership',verifyToken,isTo,Controller.addBrandOwnership)
 

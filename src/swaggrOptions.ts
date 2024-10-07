@@ -100,7 +100,7 @@ const swaggerOptions = {
                   },
                   example: ["TO"],
                 },
-                teamOwner: {
+                teamId: {
                   type: "string",
                   example: null,
                 },

@@ -52,7 +52,7 @@ export interface UserData {
     email: string;
     password: string;  
     roles: RoleName[]; 
-    teamOwner?: number;
+    teamId?: number;
     parentId?:number;
 
 }

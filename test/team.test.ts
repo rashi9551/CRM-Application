@@ -108,14 +108,14 @@
 //         {
 //             id: 1,
 //             toUserId: 1, // Assuming this corresponds to a valid User ID
-//             teamOwner: new User,
+//             teamId: new User,
 //             users: [], // Initially, no users in this team
 //             createdAt: new Date(),
 //         },
 //         {
 //             id: 2,
 //             toUserId: 2, // Assuming this corresponds to a valid User ID
-//             teamOwner: new User,
+//             teamId: new User,
 //             users: [], // Initially, no users in this team
 //             createdAt: new Date(),
 //         },
