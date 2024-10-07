@@ -3,7 +3,7 @@ import { BrandContact } from '../../entity/BrandContact';
 import { Team } from '../../entity/Team';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
-import { BrandContactData, BrandData, BrandOwnershipData, PromiseReturn, RoleName, updatingUserData, UserData, UserLoginData } from '../../interfaces/interface';
+import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, PromiseReturn, RoleName, updatingUserData, UserData, UserLoginData } from '../../interfaces/interface';
 import { buildTree } from '../../middleware/buildTree';
 import { createToken } from '../../utils/jwt';
 import UserRepo from '../repository/UserRepo';
@@ -28,6 +28,13 @@ export default new class UseCase {
             if (!userData.parentId) {
                 return { status: StatusCode.BadRequest as number, message: "Parent ID must be provided." };
             }
+            if (userData.teamOwner) {
+                const existingTeam=await userRepo.findTeamById(userData.teamOwner)
+                if(!existingTeam){
+
+                    return { status: StatusCode.BadRequest as number, message: "There is no team with this id." };
+                }
+            }
 
     
             // Ensure the TO role is assigned if the PO role is included
@@ -47,13 +54,17 @@ export default new class UseCase {
 
             if (userData.roles.includes(RoleName.BO) && !userData.roles.includes(RoleName.TO)) {
                 // Check if a TO role exists in the system
-                const toUsers = await userRepo.findUserByRole(RoleName.TO); // Check for any existing TO users
+                const toUsers = await userRepo.findUsersByRole(RoleName.TO); // Check for any existing TO users
                 console.log(toUsers, "=-=-="); // This should give you the array of TO users
-                return { status: StatusCode.BadRequest as number, message: "A TO role must be created before creating a BO." };
+                if(!toUsers){
+                    return { status: StatusCode.BadRequest as number, message: "A TO role must be created before creating a BO." };
+                }
             }
+            if(userData.roles.includes(RoleName.TO)&& userData.teamOwner){
+                return { status: StatusCode.BadRequest as number, message: "the to role cannot explicitly assign ateamOwner" };
+            }
+
             
-           
-    
             // Create the user
             const newUser = await userRepo.createUser(userData);
             // Save the new user to the database
@@ -75,7 +86,7 @@ export default new class UseCase {
             const hasTO = existingUser.roles.includes(RoleName.TO);
 
             // If the user is trying to remove the "TO" role
-            if (!userData.roles.includes(RoleName.TO) && hasTO) {
+            if (!userData.roles.includes(RoleName.TO) && existingUser.roles.includes(RoleName.TO)) {
                     return { status: StatusCode.BadRequest as number, message: "Cannot remove TO role;" };
             }
     
@@ -84,6 +95,14 @@ export default new class UseCase {
                 const emailExists = await userRepo.findUserByEmail(userData.email);
                 if (emailExists) {
                     return { status: StatusCode.BadRequest as number, message: "Email is already in use." };
+                }
+            }
+
+            if (userData.teamId) {
+                const existingTeam=await userRepo.findTeamById(userData.teamId)
+                if(!existingTeam){
+
+                    return { status: StatusCode.BadRequest as number, message: "There is no team with this id." };
                 }
             }
     
@@ -97,7 +116,7 @@ export default new class UseCase {
                 return { status: StatusCode.BadRequest as number, message: "A TO must be selected if a PO role is assigned." };
             }
             if (userData.roles.includes(RoleName.BO) && !userData.roles.includes(RoleName.TO)) {
-                const hasTO = await userRepo.findUserByRole(RoleName.TO);
+                const hasTO = await userRepo.findUsersByRole(RoleName.TO);
                 if (!hasTO) {
                     return { status: StatusCode.BadRequest as number, message: "A TO role must be created before creating a BO." };
                 }
@@ -148,7 +167,7 @@ export default new class UseCase {
 
     login = async (loginData: UserLoginData): Promise<PromiseReturn> => {
         try {
-            const user = await userRepo.findUserByEmail(loginData.email);
+            const user = await userRepo.findUserByEmail(loginData.email);            
             if (!user) {
                 return { status: StatusCode.BadRequest as number, message: "Invalid email." };
             } else {
@@ -159,7 +178,7 @@ export default new class UseCase {
                     const roles = user?.roles.map((item) => item);
                     const token = await createToken(user.id.toString(), roles, "1d");
                     return { status: StatusCode.OK as number, User: user, token, message: "User logged in successfully." };
-                }else if(user.roles.includes(RoleName.ADMIN)){
+                }else if(loginData.email==="admin@gmail.com"){
                     if(user.password === loginData.password){
                         console.log("login successfully");
                         const roles=user?.roles.map((item)=>item)
@@ -180,7 +199,7 @@ export default new class UseCase {
     getAllUser = async (): Promise<PromiseReturn > => {
         try {
            const getAllUser:User[]=await userRepo.getUserTree()
-            const User=buildTree(getAllUser)
+            const User :User[]=buildTree(getAllUser)
            return { status: StatusCode.OK as number, user:User, message: "all users fetched success fully" };
         } catch (error) {
             console.error("Error during fetching tree:", error);
@@ -190,7 +209,7 @@ export default new class UseCase {
     getAllTo = async (): Promise<PromiseReturn > => {
         try {
            const getAllTo:User[]=await userRepo.getUsersWithRoleTO(RoleName.TO)
-           return { status: StatusCode.OK as number, user:getAllTo, message: "all to  fetched success fully" };
+           return { status: StatusCode.OK as number, user:getAllTo, message: "all to fetched successfully" };
         } catch (error) {
             console.error("Error during fetching tree:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
@@ -199,24 +218,24 @@ export default new class UseCase {
     getAllTeam = async (): Promise<PromiseReturn > => {
         try {
            const getAllTeam:Team[]=await userRepo.getAllTeam()
-           return { status: StatusCode.OK as number, team:getAllTeam, message: "all team fetched success fully" };
+           return { status: StatusCode.OK as number, team:getAllTeam, message: "All teams fetched successfully" };
         } catch (error) {
             console.error("Error during fetching tree:", error);
-            return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
+            return { status: StatusCode.InternalServerError as number, message: "Error when fetching teams" };
         }
     }
     getUser = async (id:number): Promise<PromiseReturn > => {
         try {
            const getUser:User=await userRepo.getUserById(id)
            if(getUser){
-               return { status: StatusCode.OK as number, User:getUser, message: "user fetched success fully" };
+               return { status: StatusCode.OK as number, User:getUser, message: "User fetched successfully" };
            }else{
-            return { status: StatusCode.NotFound as number, message: `No user found with sepsific id ${id}` };
+            return { status: StatusCode.NotFound as number, message: `No user found with specific id ${id}` };
 
            }
         } catch (error) {
             console.error("Error during fetching tree:", error);
-            return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
+            return { status: StatusCode.InternalServerError as number, message: "Error when fetching user" };
         }
     }
     deleteUser = async (id: number): Promise<PromiseReturn> => {
@@ -226,29 +245,31 @@ export default new class UseCase {
             if (!user) {
                 return { status: StatusCode.NotFound as number, message: "User Not Found" };
             }
-
+    
+            // Check for TO role
             if (user.roles.includes(RoleName.TO)) {
                 return { status: StatusCode.BadRequest as number, message: "Cannot remove TO role;" };
             }
-            
-            console.log(user,"=-=-=-");
-            if (user.children.length > 0) {
-                // Update the parent ID for all children to the user's parent ID
-                await userRepo.updateChildrenParentId(user.children, user.parentId); // Implement this method to bulk update
+    
+            console.log(user, "=-=-=-");
+    
+            // Update the parent ID for children if necessary
+            if (user.children && user.children.length > 0) {
+                await userRepo.updateChildrenParentId(user.children, user.parentId); // Ensure this method works correctly
             }
     
-            if(user.roles.includes(RoleName.BO)){
-                await userRepo.deleteUserById(id); // Implement this method to delete the user
+            // Delete the user if they have BO role
+            if (user.roles.includes(RoleName.BO)) {
+                await userRepo.deleteUserById(id); // Ensure this method is implemented correctly
             }
     
-
             return { status: StatusCode.OK as number, message: "User deleted successfully" };
     
         } catch (error) {
             console.error("Error during user deletion:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when deleting user" };
         }
-    }
+    };
     createBrand = async (brandData: BrandData): Promise<PromiseReturn> => {
         try {
             // Check if the brand already exists with the same name (case-sensitive)
@@ -351,7 +372,7 @@ export default new class UseCase {
            return { status: StatusCode.OK as number, Brand:getBrandDetail, message: "single brand detail fetched success fully" };
         } catch (error) {
             console.error("Error during fetching tree:", error);
-            return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
+            return { status: StatusCode.InternalServerError as number, message: "Error when getting brand" };
         }
     }
     addingBrandContact = async (brandContactData: BrandContactData,loggedUserId:number): Promise<PromiseReturn> => {
@@ -366,16 +387,16 @@ export default new class UseCase {
             }
 
             // Check if the logged-in user is the owner of the brand
-            const brandOwnership = existingBrand.brandOwnerships.find(
-                ownership => ownership.boUser.id === loggedUserId
-            );
+            // const brandOwnership = existingBrand.brandOwnerships.find(
+            //     ownership => ownership.boUser.id === loggedUserId
+            // );
 
-            if (!brandOwnership) {
-                return {
-                    status: StatusCode.Forbidden as number,
-                    message: "You do not have permission to add contacts for this brand",
-                };
-            }
+            // if (!brandOwnership) {
+            //     return {
+            //         status: StatusCode.Forbidden as number,
+            //         message: "You do not have permission to add contacts for this brand",
+            //     };
+            // }
 
             // Call the repository method to add a brand contact
             const addingBrandContact = await UserRepo.addingBrandContact(brandContactData);
@@ -405,17 +426,17 @@ export default new class UseCase {
                 };
             }
 
-            // Check if the logged-in user is the owner of the brand
-            const brandOwnership = existingBrand.brandOwnerships.find(
-                ownership => ownership.boUser.id === loggedUserId
-            );
+            // // Check if the logged-in user is the owner of the brand
+            // const brandOwnership = existingBrand.brandOwnerships.find(
+            //     ownership => ownership.boUser.id === loggedUserId
+            // );
 
-            if (!brandOwnership) {
-                return {
-                    status: StatusCode.Forbidden as number,
-                    message: "You do not have permission to add contacts for this brand",
-                };
-            }
+            // if (!brandOwnership) {
+            //     return {
+            //         status: StatusCode.Forbidden as number,
+            //         message: "You do not have permission to add contacts for this brand",
+            //     };
+            // }
 
             const existingBrandContact = await UserRepo.getBrandContactById(brandContactData.brandId)
 
@@ -441,28 +462,47 @@ export default new class UseCase {
             };
         }
     };
-    addBrandOwnership = async (brandOwnershipData: BrandOwnershipData): Promise<PromiseReturn> => {
+    addBrandOwnership = async (brandOwnershipData: BrandOwnershipData,loggedUserId:number): Promise<PromiseReturn> => {
         try {
-
             const isUserHaveBoRole=await UserRepo.findUserById(brandOwnershipData.boUserId)
-
+            console.log(isUserHaveBoRole);
+            
             if(!isUserHaveBoRole){
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: `user not found`,
+                };
+            }else if(!isUserHaveBoRole.roles.includes(RoleName.BO)){
                 return {
                     status: StatusCode.NotFound as number,
                     message: `There is no BO user with this user id: ${brandOwnershipData.boUserId}`,
                 };
+
             }
 
+            if(isUserHaveBoRole.team.toUserId!=loggedUserId){
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: `you have no permission to add thi bo to brand because you not teamOwne of the this BO user`,
+                };
+
+            }
             const isExistingBrand=await UserRepo.findBrandByID(brandOwnershipData.brandId)
 
             if(!isExistingBrand){
                 return {
                     status: StatusCode.NotFound as number,
-                    message: `There is no Brand  with this brand id: ${brandOwnershipData.boUserId}`,
+                    message: `There is no Brand with this brand id: ${brandOwnershipData.boUserId}`,
                 };
             }
-
+            const existingBrandOwnership=await UserRepo.getBrandOwnerShip(brandOwnershipData)
             // Call repository to add the brand ownership
+            if(existingBrandOwnership){
+                return {
+                    status: StatusCode.BadRequest as number,
+                    message: 'Brand already exist',
+                };
+            }
             const addedBrandOwnership = await UserRepo.addBrandOwnership(brandOwnershipData);
 
             if (!addedBrandOwnership) {
@@ -518,3 +558,4 @@ export default new class UseCase {
     
 
 };
+

@@ -9,7 +9,6 @@ export function buildTree(users: User[]): User[] {
         map[user.id] = { 
             ...user, 
             children: [],
-            validateEmail: user.validateEmail // Include the validateEmail method
         };
     });
 

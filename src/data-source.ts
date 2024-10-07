@@ -9,9 +9,12 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
+const isProduction = process.env.NODE_ENV === 'production';
+console.log(isProduction);
+
 export const AppDataSource = new DataSource({
     type: 'mysql',
-    url: process.env.MYSQL_PUBLIC_URL,  // Use the public URL for Railway
+    url: isProduction ? process.env.MYSQL_PUBLIC_URL : `mysql://${process.env.USERNAME}:${process.env.PASSWORD}@${process.env.HOST}:${process.env.DB_PORT}/${process.env.DATABASE}`,
     synchronize: true,
     logging: false,
     entities: [

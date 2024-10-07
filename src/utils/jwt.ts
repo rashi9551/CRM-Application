@@ -67,8 +67,14 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export const isAdminOrBO = (req: Request, res: Response, next: NextFunction) => {
+    // Log the roles for debugging
+    console.log('User Roles:', req.role);
+    
     // Check if the role includes 'ADMIN' or 'BO' (case-insensitive comparison)
-    if (!req.role || (!req.role.includes("ADMIN") && !req.role.includes("BO"))) {
+    const hasAccess = req.role && 
+                      (req.role.includes("ADMIN") || req.role.includes("BO"));
+
+    if (!hasAccess) {
         return res.status(401).json({ message: 'Only an admin or a brand owner can perform this action' });
     }
 
@@ -82,17 +88,29 @@ export const isAdminOrBO = (req: Request, res: Response, next: NextFunction) => 
 
 //     next();
 // };
-export const isPoAndTo = (req: Request, res: Response, next: NextFunction) => {
+export const isPoAndToOrBo = (req: Request, res: Response, next: NextFunction) => {
     console.log(req.role, "=-=-=-=");
 
     // Check if the role includes 'ADMIN' or both 'TO' and 'PO'
-    if (req.role && (req.role.includes("ADMIN") || (req.role.includes("TO") && req.role.includes("PO")))) {
+    if (req.role && (req.role.includes("ADMIN") || req.role.includes("BO")||(req.role.includes("TO") && req.role.includes("PO")))) {
         // If the user has the correct role, proceed to the next middleware or route handler
         return next();
     }
 
     // If the user doesn't have the correct role, return a 401 error
     return res.status(401).json({ message: 'Only an admin or a user with both TO and PO roles can perform this action' });
+};
+export const isTo = (req: Request, res: Response, next: NextFunction) => {
+    console.log(req.role, "=-=-=-=");
+
+    // Check if the role includes 'ADMIN' or both 'TO' and 'PO'
+    if (req.role && (req.role.includes("TO"))) {
+        // If the user has the correct role, proceed to the next middleware or route handler
+        return next();
+    }
+
+    // If the user doesn't have the correct role, return a 401 error
+    return res.status(401).json({ message: 'Only a To can add the brand ownership' });
 };
 
 

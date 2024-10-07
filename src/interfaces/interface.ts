@@ -17,10 +17,24 @@ export enum RoleName {
     TO = 'TO',
 }
 
+export interface GetAllUser {
+    id: number;
+    name: string;
+    department: string;
+    phoneNumber: string;
+    email: string;
+    password: string; // Ensure password is handled securely
+    createdAt: Date; // Use Date type for createdAt
+    roles: string[]; // Array of role names as strings
+    parentId: number | null; // Parent ID can be null
+    teamId: number | null; // Team ID can be null
+    children: GetAllUser[]; // Array of children, assuming they are also GetAllUser types
+}
+
 export interface PromiseReturn{
     status: number; 
     User?:User
-    user?:User[]
+    user?:User[] | GetAllUser[]
     message?:string
     token?:string
     team?:Team[]

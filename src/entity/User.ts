@@ -66,11 +66,6 @@ export class User {
     @OneToMany(() => Team, team => team.teamOwner) // Relation to owned teams
     userTeams: Team[]; // Teams owned by this user
 
-    @BeforeInsert()
-    @BeforeUpdate()
-    validateEmail() {
-        if (!this.email || this.email.trim() === '') {
-            throw new Error('Email cannot be empty.');
-        }
-    }
+    
+    
 }

@@ -3,8 +3,7 @@ import { AppDataSource } from '../../data-source';
 import { User } from '../../entity/User';
 import { Team } from '../../entity/Team';
 import { Brand } from '../../entity/Brand';
-import { BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData } from '../../interfaces/interface';
-import { buildTree } from '../../middleware/buildTree';
+import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData } from '../../interfaces/interface';
 import { BrandContact } from '../../entity/BrandContact';
 import { BrandOwnership } from '../../entity/BrandOwnership';
 import bcrypt from 'bcryptjs';
@@ -28,8 +27,12 @@ export default new class UserRepo {
 
      // Existing method to find a user by ID
      findUserById = async (userId: number): Promise<User | null> => {
-        return await this.UserRepo.findOne({ where: { id: userId } });
-    };
+        const user = await this.UserRepo.findOne({
+            where: { id: userId },
+            relations: ['team'], // Fetch the related 'team' entity
+        });
+    
+        return user;    };
     saveUser = async (updatedData: User,isExistingTo?:boolean): Promise<User | null> => {
         try {
             
@@ -74,10 +77,7 @@ export default new class UserRepo {
     // Create new user and validate roles
     async createUser(userData: UserData): Promise<User> {
         try {
-
-
             const hashedPassword = await bcrypt.hash(userData.password, 10); // 10 is the salt rounds
-
             // Create the new user entity
             const user = this.UserRepo.create({
                 name: userData.name,
@@ -87,6 +87,7 @@ export default new class UserRepo {
                 password: hashedPassword, // You should hash the password here
                 parentId: userData.parentId,
                 roles: userData.roles,
+                teamId:userData.teamOwner
             });
     
             // Save the user
@@ -98,15 +99,16 @@ export default new class UserRepo {
                 const team = this.TeamRepo.create({ toUserId: savedUser.id }); // Store team owner ID
                 const savedTeam = await this.TeamRepo.save(team);
                 // Assign the team ID to the user
-                savedUser.teamId = savedTeam.id; // Assuming you have a `teamId` field in User entity
+                if(!userData.teamOwner){
+                    savedUser.teamId = savedTeam.id; // Assuming you have a `teamId` field in User entity
+                }
                 await this.UserRepo.save(savedUser); // Update the user with the team reference
             } else if (userData.teamOwner !== undefined){
                 // If not a TO user, check for an existing team ID and assign it to the user
                 const existingTeam = await this.TeamRepo.findOne({ where: { id: userData.teamOwner } });
-                if (!existingTeam) {
-                    throw new Error("Specified team does not exist.");
-                }
-                savedUser.teamId = existingTeam.id; // Assign the existing team's ID to the user
+                if(!userData.teamOwner){
+                    savedUser.teamId = existingTeam.id; // Assuming you have a `teamId` field in User entity
+                }              
                 await this.UserRepo.save(savedUser); // Update the user with the team reference
             }
     
@@ -114,6 +116,16 @@ export default new class UserRepo {
         } catch (error) {
             console.error("Error creating user by data:", error);
             throw error; 
+        }
+    }
+
+    async findTeamById(teamId: number): Promise<Team |null> {
+        try {
+            const existingTeam = await this.TeamRepo.findOne({ where: { id: teamId} });
+            return existingTeam; // Return true if the user exists, false otherwise
+        } catch (error) {
+            console.error('Error getting team:', error);
+            throw new Error('Unable to check user estence.'); // Throw a more user-friendly error
         }
     }
     async userExist(userId: number): Promise<User |null> {
@@ -125,40 +137,20 @@ export default new class UserRepo {
             throw new Error('Unable to check user existence.'); // Throw a more user-friendly error
         }
     }
-
-    async getUserTree(rootUserId?: number): Promise<User[]> {
+    findUsersByRole = async (roleName: RoleName): Promise<User[] | null> => {
         try {
-            if (rootUserId) {
-                // Fetch a specific user by ID and their children
-                const user = await this.UserRepo.findOne({
-                    where: { id: rootUserId },
-                    relations: ['children'],
-                });
-                return user ? [user] : []; // Return an array with the user or an empty array if not found
-            }
-    
-            // Fetch all root users (those without a parent)
-            const rootUsers = await this.UserRepo.find({
-                where: { parentId: null },
-                relations: ['children'],
-            });
-            return rootUsers;
+            const users = await this.UserRepo.createQueryBuilder("user")
+                .where("FIND_IN_SET(:role, user.roles)", { role: roleName }) // Checks if the role exists in the roles column
+                .getMany();
+                
+            return users;
+            
         } catch (error) {
-            console.error("Error fetching the user tree:", error);
-            throw error;
+            console.log(error);
+            
         }
-    }
-
-
-    findUserByRole = async (roleName: RoleName): Promise<User | null> => {
-        const user = await this.UserRepo.findOne({
-            where: {
-                roles: In([roleName]), // Check if roleName is included in the roles array
-            },
-        });
-        
-        return user;
     };
+    
     getAllTeam = async (): Promise<Team[] | null> => {
         try {
             const teams = await this.TeamRepo
@@ -195,6 +187,7 @@ export default new class UserRepo {
                     'team',
                     'team.teamOwner',         // Fetch the owner of the team correctly
                     'brandOwnerships',
+                    "brandOwnerships.brand",
                     'parent',
                     'children'
                 ] });
@@ -204,7 +197,7 @@ export default new class UserRepo {
         }
     };
 
-    async updateChildrenParentId(children: User[], newParentId: number): Promise<void> {
+    async updateChildrenParentId(children: User[], newParentId: number): Promise<void | null> {
         const childIds = children.map(child => child.id); // Extract child IDs for the update
     
         await this.UserRepo.createQueryBuilder()
@@ -214,7 +207,7 @@ export default new class UserRepo {
             .execute();
     }
 
-    async deleteUserById(id: number): Promise<void> {
+    async deleteUserById(id: number): Promise<void | null> {
         try {
             await this.UserRepo.delete(id);
         } catch (error) {
@@ -396,10 +389,49 @@ export default new class UserRepo {
             throw new Error("Failed to add brand ownership");
         }
     };
+    getBrandOwnerShip = async (brandOwnershipData: BrandOwnershipData): Promise<BrandOwnership | null> => {
+        try {
+            // Create a new BrandOwnership entity
+            const existingBrandOwnership = await this.BrandOwnershipRepo.findOne({
+                where: {
+                    boUser: { id: brandOwnershipData.boUserId },
+                    brand: { id: brandOwnershipData.brandId }
+                }
+            });
+
+            // Save the BrandOwnership entity
+            return existingBrandOwnership; // Return the saved entity
+        } catch (error) {
+            console.error("Error adding brand ownership:", error);
+            throw new Error("Failed to add brand ownership");
+        }
+    };
     
     
     
+    async getUserTree(rootUserId?: number): Promise<User[]> {
+        try {
+            if (rootUserId) {
+                // Fetch a specific user by ID and their children
+                const user = await this.UserRepo.findOne({
+                    where: { id: rootUserId },
+                    relations: ['children'],
+                });
+                return user ? [user] : []; // Return an array with the user or an empty array if not found
+            }
     
+            // Fetch all root users (those without a parent)
+            const rootUsers = await this.UserRepo.find({
+                where: { parentId: null },
+                relations: ['children'],
+            });
+            return rootUsers;
+        } catch (error) {
+            console.error("Error fetching the user tree:", error);
+            throw error;
+        }
+    }
+
     
     
     

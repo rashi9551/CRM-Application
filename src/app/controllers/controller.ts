@@ -79,17 +79,24 @@ export default new class Controller{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
         }
     }
-    deleteUser=async(req:Request,res:Response)=>{
+    deleteUser = async (req: Request, res: Response) => {
         try {
-            console.log("deleting a  single user...");
-            const {id}=req.params
+            console.log("Deleting a single user...");
+            const { id } = req.params;
+    
+            // Ensure id is a valid number
+            if (!id || isNaN(+id)) {
+                return res.status(StatusCode.BadRequest).json({ message: 'Invalid user ID' });
+            }
+    
             const deleteUserResponse = await useCase.deleteUser(+id);
-           res.status(deleteUserResponse.status).json(deleteUserResponse)
+            return res.status(deleteUserResponse.status).json(deleteUserResponse);
         } catch (error) {
-            console.log(error);
-            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
+            console.error("Error in deleteUser controller:", error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' });
         }
-    }
+    };
+    
 
 
     createBrand=async(req:Request,res:Response)=>{
@@ -183,7 +190,7 @@ export default new class Controller{
         try {
             console.log("admin or bo  updating  a brand ownership...");
             const BrandOwnershipData=req.body
-            const  addBrandOwnershipResponse=await useCase.addBrandOwnership(BrandOwnershipData)
+            const  addBrandOwnershipResponse=await useCase.addBrandOwnership(BrandOwnershipData,req.id)
             res.status(addBrandOwnershipResponse.status).json(addBrandOwnershipResponse)
         } catch (error) {
             console.log(error);
