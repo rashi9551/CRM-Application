@@ -402,18 +402,19 @@ export default new class UseCase {
                     message: "Brand not found",
                 };
             }
-
+            console.log(existingBrand,"=-=-=-=-=-");
+            
             // Check if the logged-in user is the owner of the brand
-            // const brandOwnership = existingBrand.brandOwnerships.find(
-            //     ownership => ownership.boUser.id === loggedUserId
-            // );
+            const brandOwnership = existingBrand.brandOwnerships.find(
+                ownership => ownership.boUser.id === loggedUserId
+            );
 
-            // if (!brandOwnership) {
-            //     return {
-            //         status: StatusCode.Forbidden as number,
-            //         message: "You do not have permission to add contacts for this brand",
-            //     };
-            // }
+            if (!brandOwnership) {
+                return {
+                    status: StatusCode.Forbidden as number,
+                    message: "You do not have permission to add contacts for this brand",
+                };
+            }
 
             // Call the repository method to add a brand contact
             const addingBrandContact = await UserRepo.addingBrandContact(brandContactData);
@@ -481,9 +482,8 @@ export default new class UseCase {
     };
     addBrandOwnership = async (brandOwnershipData: BrandOwnershipData,loggedUserId:number): Promise<PromiseReturn> => {
         try {
-            const isUserHaveBoRole=await UserRepo.findUserById(brandOwnershipData.boUserId)
-            console.log(isUserHaveBoRole);
-            
+            const isUserHaveBoRole=await UserRepo.findUserById(brandOwnershipData.boUserId)      
+                  
             if(!isUserHaveBoRole){
                 return {
                     status: StatusCode.NotFound as number,
@@ -496,8 +496,12 @@ export default new class UseCase {
                 };
 
             }
-
-            if(isUserHaveBoRole.team.toUserId!=loggedUserId){
+            const allHeirarchyTo=await UserRepo.getHierarchyTO(brandOwnershipData.boUserId)
+            const isLoggedUserWasHisTO = allHeirarchyTo.some(user => user.id === loggedUserId);
+            console.log(allHeirarchyTo,loggedUserId);
+            
+            
+            if(!isLoggedUserWasHisTO){
                 return {
                     status: StatusCode.NotFound as number,
                     message: `you have no permission to add this BO to brand because your not teamOwner of the this BO user`,
@@ -517,7 +521,7 @@ export default new class UseCase {
             if(existingBrandOwnership){
                 return {
                     status: StatusCode.BadRequest as number,
-                    message: 'Brand already exist',
+                    message: 'Brand ownership already exist',
                 };
             }
             const addedBrandOwnership = await UserRepo.addBrandOwnership(brandOwnershipData);

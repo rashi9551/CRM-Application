@@ -6,9 +6,11 @@ const swaggerOptions = {
     description:
       "API documentation for managing users, brands, and teams in the sales-oriented organization.",
   },
-  host: "type-orm-production.up.railway.app",
+  // host: "type-orm-production.up.railway.app",
+  host: "localhost:3001",
   basePath: "/api",
-  schemes: ["https"],
+  // schemes: ["https"],
+  schemes: ["http"],
   paths: {
     "/login": {
       post: {
@@ -513,16 +515,18 @@ const swaggerOptions = {
         },
       },
     },
-    "/getBrand": {
+    "/getBrand/{id}": {
       get: {
         summary: "Get brand by ID",
         description: "Retrieves a specific brand by its ID.",
         parameters: [
           {
             name: "id",
-            in: "query",
+            in: "path",
             required: true,
-            type: "integer",
+            schema: {
+              type: "integer",
+            },
             description: "Brand ID",
           },
         ],
@@ -571,15 +575,15 @@ const swaggerOptions = {
                   type: "integer",
                   example: 1,
                 },
-                contactName: {
+                contactPersonName: {
                   type: "string",
                   example: "John Doe",
                 },
-                email: {
+                contactPersonEmail: {
                   type: "string",
                   example: "john.doe@example.com",
                 },
-                phone: {
+                contactPersonPhone: {
                   type: "string",
                   example: "1234567890",
                 },
