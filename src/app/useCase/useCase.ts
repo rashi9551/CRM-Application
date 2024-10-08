@@ -32,7 +32,7 @@ export default new class UseCase {
                 const existingTeam=await userRepo.findTeamById(userData.teamId)
                 if(!existingTeam){
 
-                    return { status: StatusCode.BadRequest as number, message: "There is no team with this id." };
+                    return { status: StatusCode.BadRequest as number, message:`There is no team with this id.${userData.teamId}` };
                 }
             }
 
@@ -205,6 +205,18 @@ export default new class UseCase {
     getAllTo = async (): Promise<PromiseReturn > => {
         try {
            const getAllTo:User[]=await userRepo.getUsersWithRoleTO(RoleName.TO)
+           return { status: StatusCode.OK as number, user:getAllTo, message: "all to fetched successfully" };
+        } catch (error) {
+            console.error("Error during fetching tree:", error);
+            return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
+        }
+    }
+    getHierarchyTo = async (id:number): Promise<PromiseReturn > => {
+        try {
+           const getAllTo:User[]=await userRepo.getHierarchyTO(id)
+        //    const userTree=buildTree(getAllTo)
+        console.log(getAllTo);
+        
            return { status: StatusCode.OK as number, user:getAllTo, message: "all to fetched successfully" };
         } catch (error) {
             console.error("Error during fetching tree:", error);

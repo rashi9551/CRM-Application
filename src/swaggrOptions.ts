@@ -249,6 +249,105 @@ const swaggerOptions = {
         },
       },
     },
+    "/getHierarchyTo/{id}": {
+      get: {
+        summary: "Get users under TO hierarchy by ID",
+        description:
+          "Retrieves a hierarchy of users under a TO role based on their ID.",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: {
+              type: "integer",
+            },
+            description: "ID of the TO role user to fetch hierarchy",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Users fetched successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status: {
+                      type: "integer",
+                      example: 200,
+                    },
+                    user: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          id: {
+                            type: "integer",
+                            example: 4,
+                          },
+                          name: {
+                            type: "string",
+                            example: "hakeem",
+                          },
+                          department: {
+                            type: "string",
+                            example: "Development",
+                          },
+                          phoneNumber: {
+                            type: "string",
+                            example: "9867452323",
+                          },
+                          email: {
+                            type: "string",
+                            example: "hakeem@gmail.com",
+                          },
+                          password: {
+                            type: "string",
+                            example:
+                              "$2a$10$AGjHmUL34iLln7SEnphPfOXaPoSo0vkSrQ0jTNyDj0PgDV2Zj0QuK",
+                          },
+                          createdAt: {
+                            type: "string",
+                            format: "date-time",
+                            example: "2024-10-08T05:56:36.000Z",
+                          },
+                          roles: {
+                            type: "array",
+                            items: {
+                              type: "string",
+                              example: "PO",
+                            },
+                          },
+                          parentId: {
+                            type: "integer",
+                            example: 2,
+                          },
+                          teamId: {
+                            type: "integer",
+                            example: 1,
+                          },
+                        },
+                      },
+                    },
+                    message: {
+                      type: "string",
+                      example: "all to fetched successfully",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "404": {
+            description: "User not found",
+          },
+          "500": {
+            description: "Error retrieving hierarchy",
+          },
+        },
+      },
+    },
     "/getAllTo": {
       get: {
         summary: "Get all team owners",
@@ -683,7 +782,9 @@ const swaggerOptions = {
             name: "id",
             in: "path",
             required: true,
-            type: "integer",
+            schema: {
+              type: "integer",
+            },
             description: "ID of the user to delete",
           },
         ],
@@ -712,7 +813,9 @@ const swaggerOptions = {
             name: "id",
             in: "path",
             required: true,
-            type: "integer",
+            schema: {
+              type: "integer",
+            },
             description: "ID of the brand to delete",
           },
         ],

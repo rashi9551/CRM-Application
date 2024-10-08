@@ -58,6 +58,16 @@ export default new class Controller{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
         }
     }
+    getHierarchyTo=async(req:Request,res:Response)=>{
+        try {
+            console.log("geeting a all heirachy TO role user...");
+            const getAllToResponse = await useCase.getHierarchyTo(+req.params.id);
+           res.status(getAllToResponse.status).json(getAllToResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' }); 
+        }
+    }
     getAllTeam=async(req:Request,res:Response)=>{
         try {
             console.log("geeting a all team  ...");

@@ -433,6 +433,40 @@ export default new class UserRepo {
         }
     }
 
+     getHierarchyTO = async (userId: number): Promise<any> => {
+        try {
+          // Fetch all users with their children in a single query
+          const fullTree = await this.UserRepo.find({ relations: ['children', 'parent'] });
+      
+          // Find the initial user from the tree by ID
+          let currentUser = fullTree.find(user => user.id === userId);
+          
+          if (!currentUser) {
+            return { status: 404, message: "User not found" };
+          }
+      
+          // Array to store all TO role users in the hierarchy
+          const hierarchyTOs: User[] = [];
+      
+          // Traverse upwards to find parents with TO role
+          while (currentUser && currentUser.parent) {
+            const parentUser = fullTree.find(user => user.id === currentUser.parent.id);
+      
+            currentUser = {...parentUser};  // Move to the next parent in the hierarchy
+            if (parentUser && parentUser.roles.includes(RoleName.TO)) {
+                delete parentUser.children
+                delete parentUser.parent
+                hierarchyTOs.push(parentUser);
+            }
+      
+          }
+      
+          return hierarchyTOs
+        } catch (error) {
+          console.error("Error during fetching TO hierarchy:", error);
+          return { status: 500, message: "Error fetching TO hierarchy" };
+        }
+      };
     
     
     

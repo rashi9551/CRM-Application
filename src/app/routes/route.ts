@@ -14,6 +14,7 @@ router.delete('/deleteUser/:id',verifyToken,isAdmin,Controller.deleteUser);
 router.get('/getAllUser',verifyToken,isAdmin,Controller.getAllUser);
 router.get('/getUser/:id',verifyToken,isAdmin,Controller.getUser);
 router.get('/getAllTo',verifyToken,isAdmin,Controller.getAllTo)
+router.get('/getHierarchyTo/:id',verifyToken,isAdmin,Controller.getHierarchyTo)
 router.get('/getAllTeam',verifyToken,isAdmin,Controller.getAllTeam)
 
 router.post('/createBrand',verifyToken,isAdmin,Controller.createBrand);
