@@ -14,7 +14,7 @@ export const AppDataSource = new DataSource({
   type: 'mysql',
   url: process.env.MYSQL_PUBLIC_URL,  // Use the public URL for Railway
   database: process.env.DATABASE,  // Specify your database name here
-  synchronize: true,
+  synchronize: false,
   logging: true,  // Set to true for detailed logs
   entities: [User, Team, Brand, BrandContact, BrandOwnership],
   migrations: ["./src/migration/*.ts"],
