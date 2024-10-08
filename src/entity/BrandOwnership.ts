@@ -10,7 +10,7 @@ export class BrandOwnership {
     @ManyToOne(() => Brand, brand => brand.brandOwnerships, { onDelete: 'CASCADE' })
     brand: Brand;
 
-    @ManyToOne(() => User, user => user.brandOwnerships)
+    @ManyToOne(() => User, user => user.brandOwnerships, { onDelete: 'CASCADE' })
     boUser: User;
 
     @Column({ name: 'createdAt', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

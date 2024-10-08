@@ -167,7 +167,7 @@ export default new class Controller{
         try {
             console.log("admin or bo  getting  a brand details...");
             const {id}=req.params
-            const  getBrandResponse=await useCase.getBrandDetail(+id)
+            const  getBrandResponse=await useCase.getBrandDetail(+id,req.id)
             res.status(getBrandResponse.status).json(getBrandResponse)
         } catch (error) {
             console.log(error);

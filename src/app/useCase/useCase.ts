@@ -262,7 +262,7 @@ export default new class UseCase {
             console.log(user, "=-=-=-");
     
             // Update the parent ID for children if necessary
-            if (user.children && user.children.length > 0) {
+            if (user.children && user.children.length > 0 ) {
                 await userRepo.updateChildrenParentId(user.children, user.parentId); // Ensure this method works correctly
             }
     
@@ -374,8 +374,29 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: error.message || 'Error during brand deletion' };
         }
     }
-    getBrandDetail = async (id:number): Promise<PromiseReturn > => {
+    getBrandDetail = async (id:number,loggedUserId:number): Promise<PromiseReturn > => {
         try {
+            const existingBrand = await UserRepo.getBrandDetail(id);            
+            // Check if the brand exists
+            if (!existingBrand) {
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: "Brand not found",
+                };
+            }
+            console.log(existingBrand.brandOwnerships,loggedUserId);
+            // Check if the logged-in user is the owner of the brand
+            const brandOwnership = existingBrand.brandOwnerships.find(
+                ownership => ownership.boUser.id === loggedUserId
+            );
+
+            if (!brandOwnership) {
+                return {
+                    status: StatusCode.Forbidden as number,
+                    message: "You do not have permission to add contacts for this brand",
+                };
+            }
+
            const getBrandDetail:Brand=await userRepo.getBrandDetail(id)
            return { status: StatusCode.OK as number, Brand:getBrandDetail, message: "single brand detail fetched success fully" };
         } catch (error) {
@@ -402,8 +423,7 @@ export default new class UseCase {
                     message: "Brand not found",
                 };
             }
-            console.log(existingBrand,"=-=-=-=-=-");
-            
+            console.log(existingBrand.brandOwnerships,loggedUserId);
             // Check if the logged-in user is the owner of the brand
             const brandOwnership = existingBrand.brandOwnerships.find(
                 ownership => ownership.boUser.id === loggedUserId
@@ -443,18 +463,18 @@ export default new class UseCase {
                     message: "Brand not found",
                 };
             }
+            console.log(existingBrand.brandOwnerships,loggedUserId);
+            // Check if the logged-in user is the owner of the brand
+            const brandOwnership = existingBrand.brandOwnerships.find(
+                ownership => ownership.boUser.id === loggedUserId
+            );
 
-            // // Check if the logged-in user is the owner of the brand
-            // const brandOwnership = existingBrand.brandOwnerships.find(
-            //     ownership => ownership.boUser.id === loggedUserId
-            // );
-
-            // if (!brandOwnership) {
-            //     return {
-            //         status: StatusCode.Forbidden as number,
-            //         message: "You do not have permission to add contacts for this brand",
-            //     };
-            // }
+            if (!brandOwnership) {
+                return {
+                    status: StatusCode.Forbidden as number,
+                    message: "You do not have permission to add contacts for this brand",
+                };
+            }
 
             const existingBrandContact = await UserRepo.getBrandContactById(brandContactData.brandId)
 

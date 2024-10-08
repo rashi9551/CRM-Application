@@ -646,7 +646,7 @@ const swaggerOptions = {
       },
     },
     "/getBrandDetail/{id}": {
-      post: {
+      get: {
         summary: "Get brand details",
         description: "Retrieves details of a specific brand by its ID.",
         consumes: ["application/json"],
