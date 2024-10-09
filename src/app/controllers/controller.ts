@@ -19,8 +19,8 @@ export default new class Controller{
     login=async(req:Request,res:Response)=>{
         try {
             const loginData:UserLoginData=req.body
-            console.log("user login...");
             const loginResponse=await useCase.login(loginData)
+            console.log("user login...");
            res.status(loginResponse.status).json(loginResponse)
         } catch (error) {
             console.log(error);

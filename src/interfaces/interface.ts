@@ -52,10 +52,11 @@ export interface UserData {
     email: string;
     password: string;  
     roles: RoleName[]; 
-    teamId?: number;
+    teamId?: number | null;
     parentId?:number;
 
 }
+
 export interface BrandData {
     id:number
     brandName: string;        
@@ -83,7 +84,7 @@ export interface updatingUserData {
     email: string;
     password: string;  
     roles: RoleName[]; 
-    teamId?: number;
+    teamId?: number | null;
     parentId:number;
 
 }

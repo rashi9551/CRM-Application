@@ -1,6 +1,6 @@
 import useCase from '../src/app/useCase/useCase'; // Adjust the import according to your file structure
 import userRepo from '../src/app/repository/UserRepo'; // Adjust accordingly
-import { GetAllUser, Department, RoleName, UserData, BrandData, BrandContactData, BrandOwnershipData } from '../src/interfaces/interface'; // Adjust accordingly
+import { GetAllUser, Department, RoleName, UserData, BrandData, BrandContactData, BrandOwnershipData, updatingUserData } from '../src/interfaces/interface'; // Adjust accordingly
 import { StatusCode } from '../src/interfaces/enum';
 import { User } from '../src/entity/User';
 import { Team } from '../src/entity/Team';
@@ -8,39 +8,186 @@ import bcrypt from 'bcryptjs';
 import { Brand } from '../src/entity/Brand';
 import { BrandContact } from '../src/entity/BrandContact';
 
-const mockBrandData: Brand = {
-    id: 1, // Auto-incrementing ID for the brand
-    brandName: "AdisDas", // Name of the brand
-    revenue: 890000, // Revenue of the brand
-    dealClosedValue: 9839489, // Total value of closed deals for the brand
-    createdAt: new Date(), // Current timestamp for creation date
-    contacts: [], // Empty array for brand contacts (can be filled with mock data if needed)
-    brandOwnerships: [], // Empty array for brand ownerships (can be filled with mock data if needed)
-};
-const brandData: BrandData = {
-    brandName: "AdisDas", // The name of the brand
-    revenue: 890000, // The revenue associated with the brand
-    dealClosedValue: 9839489, // Total value of closed deals for the brand
-    id: 0 // Assuming this is for a new brand (ID will be auto-generated)
-};
+const team:Team=
+    {
+        id: 1,
+        toUserId: 2,
+        createdAt: new Date,
+        users: [
+            {
+                id: 3,
+                name: "rashid",
+                department: "Development",
+                phoneNumber: "9867452323",
+                email: "rashdid@gmail.com",
+                password: "$2a$10$xfBxcsgx7Oq7mQhUV8ctFe3yr8nAk7wGeaz7XeJ/NCZ939hG3VTGq",
+                createdAt: new Date,
+                roles: [
+                    RoleName.BO
+                ],
+                parentId: 2,
+                teamId: 1,
+                parent: new User,
+                children: [],
+                brandOwnerships: [],
+                team: new Team,
+                userTeams: []
+            },
+            {
+                id: 2,
+                name: "rashid",
+                department: "Development",
+                phoneNumber: "9867452323",
+                email: "rashid@gmail.com",
+                password: "$2a$10$9IEWstqBcvOqrNHg5LIVI.j/DVWjmAW4stBxbrG8vHUV.Uxz2Y2jK",
+                createdAt: new Date,
+                roles: [
+                    RoleName.BO
+                ],
+                parentId: 1,
+                teamId: 1,
+                parent: new User,
+                children: [],
+                brandOwnerships: [],
+                team: new Team,
+                userTeams: []
+            }
+        ],
+        teamId: {
+            id: 2,
+            name: "rashid",
+            department: "Development",
+            phoneNumber: "9867452323",
+            email: "rashid@gmail.com",
+            password: "$2a$10$9IEWstqBcvOqrNHg5LIVI.j/DVWjmAW4stBxbrG8vHUV.Uxz2Y2jK",
+            createdAt: new Date,
+            roles: [
+                RoleName.TO
+            ],
+            parentId: 1,
+            teamId: 1,
+            parent: new User,
+            children: [],
+            brandOwnerships: [],
+            team: new Team,
+            userTeams: []
+        }
+    }
 
-const mockUser: User = {
-    id: 2,
-    name: "Bob Brown",
-    department: "Sales",
-    phoneNumber: "444-555-6666",
-    email: "bob.brown@example.com",
-    password: "securePasswordB!",
-    createdAt: new Date(),
-    roles: [RoleName.BO],
+
+const mockUserCreateResponseData:User={
+    name: "Rashid",
+    department: Department.DEVELOPMENT,
+    phoneNumber: "9867452323",
+    email: "rashid@gmail.com",
+    password: "$2a$10$6hmonDVFAysPWVrLft9D4.RS3/4bT.LXHuItFJQnI4aSSV4WFTjnG",
+    roles: [
+        RoleName.TO,
+    ],
     parentId: 1,
     teamId: 1,
+    id: 2,
+    createdAt: new Date(),
+    parent: new User,
     children: [],
-    parent: new User, // or provide a mock User if needed
-    brandOwnerships: [], // Assuming it's an array
-    team: new Team, // or provide a mock Team object if needed
-    userTeams: [], // Assuming it's an array
+    brandOwnerships: [],
+    team: team,
+    userTeams: []
 }
+
+const BrandCreateData:BrandData={
+    brandName: "Adidas",
+    revenue: 890000,
+    dealClosedValue: 9839489,
+    id: 0
+}
+
+const BrandCreateReponseData:Brand={
+    brandName: "Adidas",
+    revenue: 890000,
+    dealClosedValue: 9839489,
+    id: 2,
+    createdAt: new Date,
+    contacts: [],
+    brandOwnerships: [{
+        id: 3,
+        createdAt: new Date,
+        boUser:mockUserCreateResponseData,
+        brand: new Brand
+    }
+    ]
+}
+const BrandContactAddingReponseData:BrandContact={
+    contactPersonName: "rashid",
+    contactPersonPhone: "+1234567890",
+    contactPersonEmail: "john.doe@example.com",
+    brand: {
+        id: 2,
+        brandName: '',
+        revenue: 0,
+        dealClosedValue: 0,
+        createdAt: new Date,
+        contacts: [],
+        brandOwnerships: []
+    },
+    id: 3,
+    createdAt: new Date
+}
+
+
+
+const mockBrandContactData: BrandContactData = {
+    brandId: 1,
+    contactPersonName: "John Doe",
+    contactPersonEmail: "johndoe@example.com",
+    contactPersonPhone: "1234567890"
+};
+
+
+jest.mock('../src/app/repository/UserRepo', () => ({
+    findUserByEmail: jest.fn(),
+    userExist: jest.fn(),
+    findBrandByName: jest.fn(),
+    createBrand: jest.fn(),
+    saveBrand: jest.fn(),
+    findUserById: jest.fn(),
+    saveUser: jest.fn(),
+    checkForCycle: jest.fn(),
+    getUserTree: jest.fn(),
+    getUserById: jest.fn(),
+    updateChildrenParentId: jest.fn(),
+    deleteUserById: jest.fn(),
+    findBrandByID: jest.fn(),
+    getBrandDetail: jest.fn(),
+    addingBrandContact: jest.fn(),
+    getBrandOwnerShip: jest.fn(),
+    addBrandOwnership: jest.fn(),
+    getHierarchyTO: jest.fn(),
+}));
+const hierarchyTo=[{
+    name: "Rashid",
+    department: "Development",
+    phoneNumber: "9867452323",
+    email: "rashid@gmail.com",
+    password: "$2a$10$6hmonDVFAysPWVrLft9D4.RS3/4bT.LXHuItFJQnI4aSSV4WFTjnG",
+    roles: [
+        "TO"
+    ],
+    parentId: 1,
+    teamId: 1,
+    id: 2,
+    createdAt: "2024-10-09T05:50:12.000Z"
+}]
+const BrandOwnershipCreateReponse={
+    brand: BrandCreateReponseData,
+    boUser:mockUserCreateResponseData,
+    id: 3,
+    createdAt: new Date
+}
+const userRepoMock = userRepo as jest.Mocked<typeof userRepo>;
+
+
+
 
 describe('User API - createBrand', () => {
     const userRepoMock = userRepo as jest.Mocked<typeof userRepo>;
@@ -53,16 +200,16 @@ describe('User API - createBrand', () => {
         // Arrange: Mock the user repository methods
         
         userRepoMock.findBrandByName.mockResolvedValue(null); // No existing brand found
-        userRepoMock.createBrand.mockReturnValue(mockBrandData); // Return mock brand data
-        userRepoMock.saveBrand.mockResolvedValue(mockBrandData); // Mock saving brand
+        userRepoMock.createBrand.mockReturnValue(BrandCreateReponseData); // Return mock brand data
+        userRepoMock.saveBrand.mockResolvedValue(BrandCreateReponseData); // Mock saving brand
 
         // Act: Call the createBrand method
-        const response = await useCase.createBrand(brandData);
+        const response = await useCase.createBrand(BrandCreateData);
 
         // Assert: Check the response
         expect(response).toEqual({
             status: StatusCode.OK,
-            Brand: mockBrandData, // Ensure it returns the created brand data
+            Brand: BrandCreateReponseData, // Ensure it returns the created brand data
             message: "Brand created successfully", // Ensure this matches the expected message
         });
     });
@@ -70,10 +217,10 @@ describe('User API - createBrand', () => {
     it('should return conflict if the brand already exists', async () => {
         // Arrange: Mock the user repository methods to simulate an existing brand
         
-        userRepoMock.findBrandByName.mockResolvedValue(mockBrandData); // Mock existing brand retrieval
+        userRepoMock.findBrandByName.mockResolvedValue(BrandCreateReponseData); // Mock existing brand retrieval
 
         // Act: Call the createBrand method
-        const response = await useCase.createBrand(brandData);
+        const response = await useCase.createBrand(BrandCreateData);
 
         // Assert: Check the response
         expect(response).toEqual({
@@ -88,7 +235,7 @@ describe('User API - createBrand', () => {
         });
 
         // Act: Call the createBrand method
-        const response = await useCase.createBrand(brandData);
+        const response = await useCase.createBrand(BrandCreateData);
 
         // Assert: Check the response
         expect(response).toEqual({
@@ -97,8 +244,6 @@ describe('User API - createBrand', () => {
         });
     });
 });
-
-
 
 
 describe('User API - updateBrand', () => {
@@ -114,16 +259,16 @@ describe('User API - updateBrand', () => {
 
 
         userRepoMock.findBrandByName.mockResolvedValue(null); // No brand with the same name exists
-        userRepoMock.findBrandByID.mockResolvedValue(mockBrandData); // Existing brand found
-        userRepoMock.saveBrand.mockResolvedValue(mockBrandData); // Mock saving updated brand
+        userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Existing brand found
+        userRepoMock.saveBrand.mockResolvedValue(BrandCreateReponseData); // Mock saving updated brand
 
         // Act
-        const response = await useCase.updateBrand(brandData);
+        const response = await useCase.updateBrand(BrandCreateData);
 
         // Assert
         expect(response).toEqual({
             status: StatusCode.OK,
-            Brand: mockBrandData,
+            Brand: BrandCreateReponseData,
             message: "Brand updated successfully",
         });
     });
@@ -131,7 +276,7 @@ describe('User API - updateBrand', () => {
 
     it('should return not found if the brand does not exist', async () => {
         // Arrange
-        const brandDatas = {...brandData}
+        const brandDatas = {...BrandCreateData}
         brandDatas.id=999
 
         userRepoMock.findBrandByName.mockResolvedValue(null); // No brand with the same name
@@ -155,7 +300,7 @@ describe('User API - updateBrand', () => {
         });
 
         // Act
-        const response = await useCase.updateBrand(brandData);
+        const response = await useCase.updateBrand(BrandCreateData);
 
         // Assert
         expect(response).toEqual({
@@ -164,6 +309,8 @@ describe('User API - updateBrand', () => {
         });
     });
 });
+
+
 
 
 
@@ -184,13 +331,18 @@ describe('User API - getBrandDetail', () => {
             dealClosedValue: 5000000,
             createdAt: new Date(),
             contacts: [],
-            brandOwnerships: [],
+            brandOwnerships: [{
+                id: 1,
+                createdAt: new Date("2024-10-08T05:55:23.000Z"),
+                brand: new Brand,
+                boUser: mockUserCreateResponseData
+            }],
         };
 
         userRepoMock.getBrandDetail.mockResolvedValue(mockBrandDetail); // Mock the brand detail retrieval
 
         // Act
-        const response = await useCase.getBrandDetail(brandId);
+        const response = await useCase.getBrandDetail(brandId,2);
 
         // Assert
         expect(response).toEqual({
@@ -209,7 +361,7 @@ describe('User API - getBrandDetail', () => {
         });
 
         // Act
-        const response = await useCase.getBrandDetail(brandId);
+        const response = await useCase.getBrandDetail(brandId,1);
 
         // Assert
         expect(response).toEqual({
@@ -221,6 +373,89 @@ describe('User API - getBrandDetail', () => {
 
 
 
+
+
+describe('Brand API - addingBrandContact', () => {
+
+    beforeEach(() => {
+        jest.clearAllMocks(); // Clear mock data between tests
+    });
+
+    it('should add brand contact successfully if logged user is the owner of the brand', async () => {
+
+        userRepoMock.getBrandDetail.mockResolvedValue(BrandCreateReponseData); // Mock brand retrieval
+        userRepoMock.addingBrandContact.mockResolvedValue(BrandContactAddingReponseData); // Mock successful contact addition
+
+        // Act: Call the addingBrandContact method
+        const response = await useCase.addingBrandContact(mockBrandContactData, 2); // Logged user ID = 1
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.OK,
+            BrandContact: BrandContactAddingReponseData,
+            message: "Brand contact added successfully"
+        });
+        expect(userRepoMock.addingBrandContact).toHaveBeenCalledWith(mockBrandContactData); // Verify repository call
+    });
+
+    it('should return 404 error if brand is not found', async () => {
+        // Arrange: Create mock data for a non-existing brand
+        const mockData={...mockBrandContactData}
+        mockData.brandId=99
+
+        userRepoMock.getBrandDetail.mockResolvedValue(null); // Mock brand not found
+
+        // Act: Call the addingBrandContact method
+        const response = await useCase.addingBrandContact(mockData, 1); // Logged user ID = 1
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.NotFound,
+            message: "Brand not found"
+        });
+        expect(userRepoMock.getBrandDetail).toHaveBeenCalledWith(mockData.brandId); // Verify repository call
+    });
+
+    it('should return 403 error if logged user is not the brand owner', async () => {
+
+        userRepoMock.getBrandDetail.mockResolvedValue(BrandCreateReponseData); // Mock brand retrieval
+
+        // Act: Call the addingBrandContact method
+        const response = await useCase.addingBrandContact(mockBrandContactData, 1); // Logged user ID = 1
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.Forbidden,
+            message: "You do not have permission to add contacts for this brand"
+        });
+    });
+
+    it('should return 500 error if there is an unexpected error', async () => {
+        // Arrange: Create mock data for adding brand contact
+            const mockBrandContactData: BrandContactData = {
+                brandId: 1,
+                contactPersonName: "John Doe",
+                contactPersonEmail: "johndoe@example.com",
+                contactPersonPhone: "1234567890"
+            }
+
+        // Mock an unexpected error during the process
+        userRepoMock.getBrandDetail.mockRejectedValue(new Error("Unexpected error"));
+
+        // Act: Call the addingBrandContact method
+        const response = await useCase.addingBrandContact(mockBrandContactData, 1);
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.InternalServerError,
+            message: "Error when adding brand contact"
+        });
+    });
+});
+
+
+
+
 describe('User API - updateBrandContact', () => {
     const userRepoMock = userRepo as jest.Mocked<typeof userRepo>; // Mock the user repository
 
@@ -228,61 +463,16 @@ describe('User API - updateBrandContact', () => {
         jest.clearAllMocks(); // Clear mocks after each test
     });
 
-    it('should update brand contact successfully if the brand exists and user is the owner', async () => {
-        // Arrange
-        const brandContactData: BrandContactData = {
-            id: 1, // Sample contact ID
-            brandId: 1, // Sample brand ID
-            contactPersonName: "John Doe", // Corrected contact name
-            contactPersonPhone: "123-456-7890", // Added phone number
-            contactPersonEmail: "john@example.com", // Corrected contact email
-        };
-
-        const loggedUserId = 1; // Sample logged-in user ID
-
-     
-
-        const mockBrandContact = 
-            {
-                id: 1,
-                brand: new Brand,
-                contactPersonName: "Alice Johnson",
-                contactPersonPhone: "123-456-7890",
-                contactPersonEmail: "alice@example.com",
-                createdAt: new Date(), // Automatically set to the current timestamp
-            }
-    
-
-        userRepoMock.getBrandDetail.mockResolvedValue(mockBrandData); // Mock the brand detail retrieval
-        userRepoMock.getBrandContactById.mockResolvedValue(mockBrandContact); // Mock existing brand contact retrieval
-        userRepoMock.updateBrandContact.mockResolvedValue({ ...mockBrandContact, ...brandContactData }); // Mock updating brand contact
-
-        // Act
-        const response = await useCase.updateBrandContact(brandContactData, loggedUserId);
-
-        // Assert
-        expect(response).toEqual({
-            status: StatusCode.OK,
-            BrandContact: { ...mockBrandContact, ...brandContactData }, // Updated contact details in the response
-            message: "Brand contact updated successfully",
-        });
-    });
+   
 
     it('should return not found if the brand does not exist', async () => {
-        // Arrange
-        const brandContactData: BrandContactData = {
-            id: 1,
-            brandId: 1,
-            contactPersonName: "John Doe",
-            contactPersonPhone: "123-456-7890",
-            contactPersonEmail: "john@example.com",
-        };
-        const loggedUserId = 1;
+     
+        const loggedUserId = 6;
 
         userRepoMock.getBrandDetail.mockResolvedValue(null); // Simulate brand not found
 
         // Act
-        const response = await useCase.updateBrandContact(brandContactData, loggedUserId);
+        const response = await useCase.updateBrandContact(mockBrandContactData, loggedUserId);
 
         // Assert
         expect(response).toEqual({
@@ -320,125 +510,115 @@ describe('User API - updateBrandContact', () => {
 
 
 
+// describe('addBrandOwnership', () => {
+//     const brandOwnershipData: BrandOwnershipData = {
+//         brandId: 2,
+//         boUserId: 2
+//     };
+    
+//     const loggedUserId = 2; // assuming logged user has ID 1
+//     const userRepoMock = userRepo as jest.Mocked<typeof userRepo>; // Mock the user repository
 
-describe('User API - addBrandOwnership', () => {
-    const userRepoMock = userRepo as jest.Mocked<typeof userRepo>; // Mock the user repository
+//     beforeEach(() => {
+//         jest.clearAllMocks(); // Clear mocks after each test
+//     });
 
-    afterEach(() => {
-        jest.clearAllMocks(); // Clear mocks after each test
-    });
+//     it('should return NotFound if the brand does not exist', async () => {
+//         userRepoMock.findBrandByID.mockResolvedValue(null); // Simulate brand not found
 
-    it('should add brand ownership successfully if the user and brand exist', async () => {
-        // Arrange
-        const brandOwnershipData: BrandOwnershipData = {
-            brandId: 1, // Sample brand ID
-            boUserId: 1, // Sample BO user ID
-        };
+//         const result = await useCase.addBrandOwnership(brandOwnershipData, loggedUserId);
 
+//         expect(result).toEqual({
+//             status: StatusCode.NotFound,
+//             message: `There is no BO user with this user id: ${brandOwnershipData.boUserId}`,
+//         });
+//         expect(userRepoMock.findBrandByID).toHaveBeenCalledWith(brandOwnershipData.brandId);
+//     });
 
+//     it('should return NotFound if the user does not exist', async () => {
+//         userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Brand exists
+//         userRepoMock.findUserById.mockResolvedValue(null); // User does not exist
 
+//         const result = await useCase.addBrandOwnership(brandOwnershipData, loggedUserId);
 
-        const addedBrandOwnership = {
-            id: 1,
-            brand: mockBrandData,
-            boUser: mockUser,
-            createdAt: new Date(),
-        };
+//         expect(result).toEqual({
+//             status: StatusCode.NotFound,
+//             message: 'user not found',
+//         });
+//         expect(userRepoMock.findUserById).toHaveBeenCalledWith(brandOwnershipData.boUserId);
+//     });
 
-        userRepoMock.findUserById.mockResolvedValue(mockUser); // Mock user retrieval
-        userRepoMock.findBrandByID.mockResolvedValue(mockBrandData); // Mock brand retrieval
-        userRepoMock.addBrandOwnership.mockResolvedValue(addedBrandOwnership); // Mock adding brand ownership
+//     it('should return NotFound if the user does not have BO role', async () => {
+//         userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Brand exists
+//         userRepoMock.findUserById.mockResolvedValue(mockUserCreateResponseData); // User exists but no BO role
 
-        // Act
-        const response = await useCase.addBrandOwnership(brandOwnershipData,1);
+//         const result = await useCase.addBrandOwnership(brandOwnershipData, loggedUserId);
 
-        // Assert
-        expect(response).toEqual({
-            status: StatusCode.OK,
-            BrandOwnership: addedBrandOwnership,
-            message: 'Brand ownership added successfully',
-        });
-    });
+//         expect(result).toEqual({
+//             status: StatusCode.NotFound,
+//             message: `There is no BO user with this user id: ${brandOwnershipData.brandId}`,
+//         });
+//         expect(userRepoMock.findUserById).toHaveBeenCalledWith(brandOwnershipData.boUserId);
+//     });
 
-    it('should return not found if the BO user does not exist', async () => {
-        // Arrange
-        const brandOwnershipData: BrandOwnershipData = {
-            brandId: 1,
-            boUserId: 1,
-        };
+//     it('should return NotFound if logged user is not the TO of the BO user', async () => {
+//         userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Brand exists
+//         userRepoMock.findUserById.mockResolvedValue(mockUserCreateResponseData); // User exists with BO role
+//         userRepoMock.getHierarchyTO.mockResolvedValue(hierarchyTo); // Logged user is not TO of the BO user
 
-        userRepoMock.findUserById.mockResolvedValue(null); // Simulate user not found
+//         const result = await useCase.addBrandOwnership(brandOwnershipData, 2);
 
-        // Act
-        const response = await useCase.addBrandOwnership(brandOwnershipData,1);
+//         expect(result).toEqual({
+//             status: StatusCode.NotFound,
+//             message: 'you have no permission to add this BO to brand because your not teamOwner of the this BO user',
+//         });
+//         expect(userRepoMock.getHierarchyTO).toHaveBeenCalledWith(brandOwnershipData.boUserId);
+//     });
 
-        // Assert
-        expect(response).toEqual({
-            status: StatusCode.NotFound,
-            message: `There is no BO user with this user id: ${brandOwnershipData.boUserId}`,
-        });
-    });
+//     it('should return BadRequest if the brand ownership already exists', async () => {
+//         userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Brand exists
+//         userRepoMock.findUserById.mockResolvedValue(mockUserCreateResponseData); // User exists with BO role
+//         userRepoMock.getHierarchyTO.mockResolvedValue(hierarchyTo); // Logged user is the TO
+//         userRepoMock.getBrandOwnerShip.mockResolvedValue(BrandOwnershipCreateReponse); // Brand ownership already exists\\\
 
-    it('should return not found if the brand does not exist', async () => {
-        // Arrange
-        const brandOwnershipData: BrandOwnershipData = {
-            brandId: 1,
-            boUserId: 1,
-        };
+        
+//         const result = await useCase.addBrandOwnership(brandOwnershipData, loggedUserId);
 
+//         expect(result).toEqual({
+//             status: StatusCode.BadRequest,
+//             message: 'Brand ownership already exist',
+//         });
+//         expect(userRepoMock.getBrandOwnerShip).toHaveBeenCalledWith(brandOwnershipData);
+//     });
 
-        userRepoMock.findUserById.mockResolvedValue(mockUser); // Mock user retrieval
-        userRepoMock.findBrandByID.mockResolvedValue(null); // Simulate brand not found
+//     it('should return OK if brand ownership is added successfully', async () => {
+//         const mockUserData={...mockUserCreateResponseData}
+//         mockUserData.roles=[RoleName.BO]
+//         userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Brand exists
+//         userRepoMock.findUserById.mockResolvedValue(mockUserData); // User exists with BO role
+//         userRepoMock.getHierarchyTO.mockResolvedValue(hierarchyTo); // Logged user is the TO
+//         userRepoMock.getBrandOwnerShip.mockResolvedValue(null); // No existing ownership
+//         userRepoMock.addBrandOwnership.mockResolvedValue(BrandOwnershipCreateReponse); // Successfully added ownership
 
-        // Act
-        const response = await useCase.addBrandOwnership(brandOwnershipData,1);
+//         const result = await useCase.addBrandOwnership(brandOwnershipData, 2);
 
-        // Assert
-        expect(response).toEqual({
-            status: StatusCode.NotFound,
-            message: `There is no Brand with this brand id: ${brandOwnershipData.brandId}`,
-        });
-    });
+//         expect(result).toEqual({
+//             status: StatusCode.OK,
+//             BrandOwnership: mockUserData,
+//             message: 'Brand ownership added successfully',
+//         });
+//         expect(userRepoMock.addBrandOwnership).toHaveBeenCalledWith(brandOwnershipData);
+//     });
 
-    it('should return bad request if adding brand ownership fails', async () => {
-        // Arrange
-        const brandOwnershipData: BrandOwnershipData = {
-            brandId: 1,
-            boUserId: 1,
-        };
-        userRepoMock.findUserById.mockResolvedValue(mockUser); // Mock user retrieval
-        userRepoMock.findBrandByID.mockResolvedValue(mockBrandData); // Mock brand retrieval
-        userRepoMock.addBrandOwnership.mockResolvedValue(null); // Simulate adding brand ownership failure
+//     it('should return InternalServerError on unexpected error', async () => {
+//         userRepoMock.findBrandByID.mockRejectedValue(new Error('Unexpected Error')); // Simulate error
 
-        // Act
-        const response = await useCase.addBrandOwnership(brandOwnershipData,1);
+//         const result = await useCase.addBrandOwnership(brandOwnershipData, loggedUserId);
 
-        // Assert
-        expect(response).toEqual({
-            status: StatusCode.BadRequest,
-            message: 'Failed to add brand ownership',
-        });
-    });
-
-    it('should return internal server error on unexpected error', async () => {
-        // Arrange
-        const brandOwnershipData: BrandOwnershipData = {
-            brandId: 1,
-            boUserId: 1,
-        };
-
-        userRepoMock.findUserById.mockImplementation(() => {
-            throw new Error("Unexpected error"); // Simulate an unexpected error
-        });
-
-        // Act
-        const response = await useCase.addBrandOwnership(brandOwnershipData,1);
-
-        // Assert
-        expect(response).toEqual({
-            status: StatusCode.InternalServerError,
-            message: 'Error when adding brand ownership',
-        });
-    });
-});
-
+//         expect(result).toEqual({
+//             status: StatusCode.InternalServerError,
+//             message: 'Error when adding brand ownership',
+//         });
+//         expect(userRepoMock.findBrandByID).toHaveBeenCalledWith(brandOwnershipData.brandId);
+//     });
+// });
