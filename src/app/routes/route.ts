@@ -4,6 +4,7 @@ import TaskController from "../controllers/taskController";
 import { isAdmin, isAdminOrBO, isAdminOrManagement, isPoAndToOrBo, isTo, verifyToken } from "../../utils/jwt";
 import userController from "../controllers/userController";
 import taskController from "../controllers/taskController";
+import { uploadMiddleware } from "../../utils/multer";
 
 const router=Router()
 
@@ -45,25 +46,24 @@ router.get('/getAllTasks',verifyToken,taskController.getTasks);
 router.get('/getTask/:id',verifyToken,taskController.getTask);
 router.post('/createTask',verifyToken,isAdminOrManagement,TaskController.createTask);
 router.put('/updateTask',verifyToken,taskController.updateTask);
-router.delete('/tasks/delete/:id');
 
+router.delete('/tasks/delete/:id');
 
 router.get('/getNotification/:id',verifyToken,taskController.getNotification);
 router.get('/getTaskHistory/:id',verifyToken,taskController.getHistory);
 
 
+router.post('/addComment', verifyToken, uploadMiddleware, TaskController.addComment); // Add upload middleware here
+router.get('/getComment',verifyToken);
 
 
 
-router.post('/tasks/:id/comment');
-router.get('/tasks/:id/comments');
 
 router.get('/tasks/filter');
 router.get('/tasks/sort');
 
 router.get('/tasks/analytics');
 
-router.get('/tasks/:id/notify');
 
 
 

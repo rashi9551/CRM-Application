@@ -13,6 +13,9 @@ export class TaskComment {
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;
 
+    @Column({ type: 'text', nullable: true })
+    filePath?: string;
+
     // The task the comment belongs to
     @ManyToOne(() => Task, task => task.comments, { onDelete: 'CASCADE' })
     task: Task;

@@ -3,7 +3,7 @@ import { AppDataSource } from '../../data-source';
 import { User } from '../../entity/User';
 import { Team } from '../../entity/Team';
 import { Brand } from '../../entity/Brand';
-import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData, TaskData } from '../../interfaces/interface';
+import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData, TaskData, TaskCommentData } from '../../interfaces/interface';
 import { BrandContact } from '../../entity/BrandContact';
 import { BrandOwnership } from '../../entity/BrandOwnership';
 import bcrypt from 'bcryptjs';
@@ -12,6 +12,7 @@ import { StatusCode } from '../../interfaces/enum';
 import UserRepo from './UserRepo'
 import { Notification } from '../../entity/Notification';
 import { TaskHistory } from '../../entity/TaskHistory';
+import { TaskComment } from '../../entity/TaskComment';
 
 export default new class TaskRepo {
 
@@ -23,6 +24,7 @@ export default new class TaskRepo {
     private TaskRepo: Repository<Task>;
     private NotificationRepo: Repository<Notification>;
     private TaskHistoryRepo: Repository<TaskHistory>;
+    private CommentRepo: Repository<TaskComment>;
 
     constructor() {
         this.UserRepo = AppDataSource.getRepository(User);
@@ -33,6 +35,7 @@ export default new class TaskRepo {
         this.TaskRepo = AppDataSource.getRepository(Task);
         this.NotificationRepo = AppDataSource.getRepository(Notification);
         this.TaskHistoryRepo = AppDataSource.getRepository(TaskHistory);
+        this.CommentRepo = AppDataSource.getRepository(TaskComment);
     }
 
      // Existing method to find a user by ID
@@ -232,6 +235,16 @@ export default new class TaskRepo {
         } catch (error) {
             console.error("Error saving task history:", error);
             throw new Error("Failed to save task history");
+        }
+    }
+
+    async createComment(commentData: DeepPartial<TaskCommentData>): Promise<TaskComment> {
+        try {
+            const comment = this.CommentRepo.create(commentData);
+            return await this.CommentRepo.save(comment);
+        } catch (error) {
+            console.error("Error when saving comment:", error);
+            throw error;
         }
     }
     

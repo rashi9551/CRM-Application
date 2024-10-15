@@ -1,12 +1,13 @@
 import { validateOrReject } from 'class-validator';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
-import { PromiseReturn,  RoleName,  TaskData, TaskHistoryAction, TaskType } from '../../interfaces/interface';
-import { Task, TaskStatus } from '../../entity/Task';
+import { PromiseReturn,  RoleName,  TaskCommentData,  TaskData, TaskHistoryAction, TaskType } from '../../interfaces/interface';
+import { Task} from '../../entity/Task';
 import UserRepo from '../repository/UserRepo';
 import TaskRepo from '../repository/TaskRepo';
 import { Notification } from '../../entity/Notification';
 import { TaskHistory } from '../../entity/TaskHistory';
+import { TaskComment } from '../../entity/TaskComment';
 
 export default new class TaskUseCase {
     
@@ -276,5 +277,21 @@ export default new class TaskUseCase {
             throw new Error("Failed to save task history");
         }
     };
+
+
+    createComment = async (commentData: TaskCommentData): Promise<PromiseReturn> => {
+        try {
+            const comment = new TaskComment();
+            Object.assign(comment, commentData); 
+
+            const savedComment = await TaskRepo.createComment(comment); 
+            return { status: StatusCode.Created as number, message: 'Comment added successfully', taskComent: savedComment };
+        } catch (error) {
+            console.error("Error when creating comment:", error);
+            throw error;
+        }
+    };
+
+
     
 }

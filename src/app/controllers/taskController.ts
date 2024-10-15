@@ -1,7 +1,7 @@
 import {Response,Request} from 'express'
 import { StatusCode } from '../../interfaces/enum'
 import TaskUseCase from '../useCase/taskUseCase'
-import { UserData, UserLoginData ,BrandData, TaskData, TaskType} from '../../interfaces/interface'
+import { UserData, UserLoginData ,BrandData, TaskData, TaskType, TaskCommentData} from '../../interfaces/interface'
 
 export default new class TaskController{
 
@@ -73,4 +73,21 @@ export default new class TaskController{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
         }
     }
+
+    addComment = async (req: Request, res: Response) => {
+        try {
+            const commentData: TaskCommentData = {
+                comment: req.body.commentText,             // Extract the comment text
+                filePath: req.file ? req.file.path : null, // Extract the file path if available
+                fileType: req.file ? req.file.mimetype : null, // Extract the file type if available
+                taskId: req.body.taskId,                   // Extract the task ID from the request body
+                userId: req.id,                        // Assuming user ID is set in req.user during token verification
+            };
+            const createCommentResponse = await TaskUseCase.createComment(commentData); // Call use case to save comment
+            res.status(createCommentResponse.status).json(createCommentResponse);
+        } catch (error) {
+            console.error('Error adding comment:', error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' });
+        }
+    };
 }

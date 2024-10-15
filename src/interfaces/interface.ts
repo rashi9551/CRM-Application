@@ -8,6 +8,7 @@ import { Team } from "../entity/Team";
 import { User } from "../entity/User";
 import { Notification } from "../entity/Notification";
 import { TaskHistory } from "../entity/TaskHistory";
+import { TaskComment } from "../entity/TaskComment";
 
 export enum Department {
     DEVELOPMENT = 'Development',
@@ -73,10 +74,11 @@ export interface PromiseReturn{
     brand?:Brand[]
     Brand?:Brand
     Task?:Task
+    taskComent?:TaskComment
     TaskHistory?: Partial<TaskHistory>;  // Make TaskHistory optional
     taskHistory?: Partial<TaskHistory>[];  // Make TaskHistory optional
     Notification?: Partial<Notification>;  
-       task?:Task[]
+    task?:Task[]
     inventory?:Inventory
     event?:Event
     UnreadNotification?:Notification[]
@@ -171,4 +173,12 @@ export interface TaskData {
     inventory_id?: number;                 // Optional ID of the brand associated with the task
     event_id?: number;                 // Optional ID of the brand associated with the task
     due_date:Date;
+}
+
+export interface TaskCommentData {
+    comment: string;           // The content of the comment
+    filePath?: string;        // Optional file path for an attached file
+    fileType?: string;        // Optional file type for an attached file
+    taskId: number;           // The ID of the task the comment belongs to
+    userId: number;           // The ID of the user who posted the comment
 }
