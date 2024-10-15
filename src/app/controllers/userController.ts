@@ -1,9 +1,9 @@
 import {Response,Request} from 'express'
 import { StatusCode } from '../../interfaces/enum'
-import useCase from '../useCase/useCase'
-import { UserData, UserLoginData ,BrandData} from '../../interfaces/interface'
+import useCase from '../useCase/userUseCase'
+import { UserData, UserLoginData ,BrandData, InventoryData, EventData} from '../../interfaces/interface'
 
-export default new class Controller{
+export default new class UserController{
 
     createUser=async(req:Request,res:Response)=>{
         try {
@@ -16,6 +16,7 @@ export default new class Controller{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
         }
     }
+
     login=async(req:Request,res:Response)=>{
         try {
             const loginData:UserLoginData=req.body
@@ -213,6 +214,30 @@ export default new class Controller{
             const {email}=req.body
             const  searchUserResponse=await useCase.searchUser(email)
             res.status(searchUserResponse.status).json(searchUserResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
+
+
+    createInventory=async(req:Request,res:Response)=>{
+        try {
+            console.log("admin creating  Inventory...");
+            const createInventoryData:InventoryData=req.body
+            const createInventoryResponse=await useCase.createInventory(createInventoryData)
+            res.status(createInventoryResponse.status).json(createInventoryResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
+    createEvent=async(req:Request,res:Response)=>{
+        try {
+            console.log("admin creating  event...");
+            const eventData:EventData=req.body
+            const eventDataResponse=await useCase.creatingEvent(eventData)
+            res.status(eventDataResponse.status).json(eventDataResponse)
         } catch (error) {
             console.log(error);
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 

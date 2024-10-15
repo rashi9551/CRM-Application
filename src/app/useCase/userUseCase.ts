@@ -3,7 +3,7 @@ import { BrandContact } from '../../entity/BrandContact';
 import { Team } from '../../entity/Team';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
-import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, PromiseReturn, RoleName, updatingUserData, UserData, UserLoginData } from '../../interfaces/interface';
+import {  BrandContactData, BrandData, BrandOwnershipData, PromiseReturn, RoleName, updatingUserData, UserData, UserLoginData, InventoryData, EventData } from '../../interfaces/interface';
 import { buildTree } from '../../middleware/buildTree';
 import { createToken } from '../../utils/jwt';
 import UserRepo from '../repository/UserRepo';
@@ -329,7 +329,7 @@ export default new class UseCase {
                     message: "Brand already exists with the same name",
                 };
             }
-    
+            
             // Find the brand to update
             const brandToUpdate = await UserRepo.findBrandByID(brandData.id);
             if (!brandToUpdate) {
@@ -342,7 +342,7 @@ export default new class UseCase {
             Object.assign(brandToUpdate, brandData);
             // Save the updated brand
             const savedBrand = await UserRepo.saveBrand(brandToUpdate);
-    
+            
             return { 
                 status: StatusCode.OK as number, 
                 Brand: savedBrand, // Return the updated brand object
@@ -358,8 +358,8 @@ export default new class UseCase {
     };
     getAllBrand = async (): Promise<PromiseReturn > => {
         try {
-           const getAllBrand:Brand[]=await userRepo.getAllBrand()
-           return { status: StatusCode.OK as number, brand:getAllBrand, message: "all Brand fetched success fully" };
+            const getAllBrand:Brand[]=await userRepo.getAllBrand()
+            return { status: StatusCode.OK as number, brand:getAllBrand, message: "all Brand fetched success fully" };
         } catch (error) {
             console.error("Error during fetching tree:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
@@ -368,7 +368,7 @@ export default new class UseCase {
     deleteBrand = async (id: number): Promise<PromiseReturn> => {
         try {
             const isBrandExist=await UserRepo.findBrandByID(id)
-
+            
             if(!isBrandExist){
                 return {
                     status: StatusCode.NotFound as number,
@@ -380,7 +380,7 @@ export default new class UseCase {
             
             // Return success response if deletion is successful
             return { status: StatusCode.OK as number, message: 'Brand deleted successfully' };
-        
+            
         } catch (error) {
             // Log the error and return an error response
             console.error('Error during brand deletion:', error);
@@ -402,16 +402,16 @@ export default new class UseCase {
             const brandOwnership = existingBrand.brandOwnerships.find(
                 ownership => ownership.boUser.id === loggedUserId
             );
-
+            
             if (!brandOwnership) {
                 return {
                     status: StatusCode.Forbidden as number,
                     message: "You do not have permission to add contacts for this brand",
                 };
             }
-
-           const getBrandDetail:Brand=await userRepo.getBrandDetail(id)
-           return { status: StatusCode.OK as number, Brand:getBrandDetail, message: "single brand detail fetched success fully" };
+            
+            const getBrandDetail:Brand=await userRepo.getBrandDetail(id)
+            return { status: StatusCode.OK as number, Brand:getBrandDetail, message: "single brand detail fetched success fully" };
         } catch (error) {
             console.error("Error during fetching tree:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when getting brand" };
@@ -419,8 +419,8 @@ export default new class UseCase {
     }
     getBrand = async (id:number): Promise<PromiseReturn > => {
         try {
-           const getBrandDetail:Brand=await userRepo.getBrand(id)
-           return { status: StatusCode.OK as number, Brand:getBrandDetail, message: "single brand detail fetched success fully" };
+            const getBrandDetail:Brand=await userRepo.getBrand(id)
+            return { status: StatusCode.OK as number, Brand:getBrandDetail, message: "single brand detail fetched success fully" };
         } catch (error) {
             console.error("Error during fetching tree:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when getting brand" };
@@ -441,17 +441,17 @@ export default new class UseCase {
             const brandOwnership = existingBrand.brandOwnerships.find(
                 ownership => ownership.boUser.id === loggedUserId
             );
-
+            
             if (!brandOwnership) {
                 return {
                     status: StatusCode.Forbidden as number,
                     message: "You do not have permission to add contacts for this brand",
                 };
             }
-
+            
             // Call the repository method to add a brand contact
             const addingBrandContact = await UserRepo.addingBrandContact(brandContactData);
-
+            
             // Return success response if saved successfully
             return {
                 status: StatusCode.OK as number,
@@ -481,16 +481,16 @@ export default new class UseCase {
             const brandOwnership = existingBrand.brandOwnerships.find(
                 ownership => ownership.boUser.id === loggedUserId
             );
-
+            
             if (!brandOwnership) {
                 return {
                     status: StatusCode.Forbidden as number,
                     message: "You do not have permission to add contacts for this brand",
                 };
             }
-
+            
             const existingBrandContact = await UserRepo.getBrandContactById(brandContactData.brandId)
-
+            
             
             
             // Update the fields of the existing brand contact
@@ -516,7 +516,7 @@ export default new class UseCase {
     addBrandOwnership = async (brandOwnershipData: BrandOwnershipData,loggedUserId:number): Promise<PromiseReturn> => {
         try {
             const isExistingBrand=await UserRepo.findBrandByID(brandOwnershipData.brandId)
-
+            
             if(!isExistingBrand){
                 return {
                     status: StatusCode.NotFound as number,
@@ -524,7 +524,7 @@ export default new class UseCase {
                 };
             }
             const isUserHaveBoRole=await UserRepo.findUserById(brandOwnershipData.boUserId)      
-                  
+            
             if(!isUserHaveBoRole){
                 return {
                     status: StatusCode.NotFound as number,
@@ -535,7 +535,7 @@ export default new class UseCase {
                     status: StatusCode.NotFound as number,
                     message: `There is no BO role user with this user id: ${brandOwnershipData.brandId}`,
                 };
-
+                
             }
             const allHeirarchyTo=await UserRepo.getHierarchyTO(brandOwnershipData.boUserId)
             const isLoggedUserWasHisTO = allHeirarchyTo.some(user => user.id === loggedUserId);
@@ -547,7 +547,7 @@ export default new class UseCase {
                     status: StatusCode.NotFound as number,
                     message: `you have no permission to add this BO to brand because your not teamOwner of the this BO user`,
                 };
-
+                
             }
             
             const existingBrandOwnership=await UserRepo.getBrandOwnerShip(brandOwnershipData)
@@ -559,14 +559,14 @@ export default new class UseCase {
                 };
             }
             const addedBrandOwnership = await UserRepo.addBrandOwnership(brandOwnershipData);
-
+            
             if (!addedBrandOwnership) {
                 return {
                     status: StatusCode.BadRequest as number,
                     message: 'Failed to add brand ownership',
                 };
             }
-
+            
             // Return success response
             return {
                 status: StatusCode.OK as number,
@@ -575,7 +575,7 @@ export default new class UseCase {
             };
         } catch (error) {
             console.error("Error during adding brand ownership:", error);
-
+            
             // Return failure response in case of an error
             return {
                 status: StatusCode.InternalServerError as number,
@@ -585,7 +585,7 @@ export default new class UseCase {
     };
     searchUser = async (email: string): Promise<PromiseReturn> => {
         try {
-
+            
             const user=await UserRepo.findUserByEmail(email)
             if(!user){
                 return {
@@ -601,7 +601,7 @@ export default new class UseCase {
             };
         } catch (error) {
             console.error("Error during adding brand ownership:", error);
-
+            
             // Return failure response in case of an error
             return {
                 status: StatusCode.InternalServerError as number,
@@ -610,7 +610,59 @@ export default new class UseCase {
         }
     };
     
-    
+    createInventory = async (inventoryData: InventoryData): Promise<PromiseReturn> => {
+        try {
+            // Check if the inventory already exists with the same name (case-sensitive)
+            const existingInventory= await UserRepo.findInventoryByName(inventoryData.name);
+            if (existingInventory) {
+                return {
+                    status: StatusCode.Conflict as number,
+                    message: "inventory already exists with the same name",
+                };
+            }
 
+            const inventory= await userRepo.createInventory(inventoryData)
+
+            return { 
+                status: StatusCode.OK as number, 
+                message: "Inventory created successfully" ,
+                inventory
+            };
+        } catch (error) {
+            console.error("Error during creating inventory:", error);
+            return { 
+                status: StatusCode.InternalServerError as number, 
+                message: "Error when creating inventory" 
+            };
+        }
+    };
+    creatingEvent = async (eventData: EventData): Promise<PromiseReturn> => {
+        try {
+            // Check if the inventory already exists with the same name (case-sensitive)
+            const existingEvent= await UserRepo.findEventByName(eventData.name);
+            if (existingEvent) {
+                return {
+                    status: StatusCode.Conflict as number,
+                    message: "Event already exists with the same name",
+                };
+            }
+
+            const event= await userRepo.createEvent(eventData)
+
+            return { 
+                status: StatusCode.OK as number, 
+                message: "Event created successfully" ,
+                event
+            };
+        } catch (error) {
+            console.error("Error during creating event:", error);
+            return { 
+                status: StatusCode.InternalServerError as number, 
+                message: "Error when creating event" 
+            };
+        }
+    };
+    
+    
 };
 

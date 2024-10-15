@@ -1,8 +1,13 @@
 import { Brand } from "../entity/Brand";
 import { BrandContact } from "../entity/BrandContact";
 import { BrandOwnership } from "../entity/BrandOwnership";
+import { Inventory } from "../entity/inventory";
+import { Task, TaskStatus } from "../entity/Task";
+import { Event } from "../entity/Event";
 import { Team } from "../entity/Team";
 import { User } from "../entity/User";
+import { Notification } from "../entity/Notification";
+import { TaskHistory } from "../entity/TaskHistory";
 
 export enum Department {
     DEVELOPMENT = 'Development',
@@ -12,9 +17,36 @@ export enum Department {
 
 export enum RoleName {
     ADMIN = 'ADMIN',
+    MANAGEMENT="MANAGEMENT",
     PO = 'PO',
     BO = 'BO',
     TO = 'TO',
+}
+
+export enum TaskHistoryAction {
+    TASK_CREATED = "Task Created",
+    TASK_ASSIGNED = "Task Assigned",
+    TASK_REASSIGNED = "Task Reassigned",
+    TASK_COMPLETED = "Task Completed",
+    TASK_OVERDUE = "Task Overdue",
+    TASK_COMMENT_ADDED = "Comment Added",
+    TASK_COMMENT_EDITED = "Comment Edited",
+    TASK_UPDATED = "Task Updated",
+    TASK_DELETED = "Task Deleted",
+    TASK_MARKED_IN_PROGRESS = "Task Marked as In Progress",
+    TASK_SLA_TRIGGERED = "SLA Triggered",
+    TASK_DUE_DATE_APPROACHING = "Due Date Approaching",
+    TASK_FILE_ATTACHED = "File Attached",
+    TASK_FILE_DELETED = "File Deleted",
+    TASK_PRIORITY_CHANGED = "Priority Changed"
+}
+
+
+export enum TaskType {
+    AllTasks = 'All tasks',
+    YourTasks = 'Your tasks',
+    TeamTasks = 'Team tasks',
+    DelegatedToOthers = 'Delegated to others'
 }
 
 export interface GetAllUser {
@@ -40,9 +72,28 @@ export interface PromiseReturn{
     team?:Team[]
     brand?:Brand[]
     Brand?:Brand
+    Task?:Task
+    TaskHistory?: Partial<TaskHistory>;  // Make TaskHistory optional
+    taskHistory?: Partial<TaskHistory>[];  // Make TaskHistory optional
+    Notification?: Partial<Notification>;  
+       task?:Task[]
+    inventory?:Inventory
+    event?:Event
+    UnreadNotification?:Notification[]
     BrandContact?:BrandContact
     BrandOwnership?:BrandOwnership
 }
+
+
+// export enum TaskStatus {
+//     NOT_STARTED = 'Not Started',
+//     IN_PROGRESS = 'In Progress',
+//     PENDING = 'Pending',
+//     COMPLETED = 'Completed',
+//     OVERDUE = 'Overdue',
+//     ON_HOLD = 'On Hold',
+//     CANCELLED = 'Cancelled',
+// }
 
 export interface UserData {
     id?:number,
@@ -55,6 +106,19 @@ export interface UserData {
     teamId?: number | null;
     parentId?:number;
 
+}
+export interface EventData {
+    id?:number,
+    name: string;
+    date: Date; 
+    location?: string;
+    details?: string;
+}
+export interface InventoryData {
+    id?:number,
+    name: string;
+    description?: Department; 
+    quantity: number;
 }
 
 export interface BrandData {
@@ -93,3 +157,18 @@ export interface UserLoginData {
     password: string;  
 }
 
+
+
+export interface TaskData {
+    id?: number;                       // Optional ID for existing tasks
+    title: string;                    // Title of the task
+    description?: string;             // Description should be a string, mark as optional
+    type: string; 
+    status:TaskStatus;                    // Type of the task
+    assigned_to: number;               // ID of the user assigned to the task
+    created_by: number;                // ID of the user who created the task
+    brand_id?: number;                 // Optional ID of the brand associated with the task
+    inventory_id?: number;                 // Optional ID of the brand associated with the task
+    event_id?: number;                 // Optional ID of the brand associated with the task
+    due_date:Date;
+}

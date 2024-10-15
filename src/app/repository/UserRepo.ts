@@ -3,10 +3,12 @@ import { AppDataSource } from '../../data-source';
 import { User } from '../../entity/User';
 import { Team } from '../../entity/Team';
 import { Brand } from '../../entity/Brand';
-import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData } from '../../interfaces/interface';
+import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData, InventoryData, EventData } from '../../interfaces/interface';
 import { BrandContact } from '../../entity/BrandContact';
 import { BrandOwnership } from '../../entity/BrandOwnership';
 import bcrypt from 'bcryptjs';
+import { Event } from '../../entity/Event';
+import { Inventory } from '../../entity/inventory';
 
 
 export default new class UserRepo {
@@ -16,6 +18,8 @@ export default new class UserRepo {
     private BrandRepo: Repository<Brand>;
     private BrandContactRepo: Repository<BrandContact>;
     private BrandOwnershipRepo: Repository<BrandOwnership>;
+    private InventoryRepo: Repository<Inventory>;
+    private EventRepo: Repository<Event>;
 
     constructor() {
         this.UserRepo = AppDataSource.getRepository(User);
@@ -23,6 +27,9 @@ export default new class UserRepo {
         this.BrandRepo = AppDataSource.getRepository(Brand);
         this.BrandContactRepo = AppDataSource.getRepository(BrandContact);
         this.BrandOwnershipRepo = AppDataSource.getRepository(BrandOwnership);
+        this.BrandOwnershipRepo = AppDataSource.getRepository(BrandOwnership);
+        this.InventoryRepo = AppDataSource.getRepository(Inventory);
+        this.EventRepo = AppDataSource.getRepository(Event);
     }
 
      // Existing method to find a user by ID
@@ -410,6 +417,7 @@ export default new class UserRepo {
     
     
     
+    
     async getUserTree(rootUserId?: number): Promise<User[]> {
         try {
             if (rootUserId) {
@@ -432,42 +440,104 @@ export default new class UserRepo {
             throw error;
         }
     }
-
-     getHierarchyTO = async (userId: number): Promise<any> => {
+    getHierarchyTO = async (userId: number): Promise<any> => {
         try {
-          // Fetch all users with their children in a single query
-          const fullTree = await this.UserRepo.find({ relations: ['children', 'parent'] });
-      
-          // Find the initial user from the tree by ID
-          let currentUser = fullTree.find(user => user.id === userId);
-          
-          if (!currentUser) {
-            return { status: 404, message: "User not found" };
-          }
-      
-          // Array to store all TO role users in the hierarchy
-          const hierarchyTOs: User[] = [];
-      
-          // Traverse upwards to find parents with TO role
-          while (currentUser && currentUser.parent) {
-            const parentUser = fullTree.find(user => user.id === currentUser.parent.id);
-      
-            currentUser = {...parentUser};  // Move to the next parent in the hierarchy
-            if (parentUser && parentUser.roles.includes(RoleName.TO)) {
-                delete parentUser.children
-                delete parentUser.parent
-                hierarchyTOs.push(parentUser);
+            // Fetch all users with their children in a single query
+            const fullTree = await this.UserRepo.find({ relations: ['children', 'parent'] });
+            
+            // Find the initial user from the tree by ID
+            let currentUser = fullTree.find(user => user.id === userId);
+            
+            if (!currentUser) {
+                return { status: 404, message: "User not found" };
             }
-      
-          }
-      
-          return hierarchyTOs
+            
+            // Array to store all TO role users in the hierarchy
+            const hierarchyTOs: User[] = [];
+            
+            // Traverse upwards to find parents with TO role
+            while (currentUser && currentUser.parent) {
+                const parentUser = fullTree.find(user => user.id === currentUser.parent.id);
+                
+                currentUser = {...parentUser};  // Move to the next parent in the hierarchy
+                if (parentUser && parentUser.roles.includes(RoleName.TO)) {
+                    delete parentUser.children
+                    delete parentUser.parent
+                    hierarchyTOs.push(parentUser);
+                }
+                
+            }
+            
+            return hierarchyTOs
         } catch (error) {
-          console.error("Error during fetching TO hierarchy:", error);
-          return { status: 500, message: "Error fetching TO hierarchy" };
+            console.error("Error during fetching TO hierarchy:", error);
+            return { status: 500, message: "Error fetching TO hierarchy" };
         }
-      };
-    
-    
-    
+    };
+    async findInventoryByName(inventoryName: string): Promise<Inventory | undefined> {
+        try {
+            const lowerCaseInventoryName = inventoryName.toLowerCase();
+
+            // Make sure to reference the correct entity and its columns
+            return await this.InventoryRepo.createQueryBuilder("inventory")
+                .where("LOWER(inventory.name) = LOWER(:name)", { name: lowerCaseInventoryName })
+                .getOne();
+        } catch (error) {
+            console.error("Error finding inventory by name:", error);
+            throw new Error("Failed to find inventory by name");
+        }
+    }
+    async findEventByName(eventName: string): Promise<Event | undefined> {
+        try {
+            const lowerCaseEventName = eventName.toLowerCase();
+
+            // Query to find the event by name (case-insensitive)
+            return await this.EventRepo.createQueryBuilder("event")
+                .where("LOWER(event.name) = LOWER(:name)", { name: lowerCaseEventName })
+                .getOne();
+        } catch (error) {
+            console.error("Error finding event by name:", error);
+            throw new Error("Failed to find event by name");
+        }
+    }
+
+    async createInventory(inventoryData: InventoryData): Promise<Inventory | null> {
+        try {
+            const inventory=this.InventoryRepo.create(inventoryData)
+            const createdTask = await this.InventoryRepo.save(inventory); // Save the task to the database
+            return createdTask; // Return the created task
+        } catch (error) {
+            console.error("Error when creating inventory:", error);
+            throw error; 
+        }
+    }  
+    async createEvent(eventData: EventData): Promise<Event | null> {
+        try {
+            const Event=this.EventRepo.create(eventData)
+            const createdEvent = await this.EventRepo.save(Event); // Save the task to the database
+            return createdEvent; // Return the created task
+        } catch (error) {
+            console.error("Error when creating createdEvent:", error);
+            throw error; 
+        }
+    }  
+
+    async findInventoryById(inventoryId: number): Promise<Inventory |null> {
+        try {
+            const inventory = await this.InventoryRepo.findOne({ where: { id: inventoryId} });
+            return inventory; // Return true if the user exists, false otherwise
+        } catch (error) {
+            console.error('Error getting inventory:', error);
+            throw new Error('Unable to check user estence.'); // Throw a more user-friendly error
+        }
+    }
+    async findEventById(eventId: number): Promise<Event |null> {
+        try {
+            const Event = await this.EventRepo.findOne({ where: { id: eventId} });
+            return Event; // Return true if the user exists, false otherwise
+        } catch (error) {
+            console.error('Error getting Event:', error);
+            throw new Error('Unable to check user estence.'); // Throw a more user-friendly error
+        }
+    }
 };

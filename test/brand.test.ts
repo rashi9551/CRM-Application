@@ -31,7 +31,11 @@ const team:Team=
                 children: [],
                 brandOwnerships: [],
                 team: new Team,
-                userTeams: []
+                userTeams: [],
+                assignedTasks: [],
+                createdTasks: [],
+                comments: [],
+                notifications: []
             },
             {
                 id: 2,
@@ -50,7 +54,11 @@ const team:Team=
                 children: [],
                 brandOwnerships: [],
                 team: new Team,
-                userTeams: []
+                userTeams: [],
+                assignedTasks: [],
+                createdTasks: [],
+                comments: [],
+                notifications: []
             }
         ],
         teamId: {
@@ -70,7 +78,11 @@ const team:Team=
             children: [],
             brandOwnerships: [],
             team: new Team,
-            userTeams: []
+            userTeams: [],
+            assignedTasks: [],
+            createdTasks: [],
+            comments: [],
+            notifications: []
         }
     }
 
@@ -92,7 +104,11 @@ const mockUserCreateResponseData:User={
     children: [],
     brandOwnerships: [],
     team: team,
-    userTeams: []
+    userTeams: [],
+    assignedTasks: [],
+    createdTasks: [],
+    comments: [],
+    notifications: []
 }
 
 const BrandCreateData:BrandData={
@@ -112,10 +128,11 @@ const BrandCreateReponseData:Brand={
     brandOwnerships: [{
         id: 3,
         createdAt: new Date,
-        boUser:mockUserCreateResponseData,
+        boUser: mockUserCreateResponseData,
         brand: new Brand
     }
-    ]
+    ],
+    tasks: []
 }
 const BrandContactAddingReponseData:BrandContact={
     contactPersonName: "rashid",
@@ -128,7 +145,8 @@ const BrandContactAddingReponseData:BrandContact={
         dealClosedValue: 0,
         createdAt: new Date,
         contacts: [],
-        brandOwnerships: []
+        brandOwnerships: [],
+        tasks: []
     },
     id: 3,
     createdAt: new Date
@@ -337,6 +355,7 @@ describe('User API - getBrandDetail', () => {
                 brand: new Brand,
                 boUser: mockUserCreateResponseData
             }],
+            tasks: []
         };
 
         userRepoMock.getBrandDetail.mockResolvedValue(mockBrandDetail); // Mock the brand detail retrieval

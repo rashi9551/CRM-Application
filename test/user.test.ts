@@ -29,7 +29,11 @@ const userRepoMock = userRepo as jest.Mocked<typeof userRepo>;
      children: [],
      brandOwnerships: [],
      team: new Team,
-     userTeams: []
+     userTeams: [],
+     assignedTasks: [],
+     createdTasks: [],
+     comments: [],
+     notifications: []
  }
 
 const mockCreateUserData:UserData={

@@ -13,8 +13,13 @@ import { IsEmail, IsNotEmpty } from 'class-validator';
 import { BrandOwnership } from './BrandOwnership';
 import { RoleName } from '../interfaces/interface';
 import { Team } from './Team'; // Import the Team entity
+import { Task } from './Task';
+import { TaskComment } from './TaskComment';
+import { Notification } from './Notification';
+import { TaskHistory } from './TaskHistory';
 
 @Entity()
+@Index(['parentId']) // Index for parent-child hierarchy
 export class User {
     @PrimaryGeneratedColumn()
     id: number;
@@ -66,6 +71,18 @@ export class User {
     @OneToMany(() => Team, team => team.teamId) // Relation to owned teams
     userTeams: Team[]; // Teams owned by this user
 
-    
-    
+    @OneToMany(() => Task, task => task.assignedTo)
+    assignedTasks: Task[];
+
+    @OneToMany(() => Task, task => task.createdBy)
+    createdTasks: Task[];
+
+    @OneToMany(() => TaskComment, comment => comment.user, { cascade: true })
+    comments: TaskComment[];
+
+    @OneToMany(() => Notification, notification => notification.recipient)
+    notifications: Notification[];
+
+    @OneToMany(() => TaskHistory, (taskHistory) => taskHistory.user)
+    taskHistories: TaskHistory[]; // User's task history records
 }

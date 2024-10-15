@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { BrandContact } from './BrandContact';
 import { BrandOwnership } from './BrandOwnership';
+import { Task } from './Task';
 
 @Entity()
 export class Brand {
@@ -26,4 +27,7 @@ export class Brand {
     // Cascade delete on BrandOwnership entities
     @OneToMany(() => BrandOwnership, brandOwnership => brandOwnership.brand, { cascade: true, onDelete: 'CASCADE' })
     brandOwnerships: BrandOwnership[];
+
+    @OneToMany(() => Task, task => task.brand)
+    tasks: Task[];
 }

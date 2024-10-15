@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
+import { RoleName } from '../interfaces/interface';
 
 declare global {
     namespace Express {
@@ -59,7 +60,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
 
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
     // Check if the role includes 'ADMIN' (case-insensitive comparison)
-    if (!req.role || !req.role.includes("ADMIN")) {
+    if (!req.role || !req.role.includes(RoleName.ADMIN)) {
         return res.status(401).json({ message: 'Only an admin can perform this action' });
     }
 
@@ -72,7 +73,7 @@ export const isAdminOrBO = (req: Request, res: Response, next: NextFunction) => 
     
     // Check if the role includes 'ADMIN' or 'BO' (case-insensitive comparison)
     const hasAccess = req.role && 
-                      (req.role.includes("ADMIN") || req.role.includes("BO"));
+                      (req.role.includes(RoleName.ADMIN) || req.role.includes(RoleName.BO));
 
     if (!hasAccess) {
         return res.status(401).json({ message: 'Only an admin or a brand owner can perform this action' });
@@ -80,19 +81,26 @@ export const isAdminOrBO = (req: Request, res: Response, next: NextFunction) => 
 
     next();
 };
-// export const isAdminOrIsThatBrandOwner = (req: Request, res: Response, next: NextFunction) => {
-//     // Check if the role includes 'ADMIN' or 'BO' (case-insensitive comparison)
-//     if (!req.role || (!req.role.includes("ADMIN") && !req.role.includes("BO"))) {
-//         return res.status(401).json({ message: 'Only an admin or a brand owner can perform this action' });
-//     }
+export const isAdminOrManagement = (req: Request, res: Response, next: NextFunction) => {
+    // Log the roles for debugging
+    console.log('User Roles:', req.role);
+    
+    // Check if the role includes 'ADMIN' or 'BO' (case-insensitive comparison)
+    const hasAccess = req.role && 
+                      (req.role.includes(RoleName.ADMIN) || req.role.includes(RoleName.MANAGEMENT));
 
-//     next();
-// };
+    if (!hasAccess) {
+        return res.status(401).json({ message: 'Only an admin or a brand owner can perform this action' });
+    }
+
+    next();
+};
+
 export const isPoAndToOrBo = (req: Request, res: Response, next: NextFunction) => {
     console.log(req.role, "=-=-=-=");
 
     // Check if the role includes 'ADMIN' or both 'TO' and 'PO'
-    if (req.role && (req.role.includes("ADMIN") || req.role.includes("BO")||(req.role.includes("TO") && req.role.includes("PO")))) {
+    if (req.role && (req.role.includes(RoleName.ADMIN) || req.role.includes(RoleName.BO)||(req.role.includes(RoleName.TO) && req.role.includes(RoleName.PO)))) {
         // If the user has the correct role, proceed to the next middleware or route handler
         return next();
     }
@@ -104,7 +112,7 @@ export const isTo = (req: Request, res: Response, next: NextFunction) => {
     console.log(req.role, "=-=-=-=");
 
     // Check if the role includes 'ADMIN' or both 'TO' and 'PO'
-    if (req.role && (req.role.includes("TO"))) {
+    if (req.role && (req.role.includes(RoleName.TO))) {
         // If the user has the correct role, proceed to the next middleware or route handler
         return next();
     }
