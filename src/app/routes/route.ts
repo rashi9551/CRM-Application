@@ -54,12 +54,12 @@ router.get('/getTaskHistory/:id',verifyToken,taskController.getHistory);
 
 
 router.post('/addComment', verifyToken, uploadMiddleware, TaskController.addComment); // Add upload middleware here
-router.get('/getComment',verifyToken);
+router.get('/getComment/:id',verifyToken);
+router.get('/filterTask',verifyToken,taskController.getFilteredAndSortedTasks);
 
 
 
 
-router.get('/tasks/filter');
 router.get('/tasks/sort');
 
 router.get('/tasks/analytics');

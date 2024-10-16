@@ -1,7 +1,7 @@
 import { validateOrReject } from 'class-validator';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
-import { PromiseReturn,  RoleName,  TaskCommentData,  TaskData, TaskHistoryAction, TaskType } from '../../interfaces/interface';
+import { FilterOptions, PromiseReturn,  RoleName,  TaskCommentData,  TaskData, TaskHistoryAction, TaskType } from '../../interfaces/interface';
 import { Task} from '../../entity/Task';
 import UserRepo from '../repository/UserRepo';
 import TaskRepo from '../repository/TaskRepo';
@@ -166,28 +166,28 @@ export default new class TaskUseCase {
         }
     };
     
-    getTasks = async (filter: TaskType,loggedUserId:number,role?:String[]): Promise<PromiseReturn> => {
+    getTasks = async (filter: TaskType,loggedUserId:number,role?:String[],isCompleted?:boolean): Promise<PromiseReturn> => {
         try {  
             console.log(filter);
             if(filter===TaskType.AllTasks){
-                const tasks = await TaskRepo.getAllTasks();            
+                const tasks = await TaskRepo.getAllTasks(isCompleted);            
                 if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched All Tasks",task:tasks};
             } 
             if(filter===TaskType.YourTasks){
-                const tasks = await TaskRepo.getYourTask(loggedUserId);            
+                const tasks = await TaskRepo.getYourTask(loggedUserId,isCompleted);            
                 if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched  your Tasks",task:tasks};
             } 
             if(filter===TaskType.TeamTasks){
                 const hasAccess = role?.some(r => [RoleName.MANAGEMENT, RoleName.ADMIN, RoleName.TO].includes(r as RoleName));
                 if (hasAccess) {
-                    const tasks = await TaskRepo.getTeamTask(loggedUserId);            
+                    const tasks = await TaskRepo.getTeamTask(loggedUserId,isCompleted);            
                     if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched  team Tasks",task:tasks};
                 } else {
                     return {status: StatusCode.Unauthorized as number,message: "only TO Can View The TeamTask",};
                 }
             } 
             if(filter===TaskType.DelegatedToOthers){
-                const tasks = await TaskRepo.getDelegatedToOthersTask(loggedUserId);            
+                const tasks = await TaskRepo.getDelegatedToOthersTask(loggedUserId,isCompleted);            
                 if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched  DelegatedToOthers Tasks",task:tasks};
             } 
             return { status: StatusCode.BadRequest as number, message: "select appropriate filter." };
@@ -281,11 +281,32 @@ export default new class TaskUseCase {
 
     createComment = async (commentData: TaskCommentData): Promise<PromiseReturn> => {
         try {
+            const existingTask = await TaskRepo.findTaskById(commentData.taskId);
+            if (!existingTask) {
+                return { status: StatusCode.NotFound as number, message: "Task not found." };
+            }
+
+            const existingUser: User = await UserRepo.getUserById(commentData.userId);
+
+            if (!existingUser) return { status: StatusCode.NotFound as number, message: "Comment Added User Not Found" };
             const comment = new TaskComment();
             Object.assign(comment, commentData); 
 
             const savedComment = await TaskRepo.createComment(comment); 
+            await this.TaskHistoryLogging(existingTask,existingUser,TaskHistoryAction.TASK_COMMENT_ADDED,`the task have a  new comment on: ${existingTask.title} by ${existingUser.name}`)
             return { status: StatusCode.Created as number, message: 'Comment added successfully', taskComent: savedComment };
+        } catch (error) {
+            console.error("Error when creating comment:", error);
+            throw error;
+        }
+    };
+    getFilteredAndSortedTasks = async (filterOptions:FilterOptions): Promise<PromiseReturn> => {
+        try { 
+            const filterTask = await TaskRepo.getFilteredAndSortedTasks(filterOptions); 
+            if(!filterOptions){
+                return { status: StatusCode.NotFound as number, message: "filter task  not found." };
+            }
+            return { status: StatusCode.Created as number, message: 'Comment added successfully', task: filterTask };
         } catch (error) {
             console.error("Error when creating comment:", error);
             throw error;

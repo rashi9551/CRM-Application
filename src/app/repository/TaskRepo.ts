@@ -1,13 +1,13 @@
-import { DeepPartial, In, Like, Repository } from 'typeorm';
+import { DeepPartial, In, LessThan, Like, MoreThanOrEqual, Repository } from 'typeorm';
 import { AppDataSource } from '../../data-source';
 import { User } from '../../entity/User';
 import { Team } from '../../entity/Team';
 import { Brand } from '../../entity/Brand';
-import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData, TaskData, TaskCommentData } from '../../interfaces/interface';
+import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData, TaskData, TaskCommentData, FilterOptions } from '../../interfaces/interface';
 import { BrandContact } from '../../entity/BrandContact';
 import { BrandOwnership } from '../../entity/BrandOwnership';
 import bcrypt from 'bcryptjs';
-import { Task } from '../../entity/Task';
+import { Task, TaskStatus } from '../../entity/Task';
 import { StatusCode } from '../../interfaces/enum';
 import UserRepo from './UserRepo'
 import { Notification } from '../../entity/Notification';
@@ -59,43 +59,52 @@ export default new class TaskRepo {
             throw new Error("Failed to save task");
         }
     }
-     async getAllTasks(): Promise<Task[] | null> {
+    async getAllTasks(isComplete: boolean): Promise<Task[] | null> {
         try {
+            const statusToCheck = isComplete ? TaskStatus.Completed : TaskStatus.Pending;
             const gettingAllTasks = await this.TaskRepo.find({
+                where: { status: statusToCheck }, // Filter tasks based on the status
                 relations: ['assignedTo', 'createdBy', 'brand', 'inventory', 'event'], // Include any other relations you need
-            });            
-            return gettingAllTasks; // Return the created task
+            });
+            return gettingAllTasks;
         } catch (error) {
-            console.error("Error getting alll tasks:", error);
-            throw error; 
+            console.error("Error getting all tasks:", error);
+            throw error;
         }
     }
 
-    async getYourTask(userId: number): Promise<Task[]> {
+    async getYourTask(userId: number, isComplete: boolean): Promise<Task[]> {
         try {
+            const statusToCheck = isComplete ? TaskStatus.Completed : TaskStatus.Pending;
+    
             return await this.TaskRepo.createQueryBuilder("task")
                 .leftJoinAndSelect("task.assignedTo", "assignedTo") // Join with assigned user
-                .leftJoinAndSelect("task.createdBy", "createdBy") // Join with creator user
-                .leftJoinAndSelect("task.brand", "brand") // Join with brand
-                .leftJoinAndSelect("task.inventory", "inventory") // Join with inventory
-                .leftJoinAndSelect("task.event", "event") // Join with event
-                .where("task.assigned_to = :userId", { userId })
+                .leftJoinAndSelect("task.createdBy", "createdBy")   // Join with creator user
+                .leftJoinAndSelect("task.brand", "brand")           // Join with brand
+                .leftJoinAndSelect("task.inventory", "inventory")   // Join with inventory
+                .leftJoinAndSelect("task.event", "event")           // Join with event
+                .where("task.assigned_to = :userId", { userId })    // Match the assigned user
+                .andWhere("task.status = :status", { status: statusToCheck }) // Match the task status based on isComplete
                 .getMany(); // Fetch all matching tasks with relations
         } catch (error) {
             console.error("Error fetching user's tasks:", error);
             throw new Error("Failed to fetch tasks");
         }
     }
-    async getDelegatedToOthersTask(created_by: number): Promise<Task[]> {
+    
+    async getDelegatedToOthersTask(created_by: number,isComplete: boolean): Promise<Task[]> {
         try {
+            const statusCondition = isComplete ? TaskStatus.Completed : TaskStatus.Pending;
+
             return await this.TaskRepo.createQueryBuilder("task")
                 .leftJoinAndSelect("task.assignedTo", "assignedTo") // Join with assigned user
                 .leftJoinAndSelect("task.createdBy", "createdBy") // Join with creator user
                 .leftJoinAndSelect("task.brand", "brand") // Join with brand
                 .leftJoinAndSelect("task.inventory", "inventory") // Join with inventory
                 .leftJoinAndSelect("task.event", "event") // Join with event
-                .where("task.created_by = :created_by", { created_by }) // Filter by creator user
-                .getMany(); // Fetch all matching tasks with relations
+                .where("task.created_by = :created_by", { created_by })
+                .andWhere("task.status = :status", { status: statusCondition }) // Check completion status
+                .getMany(); // Filter by creator user
         } catch (error) {
             console.error("Error fetching user's tasks:", error);
             throw new Error("Failed to fetch tasks");
@@ -103,7 +112,7 @@ export default new class TaskRepo {
     }
 
 
-    async getTeamTask(userId: number): Promise<Task[]> {
+    async getTeamTask(userId: number,isComplete: boolean): Promise<Task[]> {
         try {
             // Fetch the team ID of the user
             const user=await UserRepo.findUserById(userId)
@@ -113,7 +122,8 @@ export default new class TaskRepo {
             }
     
             const teamId = user.team.id; // Assuming the team has an 'id' field
-    
+            const statusCondition = isComplete ? TaskStatus.Completed : TaskStatus.Pending;
+
             // Fetch tasks assigned to all users in the same team
             return await this.TaskRepo.createQueryBuilder("task")
                 .leftJoinAndSelect("task.assignedTo", "assignedTo")
@@ -122,7 +132,8 @@ export default new class TaskRepo {
                 .leftJoinAndSelect("task.inventory", "inventory")
                 .leftJoinAndSelect("task.event", "event")
                 .where("assignedTo.team_id = :teamId", { teamId }) // Replace with the correct foreign key name
-                .getMany(); // Fetch all tasks assigned to users in the team
+                .andWhere("task.status = :status", { status: statusCondition }) // Check completion status
+                .getMany();// Fetch all tasks assigned to users in the team
         } catch (error) {
             if (error.message === "admin can't have the team task") {
                 throw new Error("admin can't have the team task");
@@ -228,6 +239,10 @@ export default new class TaskRepo {
             throw new Error("Failed to save notification");
         }
     }
+
+    async saveBatchNotification(notifications: Notification[]): Promise<Notification[]> {
+        return await this.NotificationRepo.save(notifications);
+    }
     async saveTaskHistory(taskHistory: TaskHistory): Promise<TaskHistory> {
         try {
             const savedTaskHistory = await this.TaskHistoryRepo.save(taskHistory); // Save the task history to the database
@@ -246,6 +261,68 @@ export default new class TaskRepo {
             console.error("Error when saving comment:", error);
             throw error;
         }
+    }
+
+    async getFilteredAndSortedTasks(filters: FilterOptions): Promise<Task[]> {
+        const query = this.TaskRepo.createQueryBuilder("task")
+            .leftJoinAndSelect("task.assignedTo", "assignedTo")
+            .leftJoinAndSelect("task.createdBy", "createdBy")
+            .leftJoinAndSelect("task.brand", "brand")
+            .leftJoinAndSelect("task.inventory", "inventory")
+            .leftJoinAndSelect("task.event", "event");
+
+        // Apply filters
+        if (filters.taskType) {
+            query.andWhere("task.type = :taskType", { taskType: filters.taskType });
+        }
+        if (filters.assignedBy) {
+            query.andWhere("task.created_by = :assignedBy", { assignedBy: filters.assignedBy });
+        }
+        if (filters.assignedTo) {
+            query.andWhere("task.assigned_to = :assignedTo", { assignedTo: filters.assignedTo });
+        }
+        if (filters.teamOwner) {
+            query.andWhere("assignedTo.team_id = :teamOwner", { teamOwner: filters.teamOwner });
+        }
+        if (filters.dueDatePassed) {
+            query.andWhere("task.due_date < NOW()"); // Assuming due_date is a field in Task
+        }
+        if (filters.brandName) {
+            query.andWhere("brand.name LIKE :brandName", { brandName: `%${filters.brandName}%` });
+        }
+        if (filters.inventoryName) {
+            query.andWhere("inventory.name LIKE :inventoryName", { inventoryName: `%${filters.inventoryName}%` });
+        }
+        if (filters.eventName) {
+            query.andWhere("event.name LIKE :eventName", { eventName: `%${filters.eventName}%` });
+        }
+
+        // Apply sorting
+        if (filters.sortBy) {
+            const order = filters.sortOrder === 'DESC' ? 'DESC' : 'ASC';
+            query.orderBy(`task.${filters.sortBy}`, order);
+        }
+
+        return await query.getMany();
+    }
+
+    async findDueTasks(now: Date, twelveHoursFromNow: Date): Promise<Task[]> {
+        return await this.TaskRepo.find({
+            where: [
+                {
+                    dueDate: MoreThanOrEqual(now),
+                },
+                {
+                    dueDate: LessThan(twelveHoursFromNow),
+                },
+            ],
+            relations: ['assignedTo'], // Assuming assignedTo is a User entity
+        });
+    }
+
+    // Method to fetch all users
+    async findAllUsers(): Promise<User[]> {
+        return await this.UserRepo.find();
     }
     
 }

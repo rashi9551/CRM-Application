@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from 'typeorm';
 import { Task } from './Task';
 import { User } from './User';
 
@@ -16,11 +16,19 @@ export class TaskComment {
     @Column({ type: 'text', nullable: true })
     filePath?: string;
 
-    // The task the comment belongs to
-    @ManyToOne(() => Task, task => task.comments, { onDelete: 'CASCADE' })
-    task: Task;
+    @Column({ name: 'task_id', nullable: false })
+    taskId: number;
 
+    @Column({ name: 'user_id', nullable: false })
+    userId: number;
+
+    // The task the comment belongs to (relationship with Task entity)
+    @ManyToOne(() => Task, task => task.comments, { onDelete: 'CASCADE', nullable: false })
+    @JoinColumn({ name: 'task_id' })
+    task: Task;
+    
     // The user who posted the comment
     @ManyToOne(() => User, user => user.comments, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'user_id' })
     user: User;
 }

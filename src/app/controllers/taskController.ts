@@ -1,7 +1,7 @@
 import {Response,Request} from 'express'
 import { StatusCode } from '../../interfaces/enum'
 import TaskUseCase from '../useCase/taskUseCase'
-import { UserData, UserLoginData ,BrandData, TaskData, TaskType, TaskCommentData} from '../../interfaces/interface'
+import { UserData, UserLoginData ,BrandData, TaskData, TaskType, TaskCommentData, FilterOptions} from '../../interfaces/interface'
 
 export default new class TaskController{
 
@@ -33,7 +33,8 @@ export default new class TaskController{
             console.log("loggedUser:",req.id);
             
             const filter:TaskType=req.body.filter
-            const getTasksResponse=await TaskUseCase.getTasks(filter,req.id,req.role)
+            const isComplete:boolean=req.body.isCompleted
+            const getTasksResponse=await TaskUseCase.getTasks(filter,req.id,req.role,isComplete)
             res.status(getTasksResponse.status).json(getTasksResponse)
         } catch (error) {
             console.log(error);
@@ -77,12 +78,14 @@ export default new class TaskController{
     addComment = async (req: Request, res: Response) => {
         try {
             const commentData: TaskCommentData = {
-                comment: req.body.commentText,             // Extract the comment text
+                comment: req.body.comment,             // Extract the comment text
                 filePath: req.file ? req.file.path : null, // Extract the file path if available
                 fileType: req.file ? req.file.mimetype : null, // Extract the file type if available
                 taskId: req.body.taskId,                   // Extract the task ID from the request body
                 userId: req.id,                        // Assuming user ID is set in req.user during token verification
             };
+            console.log(commentData);
+            
             const createCommentResponse = await TaskUseCase.createComment(commentData); // Call use case to save comment
             res.status(createCommentResponse.status).json(createCommentResponse);
         } catch (error) {
@@ -90,4 +93,41 @@ export default new class TaskController{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' });
         }
     };
+
+    getFilteredAndSortedTasks=async(req: Request, res: Response): Promise<Response> =>{
+        console.log("user filtering  task...");
+        const {
+            taskType,
+            assignedBy,
+            assignedTo,
+            teamOwner,
+            dueDatePassed,
+            brandName,
+            inventoryName,
+            eventName,
+            sortBy,
+            sortOrder,
+        }:FilterOptions = req.body;
+
+        try {
+            const taskFilteringReponse = await TaskUseCase.getFilteredAndSortedTasks({
+                taskType,
+                assignedBy,
+                assignedTo,
+                teamOwner,
+                dueDatePassed,
+                brandName,
+                inventoryName,
+                eventName,
+                sortBy,
+                sortOrder,
+            });
+
+            return res.status(taskFilteringReponse.status).json(taskFilteringReponse);
+        } catch (error) {
+            console.error("Error fetching filtered and sorted tasks:", error);
+            return res.status(500).json({ message: "Failed to fetch tasks" });
+        }
+    }
+
 }

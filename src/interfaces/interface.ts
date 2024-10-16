@@ -182,3 +182,17 @@ export interface TaskCommentData {
     taskId: number;           // The ID of the task the comment belongs to
     userId: number;           // The ID of the user who posted the comment
 }
+
+
+export interface FilterOptions {
+    taskType?: string;
+    assignedBy?: number;
+    assignedTo?: number;
+    teamOwner?: number;
+    dueDatePassed?: boolean;
+    brandName?: string;
+    inventoryName?: string;
+    eventName?: string;
+    sortBy?: string;
+    sortOrder?: 'ASC' | 'DESC';
+}
