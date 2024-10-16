@@ -59,6 +59,18 @@ export default new class TaskRepo {
             throw new Error("Failed to save task");
         }
     }
+    async deleteTask(taskId: number): Promise<Task | number> {
+        try {            
+            const deleteTask = await this.TaskRepo.delete(taskId);
+            if (deleteTask.affected === 0) {
+                throw new Error('Task not found or already deleted');
+            }            
+            return taskId ;; // Return the saved task (whether new or updated)
+        } catch (error) {
+            console.error("Error saving task:", error);
+            throw new Error("Failed to save task");
+        }
+    }
     async getAllTasks(isComplete: boolean): Promise<Task[] | null> {
         try {
             const statusToCheck = isComplete ? TaskStatus.Completed : TaskStatus.Pending;
@@ -272,8 +284,8 @@ export default new class TaskRepo {
             .leftJoinAndSelect("task.event", "event");
 
         // Apply filters
-        if (filters.taskType) {
-            query.andWhere("task.type = :taskType", { taskType: filters.taskType });
+        if (filters.type) {
+            query.andWhere("task.type = :taskType", { taskType: filters.type });
         }
         if (filters.assignedBy) {
             query.andWhere("task.created_by = :assignedBy", { assignedBy: filters.assignedBy });
@@ -324,5 +336,48 @@ export default new class TaskRepo {
     async findAllUsers(): Promise<User[]> {
         return await this.UserRepo.find();
     }
-    
+
+
+
+    async countTasksCreated(startDate: Date, endDate: Date): Promise<number> {
+        return await this.TaskRepo.count({
+            where: {
+                createdAt: MoreThanOrEqual(startDate), // This is fine
+                dueDate: LessThan(endDate), // Use a different property or the correct one
+            },
+        });
+    }
+
+    async countOpenTasks(startDate: Date, endDate: Date): Promise<number> {
+        return await this.TaskRepo.count({
+            where: {
+                createdAt: MoreThanOrEqual(startDate),
+                dueDate: LessThan(endDate),
+                status: TaskStatus.Pending, // Adjusted to use the enum
+            },
+        });
+    }
+
+    async countCompletedTasks(startDate: Date, endDate: Date): Promise<number> {
+        return await this.TaskRepo.count({
+            where: {
+                createdAt: MoreThanOrEqual(startDate),
+                dueDate: LessThan(endDate),
+                status: TaskStatus.Completed, // Adjusted to use the enum
+            },
+        });
+    }
+
+    async countOverdueTasks(now: Date): Promise<number> {
+        return await this.TaskRepo.count({
+            where: {
+                dueDate: LessThan(now),
+                status: TaskStatus.Pending, // Assuming you want overdue tasks that are still open
+            },
+        });
+    }
+
+    async findAllTasks(): Promise<Task[]> {
+        return await this.TaskRepo.find();
+    }
 }

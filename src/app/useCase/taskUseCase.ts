@@ -8,7 +8,7 @@ import TaskRepo from '../repository/TaskRepo';
 import { Notification } from '../../entity/Notification';
 import { TaskHistory } from '../../entity/TaskHistory';
 import { TaskComment } from '../../entity/TaskComment';
-
+import {AnalyticsFilter} from '../../interfaces/interface'
 export default new class TaskUseCase {
     
     createTask = async (taskData: TaskData): Promise<PromiseReturn> => {
@@ -165,6 +165,19 @@ export default new class TaskUseCase {
             return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
     };
+    deleteTask = async (taskId:number,loggedUserId:number): Promise<PromiseReturn> => {
+        try {  
+            const existingTask = await TaskRepo.findTaskById(taskId);            
+            if (!existingTask) {
+                return { status: StatusCode.NotFound as number, message: "Task not found." };
+            }
+           await TaskRepo.deleteTask(taskId);
+            return { status: StatusCode.OK as number, message: "Task deleted Successfully."};
+        }catch (error) {
+                console.error("Error during getting task :", error);
+                return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
+            }
+    };
     
     getTasks = async (filter: TaskType,loggedUserId:number,role?:String[],isCompleted?:boolean): Promise<PromiseReturn> => {
         try {  
@@ -312,6 +325,101 @@ export default new class TaskUseCase {
             throw error;
         }
     };
+
+
+
+    async getAnalytics(filter: string): Promise<PromiseReturn> {
+        const now = new Date();
+        let startDate: Date;
+        let endDate: Date;
+        let previousStartDate: Date;
+        let previousEndDate: Date;
+    
+        // Set date ranges based on the filter
+        switch (filter) {
+            case AnalyticsFilter.Today:
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
+                previousStartDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000); // Yesterday
+                previousEndDate = startDate; // Today
+                break;
+            case AnalyticsFilter.Last3Days:
+                startDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+                endDate = now;
+                previousStartDate = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000); // Previous 3 days
+                previousEndDate = startDate; // Last 3 days
+                break;
+            case AnalyticsFilter.Last7Days:
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                endDate = now;
+                previousStartDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000); // Previous week
+                previousEndDate = startDate; // Last week
+                break;
+            case AnalyticsFilter.Last15Days:
+                startDate = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+                endDate = now;
+                previousStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Previous 15 days
+                previousEndDate = startDate; // Last 15 days
+                break;
+            case AnalyticsFilter.LastMonth:
+                startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                endDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                previousStartDate = new Date(now.getFullYear(), now.getMonth() - 2, 1); // Previous month
+                previousEndDate = new Date(now.getFullYear(), now.getMonth() - 1, 1); // Last month
+                break;
+            case AnalyticsFilter.ThisMonth:
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000); // Rough estimate of a month
+                previousStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1); // Previous month
+                previousEndDate = new Date(now.getFullYear(), now.getMonth(), 1); // Last month
+                break;
+            case AnalyticsFilter.AllTime:
+                startDate = new Date(0); // Earliest date
+                endDate = now;
+                previousStartDate = new Date(0); // Earliest date
+                previousEndDate = startDate; // All time
+                break;
+            default:
+                throw new Error('Invalid filter');
+        }
+    
+        // Fetching the data for the current period
+        const totalTasksCreated = await TaskRepo.countTasksCreated(startDate, endDate);
+        const openTasks = await TaskRepo.countOpenTasks(startDate, endDate);
+        const completedTasks = await TaskRepo.countCompletedTasks(startDate, endDate);
+        const overdueTasks = await TaskRepo.countOverdueTasks(now);
+    
+        // Fetching the data for the previous period for comparison
+        const totalTasksCreatedPrevious = await TaskRepo.countTasksCreated(previousStartDate, previousEndDate);
+        const openTasksPrevious = await TaskRepo.countOpenTasks(previousStartDate, previousEndDate);
+        const completedTasksPrevious = await TaskRepo.countCompletedTasks(previousStartDate, previousEndDate);
+        const overdueTasksPrevious = await TaskRepo.countOverdueTasks(previousEndDate); // Using now for overdue tasks
+    
+        // Constructing comparison strings
+        const totalTasksComparison = totalTasksCreated - totalTasksCreatedPrevious;
+        const openTasksComparison = openTasks - openTasksPrevious;
+        const completedTasksComparison = completedTasks - completedTasksPrevious;
+        const overdueTasksComparison = overdueTasks - overdueTasksPrevious;
+    
+        return {
+            message:"analatycs fetched successfully",
+            status:200,
+            analytics: {
+                [filter]: {
+                    totalTasksCreated,
+                    openTasks,
+                    completedTasks,
+                    overdueTasks,
+                    comparison: {
+                        totalTasksCreated: `Total Tasks Created: ${totalTasksComparison >= 0 ? '+' : ''}${totalTasksComparison} compared to previous period`,
+                        openTasks: `Open Tasks: ${openTasksComparison >= 0 ? '+' : ''}${openTasksComparison} compared to previous period`,
+                        completedTasks: `Completed Tasks: ${completedTasksComparison >= 0 ? '+' : ''}${completedTasksComparison} compared to previous period`,
+                        overdueTasks: `Overdue Tasks: ${overdueTasksComparison >= 0 ? '+' : ''}${overdueTasksComparison} compared to previous period`,
+                    },
+                },
+            },
+        };
+    }
 
 
     

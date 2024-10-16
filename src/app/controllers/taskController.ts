@@ -27,6 +27,17 @@ export default new class TaskController{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
         }
     }
+    deleteTask=async(req:Request,res:Response)=>{
+        try {
+            console.log("user creating  deleting task...");
+            const taskId:number=+req.params.id
+            const deleteTaskResponse=await TaskUseCase.deleteTask(taskId,+req.id)
+            res.status(deleteTaskResponse.status).json(deleteTaskResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
     getTasks=async(req:Request,res:Response)=>{
         try {
             console.log("user getting  tsaks...");
@@ -97,7 +108,7 @@ export default new class TaskController{
     getFilteredAndSortedTasks=async(req: Request, res: Response): Promise<Response> =>{
         console.log("user filtering  task...");
         const {
-            taskType,
+            type,
             assignedBy,
             assignedTo,
             teamOwner,
@@ -111,7 +122,7 @@ export default new class TaskController{
 
         try {
             const taskFilteringReponse = await TaskUseCase.getFilteredAndSortedTasks({
-                taskType,
+                type,
                 assignedBy,
                 assignedTo,
                 teamOwner,
@@ -129,5 +140,16 @@ export default new class TaskController{
             return res.status(500).json({ message: "Failed to fetch tasks" });
         }
     }
+    getAnalytics=async(req: Request, res: Response): Promise<Response> =>{
+        console.log("user getting analytics  task...");
+        try {
+            const analyticsReponse=await TaskUseCase.getAnalytics(req.body.filter)
+            return res.status(200).json(analyticsReponse);
+        } catch (error) {
+            console.error("Error fetching analytics of organisation:", error);
+            return res.status(500).json({ message: "Failed to fetch tasks" });
+        }
+    }
+    
 
 }

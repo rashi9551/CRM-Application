@@ -50,6 +50,16 @@ export enum TaskType {
     DelegatedToOthers = 'Delegated to others'
 }
 
+export enum AnalyticsFilter {
+    Today = 'Today',
+    Last3Days = 'Last 3 Days',
+    Last7Days = 'Last 7 Days',
+    Last15Days = 'Last 15 Days',
+    LastMonth = 'Last Month',
+    ThisMonth = 'This Month',
+    AllTime = 'All Time',
+}
+
 export interface GetAllUser {
     id: number;
     name: string;
@@ -81,6 +91,7 @@ export interface PromiseReturn{
     task?:Task[]
     inventory?:Inventory
     event?:Event
+    analytics?:Analytics
     UnreadNotification?:Notification[]
     BrandContact?:BrandContact
     BrandOwnership?:BrandOwnership
@@ -185,7 +196,7 @@ export interface TaskCommentData {
 
 
 export interface FilterOptions {
-    taskType?: string;
+    type?: string;
     assignedBy?: number;
     assignedTo?: number;
     teamOwner?: number;
@@ -195,4 +206,20 @@ export interface FilterOptions {
     eventName?: string;
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
+}
+
+interface Analytics {
+
+    [key: string]: {
+        totalTasksCreated: number;
+        openTasks: number;
+        completedTasks: number;
+        overdueTasks: number;
+        comparison: {
+            totalTasksCreated: string;
+            openTasks: string;
+            completedTasks: string;
+            overdueTasks: string;
+        };
+    };
 }
