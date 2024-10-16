@@ -7,6 +7,7 @@ import cors from 'cors'
 import swaggerUi from 'swagger-ui-express';
 import swaggerOptions from "./swaggrOptions";
 import 'reflect-metadata';
+import { scheduleTaskNotifications } from './services/cron-job';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ AppDataSource.initialize()
     .catch(error => console.log("Database connection failed:", error));
 
 const PORT = process.env.PORT ;
+scheduleTaskNotifications();
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

@@ -1,4 +1,5 @@
 import multer from 'multer';
+import path from 'path';
 
 // Set up Multer storage options
 const storage = multer.diskStorage({
@@ -10,10 +11,10 @@ const storage = multer.diskStorage({
     }
 });
 
-// Create Multer middleware for handling single file upload with the field name 'image'
+// Create Multer middleware for handling multiple file uploads (with a limit of 10 files)
 const upload = multer({ storage });
 
-// Middleware to handle single file upload
-export const uploadMiddleware = upload.single('image'); // 'image' must match the field name in your form (or Postman)
+// Middleware to handle multiple files
+export const uploadMiddleware = upload.array('files', 10); // 'files' is the field name in the form
 
 export default uploadMiddleware;

@@ -20,7 +20,7 @@ export default new class TaskController{
         try {
             console.log("user creating  updating task...");
             const taskData:TaskData=req.body
-            const updateTaskResponse=await TaskUseCase.updateTask(taskData,+req.id)
+            const updateTaskResponse=await TaskUseCase.updateTask(taskData,+req.id,req.role)
             res.status(updateTaskResponse.status).json(updateTaskResponse)
         } catch (error) {
             console.log(error);
@@ -31,7 +31,7 @@ export default new class TaskController{
         try {
             console.log("user creating  deleting task...");
             const taskId:number=+req.params.id
-            const deleteTaskResponse=await TaskUseCase.deleteTask(taskId,+req.id)
+            const deleteTaskResponse=await TaskUseCase.deleteTask(taskId,+req.id,req.role)
             res.status(deleteTaskResponse.status).json(deleteTaskResponse)
         } catch (error) {
             console.log(error);
@@ -88,16 +88,23 @@ export default new class TaskController{
 
     addComment = async (req: Request, res: Response) => {
         try {
+            const files = req.files as Express.Multer.File[] || [];
+            // Extract file paths and types for multiple files
+            const filePaths = files.map(file => file.path);
+            const fileTypes = files.map(file => file.mimetype);
+    
             const commentData: TaskCommentData = {
                 comment: req.body.comment,             // Extract the comment text
-                filePath: req.file ? req.file.path : null, // Extract the file path if available
-                fileType: req.file ? req.file.mimetype : null, // Extract the file type if available
-                taskId: req.body.taskId,                   // Extract the task ID from the request body
+                filePaths,                             // Store array of file paths
+                fileTypes,                             // Store array of file types
+                taskId: req.body.taskId,               // Extract the task ID from the request body
                 userId: req.id,                        // Assuming user ID is set in req.user during token verification
             };
+    
             console.log(commentData);
             
-            const createCommentResponse = await TaskUseCase.createComment(commentData); // Call use case to save comment
+            // Call use case to save the comment
+            const createCommentResponse = await TaskUseCase.createComment(commentData, req.id, req.role); 
             res.status(createCommentResponse.status).json(createCommentResponse);
         } catch (error) {
             console.error('Error adding comment:', error);

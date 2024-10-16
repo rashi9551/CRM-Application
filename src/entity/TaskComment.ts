@@ -13,8 +13,8 @@ export class TaskComment {
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;
 
-    @Column({ type: 'text', nullable: true })
-    filePath?: string;
+    @Column({ type: 'simple-array', nullable: true })
+    filePaths: string[];
 
     @Column({ name: 'task_id', nullable: false })
     taskId: number;

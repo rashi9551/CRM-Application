@@ -276,108 +276,158 @@ export default new class TaskRepo {
     }
 
     async getFilteredAndSortedTasks(filters: FilterOptions): Promise<Task[]> {
-        const query = this.TaskRepo.createQueryBuilder("task")
-            .leftJoinAndSelect("task.assignedTo", "assignedTo")
-            .leftJoinAndSelect("task.createdBy", "createdBy")
-            .leftJoinAndSelect("task.brand", "brand")
-            .leftJoinAndSelect("task.inventory", "inventory")
-            .leftJoinAndSelect("task.event", "event");
-
-        // Apply filters
-        if (filters.type) {
-            query.andWhere("task.type = :taskType", { taskType: filters.type });
+        try {
+            const query = this.TaskRepo.createQueryBuilder("task")
+                .leftJoinAndSelect("task.assignedTo", "assignedTo")
+                .leftJoinAndSelect("task.createdBy", "createdBy")
+                .leftJoinAndSelect("task.brand", "brand")
+                .leftJoinAndSelect("task.inventory", "inventory")
+                .leftJoinAndSelect("task.event", "event");
+    
+            // Apply filters
+            if (filters.type) {
+                query.andWhere("task.type = :taskType", { taskType: filters.type });
+            }
+            if (filters.assignedBy) {
+                console.log(filters.assignedBy, "===-");
+                query.andWhere("task.created_by = :assignedBy", { assignedBy: filters.assignedBy });
+            }
+            if (filters.assignedTo) {
+                query.andWhere("task.assigned_to = :assignedTo", { assignedTo: filters.assignedTo });
+            }
+            if (filters.teamOwner) {
+                query.andWhere("assignedTo.team_id = :teamOwner", { teamOwner: filters.teamOwner });
+            }
+            if (filters.dueDatePassed) {
+                query.andWhere("task.due_date < NOW()"); // Assuming due_date is a field in Task
+            }
+            if (filters.brandName) {
+                query.andWhere("brand.name LIKE :brandName", { brandName: `%${filters.brandName}%` });
+            }
+            if (filters.inventoryName) {
+                query.andWhere("LOWER(TRIM(inventory.name)) LIKE LOWER(:inventoryName)", { inventoryName: `%${filters.inventoryName.trim().toLowerCase()}%` });
+            }
+            if (filters.eventName) {
+                query.andWhere("event.name LIKE :eventName", { eventName: `%${filters.eventName}%` });
+            }
+    
+            // Apply sorting
+            if (filters.sortBy) {
+                const order = filters.sortOrder === 'DESC' ? 'DESC' : 'ASC';
+                query.orderBy(`task.${filters.sortBy}`, order);
+            }
+    
+            return await query.getMany();
+        } catch (error) {
+            console.error('Error getting filtered and sorted tasks:', error);
+            throw error; // Optionally re-throw the error for further handling
         }
-        if (filters.assignedBy) {
-            query.andWhere("task.created_by = :assignedBy", { assignedBy: filters.assignedBy });
-        }
-        if (filters.assignedTo) {
-            query.andWhere("task.assigned_to = :assignedTo", { assignedTo: filters.assignedTo });
-        }
-        if (filters.teamOwner) {
-            query.andWhere("assignedTo.team_id = :teamOwner", { teamOwner: filters.teamOwner });
-        }
-        if (filters.dueDatePassed) {
-            query.andWhere("task.due_date < NOW()"); // Assuming due_date is a field in Task
-        }
-        if (filters.brandName) {
-            query.andWhere("brand.name LIKE :brandName", { brandName: `%${filters.brandName}%` });
-        }
-        if (filters.inventoryName) {
-            query.andWhere("inventory.name LIKE :inventoryName", { inventoryName: `%${filters.inventoryName}%` });
-        }
-        if (filters.eventName) {
-            query.andWhere("event.name LIKE :eventName", { eventName: `%${filters.eventName}%` });
-        }
-
-        // Apply sorting
-        if (filters.sortBy) {
-            const order = filters.sortOrder === 'DESC' ? 'DESC' : 'ASC';
-            query.orderBy(`task.${filters.sortBy}`, order);
-        }
-
-        return await query.getMany();
     }
-
+    
     async findDueTasks(now: Date, twelveHoursFromNow: Date): Promise<Task[]> {
-        return await this.TaskRepo.find({
-            where: [
-                {
-                    dueDate: MoreThanOrEqual(now),
-                },
-                {
-                    dueDate: LessThan(twelveHoursFromNow),
-                },
-            ],
-            relations: ['assignedTo'], // Assuming assignedTo is a User entity
-        });
+        try {
+            return await this.TaskRepo.find({
+                where: [
+                    {
+                        due_date: MoreThanOrEqual(now),
+                    },
+                    {
+                        due_date: LessThan(twelveHoursFromNow),
+                    },
+                ],
+                relations: ['assignedTo'], // Assuming assignedTo is a User entity
+            });
+        } catch (error) {
+            console.error('Error finding due tasks:', error);
+            throw error; // Optionally re-throw the error for further handling
+        }
     }
-
+    
     // Method to fetch all users
     async findAllUsers(): Promise<User[]> {
-        return await this.UserRepo.find();
+        try {
+            return await this.UserRepo.find();
+        } catch (error) {
+            console.error('Error finding all users:', error);
+            throw error; // Optionally re-throw the error for further handling
+        }
     }
-
-
-
+    
     async countTasksCreated(startDate: Date, endDate: Date): Promise<number> {
-        return await this.TaskRepo.count({
-            where: {
-                createdAt: MoreThanOrEqual(startDate), // This is fine
-                dueDate: LessThan(endDate), // Use a different property or the correct one
-            },
-        });
+        try {
+            return await this.TaskRepo.count({
+                where: {
+                    createdAt: MoreThanOrEqual(startDate),
+                    due_date: LessThan(endDate),
+                },
+            });
+        } catch (error) {
+            console.error('Error counting tasks created:', error);
+            throw error; // Optionally re-throw the error for further handling
+        }
     }
-
+    
     async countOpenTasks(startDate: Date, endDate: Date): Promise<number> {
-        return await this.TaskRepo.count({
-            where: {
-                createdAt: MoreThanOrEqual(startDate),
-                dueDate: LessThan(endDate),
-                status: TaskStatus.Pending, // Adjusted to use the enum
-            },
-        });
+        try {
+            return await this.TaskRepo.count({
+                where: {
+                    createdAt: MoreThanOrEqual(startDate),
+                    due_date: LessThan(endDate),
+                    status: TaskStatus.Pending, // Adjusted to use the enum
+                },
+            });
+        } catch (error) {
+            console.error('Error counting open tasks:', error);
+            throw error; // Optionally re-throw the error for further handling
+        }
     }
-
+    
     async countCompletedTasks(startDate: Date, endDate: Date): Promise<number> {
-        return await this.TaskRepo.count({
-            where: {
-                createdAt: MoreThanOrEqual(startDate),
-                dueDate: LessThan(endDate),
-                status: TaskStatus.Completed, // Adjusted to use the enum
-            },
-        });
+        try {
+            return await this.TaskRepo.count({
+                where: {
+                    createdAt: MoreThanOrEqual(startDate),
+                    due_date: LessThan(endDate),
+                    status: TaskStatus.Completed, // Adjusted to use the enum
+                },
+            });
+        } catch (error) {
+            console.error('Error counting completed tasks:', error);
+            throw error; // Optionally re-throw the error for further handling
+        }
     }
-
+    
     async countOverdueTasks(now: Date): Promise<number> {
-        return await this.TaskRepo.count({
-            where: {
-                dueDate: LessThan(now),
-                status: TaskStatus.Pending, // Assuming you want overdue tasks that are still open
-            },
-        });
+        try {
+            return await this.TaskRepo.count({
+                where: {
+                    due_date: LessThan(now),
+                    status: TaskStatus.Pending, // Assuming you want overdue tasks that are still open
+                },
+            });
+        } catch (error) {
+            console.error('Error counting overdue tasks:', error);
+            throw error; // Optionally re-throw the error for further handling
+        }
     }
-
+    
     async findAllTasks(): Promise<Task[]> {
-        return await this.TaskRepo.find();
+        try {
+            return await this.TaskRepo.find();
+        } catch (error) {
+            console.error('Error finding all tasks:', error);
+            throw error; // Optionally re-throw the error for further handling
+        }
     }
+    
+    async updateSLA(tasks: Task[]) {
+        try {
+            const taskIds = tasks.map(task => task.id);
+            await this.TaskRepo.update(taskIds, { sla: true }); // Update SLA for the given task IDs
+        } catch (error) {
+            console.error('Error updating SLA:', error);
+            throw error; // Optionally re-throw the error for further handling
+        }
+    }
+    
 }

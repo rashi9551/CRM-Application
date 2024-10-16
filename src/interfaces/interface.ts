@@ -26,7 +26,6 @@ export enum RoleName {
 
 export enum TaskHistoryAction {
     TASK_CREATED = "Task Created",
-    TASK_ASSIGNED = "Task Assigned",
     TASK_REASSIGNED = "Task Reassigned",
     TASK_COMPLETED = "Task Completed",
     TASK_OVERDUE = "Task Overdue",
@@ -181,17 +180,17 @@ export interface TaskData {
     assigned_to: number;               // ID of the user assigned to the task
     created_by: number;                // ID of the user who created the task
     brand_id?: number;                 // Optional ID of the brand associated with the task
-    inventory_id?: number;                 // Optional ID of the brand associated with the task
-    event_id?: number;                 // Optional ID of the brand associated with the task
-    due_date:Date;
+    inventoryId?: number;                 // Optional ID of the brand associated with the task
+    eventId?: number;                 // Optional ID of the brand associated with the task
+    due_date:string;
 }
 
 export interface TaskCommentData {
     comment: string;           // The content of the comment
-    filePath?: string;        // Optional file path for an attached file
-    fileType?: string;        // Optional file type for an attached file
-    taskId: number;           // The ID of the task the comment belongs to
-    userId: number;           // The ID of the user who posted the comment
+    filePaths?: string[];      // Optional array of file paths for attached files
+    fileTypes?: string[];      // Optional array of file types for attached files
+    taskId: number;            // The ID of the task the comment belongs to
+    userId: number;            // The ID of the user who posted the comment
 }
 
 

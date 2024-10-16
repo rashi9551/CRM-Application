@@ -2,7 +2,7 @@ import { validateOrReject } from 'class-validator';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
 import { FilterOptions, PromiseReturn,  RoleName,  TaskCommentData,  TaskData, TaskHistoryAction, TaskType } from '../../interfaces/interface';
-import { Task} from '../../entity/Task';
+import { Task, TaskStatus} from '../../entity/Task';
 import UserRepo from '../repository/UserRepo';
 import TaskRepo from '../repository/TaskRepo';
 import { Notification } from '../../entity/Notification';
@@ -14,18 +14,20 @@ export default new class TaskUseCase {
     createTask = async (taskData: TaskData): Promise<PromiseReturn> => {
         try {  
             const task = new Task();
-            Object.assign(task, taskData); // Assign taskData to the task entity
-            await validateOrReject(task);
+            const { due_date, ...rest } = taskData;
+            task.due_date = new Date(due_date); // Convert the string to a Date object
+            Object.assign(task, rest); // Assign other properties to the task entity
+\            await validateOrReject(task);
              if(taskData.brand_id){
                  const existingBrand = await UserRepo.getBrandDetail(taskData.brand_id);            
                  if (!existingBrand) return {status: StatusCode.NotFound as number,message: "Brand not found",};
              }
-             if(taskData.inventory_id){
-                 const existingInventory= await UserRepo.findInventoryById(taskData.inventory_id);            
+             if(taskData.inventoryId){
+                 const existingInventory= await UserRepo.findInventoryById(taskData.inventoryId);            
                  if (!existingInventory) return {status: StatusCode.NotFound as number,message: "Inventory not found",};
              }
-             if(taskData.event_id){
-                 const existingEvent= await UserRepo.findEventById(taskData.event_id);            
+             if(taskData.eventId){
+                 const existingEvent= await UserRepo.findEventById(taskData.eventId);            
                  if (!existingEvent) return {status: StatusCode.NotFound as number,message: "Event not found",};
              }
 
@@ -52,7 +54,7 @@ export default new class TaskUseCase {
             return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
     };
-    updateTask = async (taskData: TaskData, loggedUserId: number): Promise<PromiseReturn> => {
+    updateTask = async (taskData: TaskData, loggedUserId?: number,roles?:string[]): Promise<PromiseReturn> => {
         try {
             let flag: boolean = true;
             let taskHistory: TaskHistory | undefined;
@@ -63,27 +65,39 @@ export default new class TaskUseCase {
             if (!existingTask) {
                 return { status: StatusCode.NotFound as number, message: "Task not found." };
             }
-            if (existingTask.created_by !== loggedUserId && existingTask.assigned_to!=loggedUserId) {
+            const hasPermission = 
+            existingTask.created_by === loggedUserId ||
+            existingTask.assigned_to === loggedUserId ||
+            roles?.some(role => [RoleName.ADMIN, RoleName.MANAGEMENT].includes(role as RoleName));
+            
+            if (!hasPermission) {
                 return {
                     status: StatusCode.Unauthorized as number,
-                    message: "Only the user who created the task has permission to update it.",
+                    message: "Only the user who created the task, the assignee, or users with admin or management roles have permission to update it.",
                 };
             }
-            if(taskData.status && existingTask.assigned_to!=loggedUserId){
+
+            if (existingTask.status === TaskStatus.Completed) {
+                return {
+                    status: StatusCode.BadRequest as number,
+                    message: "Cannot update a completed task.",
+                };
+            }
+            if(taskData.status && taskData.status===TaskStatus.Completed && existingTask.assigned_to!=loggedUserId ){
                 return {
                     status: StatusCode.Unauthorized as number,
-                    message: "Only the user who assigned_to   has permission to update complete status.",
+                    message: "Only the user who assigned_to   has permission to update the status.",
                 };
             }else{
                 flag=false
                 taskHistory=await this.TaskHistoryLogging(
                     existingTask,
                     existingTask.createdBy,
-                    TaskHistoryAction.TASK_UPDATED,
-                    `The Task ${existingTask.title} was updated by ${existingTask.createdBy.name}`
+                    TaskHistoryAction.TASK_COMPLETED,
+                    `The Task ${existingTask.title} was update the status as comleted by ${existingTask.assignedTo.name}`
                 );
             }
-            if(taskData.assigned_to || taskData.created_by){
+            if(taskData.assigned_to && taskData.created_by){
                 const assignedUser: User = await UserRepo.getUserById(taskData.assigned_to);
                 const createdUser: User = await UserRepo.getUserById(taskData.created_by);
                 if (!assignedUser) return { status: StatusCode.NotFound as number, message: "Assigned user not found." };
@@ -95,21 +109,27 @@ export default new class TaskUseCase {
                 if (!existingBrand) return { status: StatusCode.NotFound as number, message: "Brand not found." };
             }
     
-            if (taskData.inventory_id) {
-                const existingInventory = await UserRepo.findInventoryById(taskData.inventory_id);
+            if (taskData.inventoryId) {
+                const existingInventory = await UserRepo.findInventoryById(taskData.inventoryId);
                 if (!existingInventory) return { status: StatusCode.NotFound as number, message: "Inventory not found." };
             }
     
-            if (taskData.event_id) {
-                const existingEvent = await UserRepo.findEventById(taskData.event_id);
+            if (taskData.eventId) {
+                const existingEvent = await UserRepo.findEventById(taskData.eventId);
                 if (!existingEvent) return { status: StatusCode.NotFound as number, message: "Event not found." };
             }
     
             
     
             if (existingTask.assigned_to !== taskData.assigned_to) {
-                flag = false;
-    
+                if(existingTask.created_by!==loggedUserId){
+                    return {
+                        status: StatusCode.Unauthorized as number,
+                        message: `Only the user who created user: ${existingTask.createdBy.name}  has permission to reassign the user.`,
+                    };
+                }
+               
+                flag = false; 
                 // Execute TaskHistoryLogging and NotificationSending in parallel
                 [taskHistory, notification] = await Promise.all([
                     this.TaskHistoryLogging(
@@ -165,11 +185,19 @@ export default new class TaskUseCase {
             return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
     };
-    deleteTask = async (taskId:number,loggedUserId:number): Promise<PromiseReturn> => {
+    deleteTask = async (taskId:number,loggedUserId:number,roles:string[]): Promise<PromiseReturn> => {
         try {  
             const existingTask = await TaskRepo.findTaskById(taskId);            
             if (!existingTask) {
                 return { status: StatusCode.NotFound as number, message: "Task not found." };
+            }
+
+            const hasAccess = existingTask.created_by === loggedUserId 
+            if (!hasAccess) {
+                return { 
+                    status: StatusCode.Unauthorized as number, 
+                    message: `You do not have permission to remove  this task: ${existingTask.title}.` 
+                };
             }
            await TaskRepo.deleteTask(taskId);
             return { status: StatusCode.OK as number, message: "Task deleted Successfully."};
@@ -191,7 +219,7 @@ export default new class TaskUseCase {
                 if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched  your Tasks",task:tasks};
             } 
             if(filter===TaskType.TeamTasks){
-                const hasAccess = role?.some(r => [RoleName.MANAGEMENT, RoleName.ADMIN, RoleName.TO].includes(r as RoleName));
+                const hasAccess = role?.some(r => [RoleName.TO].includes(r as RoleName));
                 if (hasAccess) {
                     const tasks = await TaskRepo.getTeamTask(loggedUserId,isCompleted);            
                     if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched  team Tasks",task:tasks};
@@ -292,11 +320,24 @@ export default new class TaskUseCase {
     };
 
 
-    createComment = async (commentData: TaskCommentData): Promise<PromiseReturn> => {
+    createComment = async (commentData: TaskCommentData,loggedUserId?:number,roles?:string[]): Promise<PromiseReturn> => {
         try {
             const existingTask = await TaskRepo.findTaskById(commentData.taskId);
             if (!existingTask) {
                 return { status: StatusCode.NotFound as number, message: "Task not found." };
+            }
+            
+            const hasAccess = 
+            existingTask.assigned_to === loggedUserId || 
+            existingTask.created_by === loggedUserId || 
+            roles?.some(role => [RoleName.ADMIN, RoleName.MANAGEMENT].includes(role as RoleName))||
+            (roles?.includes(RoleName.TO) && existingTask.assignedTo.team.toUserId === loggedUserId)
+
+            if (!hasAccess) {
+                return { 
+                    status: StatusCode.Unauthorized as number, 
+                    message: `You do not have permission to comment on this task: ${existingTask.title}.` 
+                };
             }
 
             const existingUser: User = await UserRepo.getUserById(commentData.userId);
@@ -313,13 +354,14 @@ export default new class TaskUseCase {
             throw error;
         }
     };
+
     getFilteredAndSortedTasks = async (filterOptions:FilterOptions): Promise<PromiseReturn> => {
         try { 
             const filterTask = await TaskRepo.getFilteredAndSortedTasks(filterOptions); 
             if(!filterOptions){
                 return { status: StatusCode.NotFound as number, message: "filter task  not found." };
             }
-            return { status: StatusCode.Created as number, message: 'Comment added successfully', task: filterTask };
+            return { status: StatusCode.Created as number, message: 'Filteres Task Successfully', task: filterTask };
         } catch (error) {
             console.error("Error when creating comment:", error);
             throw error;
