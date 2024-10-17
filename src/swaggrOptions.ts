@@ -6,11 +6,11 @@ const swaggerOptions = {
     description:
       "API documentation for managing users, brands, and teams in the sales-oriented organization.",
   },
-  host: "type-orm-production.up.railway.app",
-  // host: "localhost:3001",
+  // host: "type-orm-production.up.railway.app",
+  host: "localhost:3001",
   basePath: "/api",
-  schemes: ["https"],
-  // schemes: ["http"],
+  // schemes: ["https"],
+  schemes: ["http"],
   paths: {
     "/login": {
       post: {
@@ -832,6 +832,907 @@ const swaggerOptions = {
           },
           "500": {
             description: "Error during brand deletion",
+          },
+        },
+      },
+    },
+    "/createEvent": {
+      post: {
+        summary: "Create a new event",
+        description:
+          "Creates a new event with a name, date, location, and additional details.",
+        consumes: ["application/json"],
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "body",
+            in: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                name: {
+                  type: "string",
+                  example: "Dabzee",
+                },
+                date: {
+                  type: "string",
+                  format: "date-time",
+                  example: "2024-10-21T21:00:00",
+                },
+                location: {
+                  type: "string",
+                  example: "madiwala",
+                },
+                details: {
+                  type: "string",
+                  example: "dabzee is coming",
+                },
+              },
+              required: ["name", "date", "location", "details"],
+            },
+          },
+        ],
+        responses: {
+          201: {
+            description: "Event created successfully",
+            schema: {
+              type: "object",
+              properties: {
+                message: {
+                  type: "string",
+                  example: "Event created successfully",
+                },
+              },
+            },
+          },
+          400: {
+            description: "Invalid input data",
+          },
+          500: {
+            description: "Error during event creation",
+          },
+        },
+      },
+    },
+    "/getAllEvent": {
+      get: {
+        summary: "Retrieve all events",
+        description: "Fetches a list of all events stored in the database.",
+        produces: ["application/json"],
+        responses: {
+          200: {
+            description: "List of events retrieved successfully",
+            schema: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "integer",
+                    example: 1,
+                    description: "Unique identifier for the event",
+                  },
+                  name: {
+                    type: "string",
+                    example: "Dabzee",
+                    description: "Name of the event",
+                  },
+                  date: {
+                    type: "string",
+                    format: "date-time",
+                    example: "2024-10-21T21:00:00",
+                    description: "Date and time of the event",
+                  },
+                  location: {
+                    type: "string",
+                    example: "madiwala",
+                    description: "Location of the event",
+                  },
+                  details: {
+                    type: "string",
+                    example: "dabzee is coming",
+                    description: "Additional details about the event",
+                  },
+                },
+              },
+            },
+          },
+          404: {
+            description: "No events found",
+          },
+          500: {
+            description: "Error retrieving events",
+          },
+        },
+      },
+    },
+    "/createInventory": {
+      post: {
+        summary: "Create a new inventory item",
+        description:
+          "Creates a new inventory item with a name, description, and quantity.",
+        consumes: ["application/json"],
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "body",
+            in: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                name: {
+                  type: "string",
+                  example: "Disha",
+                  description: "Name of the inventory item",
+                },
+                description: {
+                  type: "string",
+                  example: "its a sports club",
+                  description: "Description of the inventory item",
+                },
+                quantity: {
+                  type: "integer",
+                  example: 7,
+                  description: "Quantity of the inventory item",
+                },
+              },
+              required: ["name", "description", "quantity"],
+            },
+          },
+        ],
+        responses: {
+          201: {
+            description: "Inventory item created successfully",
+            schema: {
+              type: "object",
+              properties: {
+                message: {
+                  type: "string",
+                  example: "Inventory item created successfully",
+                },
+              },
+            },
+          },
+          400: {
+            description: "Invalid input data",
+          },
+          500: {
+            description: "Error during inventory creation",
+          },
+        },
+      },
+    },
+    "/getAllInventory": {
+      get: {
+        summary: "Retrieve all inventory items",
+        description:
+          "Fetches a list of all inventory items stored in the database.",
+        produces: ["application/json"],
+        responses: {
+          200: {
+            description: "List of inventory items retrieved successfully",
+            schema: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "integer",
+                    example: 1,
+                    description: "Unique identifier for the inventory item",
+                  },
+                  name: {
+                    type: "string",
+                    example: "Disha",
+                    description: "Name of the inventory item",
+                  },
+                  description: {
+                    type: "string",
+                    example: "its a sports club",
+                    description: "Description of the inventory item",
+                  },
+                  quantity: {
+                    type: "integer",
+                    example: 7,
+                    description: "Quantity of the inventory item",
+                  },
+                },
+              },
+            },
+          },
+          404: {
+            description: "No inventory items found",
+          },
+          500: {
+            description: "Error retrieving inventory items",
+          },
+        },
+      },
+    },
+    "/createTask": {
+      post: {
+        summary: "Create a new task",
+        description:
+          "Creates a new task with title, description, type, assignment, and due date.",
+        consumes: ["application/json"],
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "body",
+            in: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                title: {
+                  type: "string",
+                  example: "Evolution on clothing",
+                  description: "Title of the task",
+                },
+                description: {
+                  type: "string",
+                  example: "Design",
+                  description: "Description of the task",
+                },
+                type: {
+                  type: "string",
+                  example: "Brand",
+                  description: "Type of the task",
+                },
+                assigned_to: {
+                  type: "integer",
+                  example: 4,
+                  description:
+                    "User ID of the person to whom the task is assigned",
+                },
+                created_by: {
+                  type: "integer",
+                  example: 4,
+                  description: "User ID of the person creating the task",
+                },
+                due_date: {
+                  type: "string",
+                  format: "date-time",
+                  example: "2024-10-17T06:53:08.910776Z",
+                  description: "Due date for the task",
+                },
+                brand_id: {
+                  type: "integer",
+                  example: 1,
+                  description: "ID of the brand associated with the task",
+                },
+              },
+              required: [
+                "title",
+                "description",
+                "type",
+                "assigned_to",
+                "created_by",
+                "due_date",
+                "brand_id",
+              ],
+            },
+          },
+        ],
+        responses: {
+          201: {
+            description: "Task created successfully",
+            schema: {
+              type: "object",
+              properties: {
+                message: {
+                  type: "string",
+                  example: "Task created successfully",
+                },
+              },
+            },
+          },
+          400: {
+            description: "Invalid input data",
+          },
+          500: {
+            description: "Error during task creation",
+          },
+        },
+      },
+    },
+    "/updateTask": {
+      patch: {
+        summary: "Update an existing task",
+        description: "Updates the details of an existing task based on its ID.",
+        consumes: ["application/json"],
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "body",
+            in: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "integer",
+                  example: 2,
+                  description: "ID of the task to update",
+                },
+                description: {
+                  type: "string",
+                  example: "HR",
+                  description: "Updated description of the task",
+                },
+              },
+              required: ["id"],
+            },
+          },
+        ],
+        responses: {
+          200: {
+            description: "Task updated successfully",
+            schema: {
+              type: "object",
+              properties: {
+                message: {
+                  type: "string",
+                  example: "Task updated successfully",
+                },
+              },
+            },
+          },
+          404: {
+            description: "Task not found",
+          },
+          400: {
+            description: "Invalid input data",
+          },
+          500: {
+            description: "Error during task update",
+          },
+        },
+      },
+    },
+    "/getAllTasks": {
+      get: {
+        summary: "Get all tasks",
+        description:
+          "Retrieves a list of all tasks, with optional filtering based on completion status.",
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "filter",
+            in: "query",
+            required: false,
+            type: "string",
+            example: "All tasks",
+            description: "Filter for the tasks to be retrieved",
+          },
+          {
+            name: "isCompleted",
+            in: "query",
+            required: false,
+            type: "boolean",
+            example: false,
+            description: "Filter tasks based on their completion status",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Successfully retrieved tasks",
+            schema: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "integer",
+                    example: 1,
+                    description: "ID of the task",
+                  },
+                  title: {
+                    type: "string",
+                    example: "Evolution on clothing",
+                    description: "Title of the task",
+                  },
+                  description: {
+                    type: "string",
+                    example: "Design",
+                    description: "Description of the task",
+                  },
+                  type: {
+                    type: "string",
+                    example: "Brand",
+                    description: "Type of the task",
+                  },
+                  assigned_to: {
+                    type: "integer",
+                    example: 4,
+                    description: "User ID of the person assigned to the task",
+                  },
+                  created_by: {
+                    type: "integer",
+                    example: 4,
+                    description: "User ID of the person who created the task",
+                  },
+                  due_date: {
+                    type: "string",
+                    format: "date-time",
+                    example: "2024-10-17T06:53:08.910776Z",
+                    description: "Due date for the task",
+                  },
+                  brand_id: {
+                    type: "integer",
+                    example: 1,
+                    description: "ID of the brand associated with the task",
+                  },
+                  isCompleted: {
+                    type: "boolean",
+                    example: false,
+                    description: "Indicates if the task is completed",
+                  },
+                },
+              },
+            },
+          },
+          404: {
+            description: "No tasks found",
+          },
+          500: {
+            description: "Error during retrieval of tasks",
+          },
+        },
+      },
+    },
+    "/getTask/{id}": {
+      get: {
+        summary: "Get a task by ID",
+        description: "Retrieves a specific task based on its ID.",
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            type: "integer",
+            description: "ID of the task to retrieve",
+            example: 2,
+          },
+        ],
+        responses: {
+          200: {
+            description: "Successfully retrieved the task",
+            schema: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "integer",
+                  example: 2,
+                  description: "ID of the task",
+                },
+                title: {
+                  type: "string",
+                  example: "Evolution on clothing",
+                  description: "Title of the task",
+                },
+                description: {
+                  type: "string",
+                  example: "Design",
+                  description: "Description of the task",
+                },
+                type: {
+                  type: "string",
+                  example: "Brand",
+                  description: "Type of the task",
+                },
+                assigned_to: {
+                  type: "integer",
+                  example: 4,
+                  description: "User ID of the person assigned to the task",
+                },
+                created_by: {
+                  type: "integer",
+                  example: 4,
+                  description: "User ID of the person who created the task",
+                },
+                due_date: {
+                  type: "string",
+                  format: "date-time",
+                  example: "2024-10-17T06:53:08.910776Z",
+                  description: "Due date for the task",
+                },
+                brand_id: {
+                  type: "integer",
+                  example: 1,
+                  description: "ID of the brand associated with the task",
+                },
+                isCompleted: {
+                  type: "boolean",
+                  example: false,
+                  description: "Indicates if the task is completed",
+                },
+              },
+            },
+          },
+          404: {
+            description: "Task not found",
+          },
+          500: {
+            description: "Error during retrieval of the task",
+          },
+        },
+      },
+    },
+    "/getNotification/{id}": {
+      get: {
+        summary: "Get a notification by ID",
+        description: "Retrieves a specific notification based on its ID.",
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            type: "integer",
+            description: "ID of the notification to retrieve",
+            example: 3,
+          },
+        ],
+        responses: {
+          200: {
+            description: "Successfully retrieved the notification",
+            schema: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "integer",
+                  example: 3,
+                  description: "ID of the notification",
+                },
+                title: {
+                  type: "string",
+                  example: "New Event Created",
+                  description: "Title of the notification",
+                },
+                message: {
+                  type: "string",
+                  example: "An event has been created successfully.",
+                  description: "Message of the notification",
+                },
+                created_at: {
+                  type: "string",
+                  format: "date-time",
+                  example: "2024-10-17T06:53:08.910776Z",
+                  description:
+                    "Date and time when the notification was created",
+                },
+                read: {
+                  type: "boolean",
+                  example: false,
+                  description:
+                    "Indicates whether the notification has been read",
+                },
+              },
+            },
+          },
+          404: {
+            description: "Notification not found",
+          },
+          500: {
+            description: "Error during retrieval of the notification",
+          },
+        },
+      },
+    },
+    "/getTaskHistory/{id}": {
+      get: {
+        summary: "Get task history by task ID",
+        description:
+          "Retrieves the history of a specific task based on its ID.",
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            type: "integer",
+            description: "ID of the task to retrieve its history",
+            example: 1,
+          },
+        ],
+        responses: {
+          200: {
+            description: "Successfully retrieved the task history",
+            schema: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "integer",
+                    example: 1,
+                    description: "ID of the task history entry",
+                  },
+                  task_id: {
+                    type: "integer",
+                    example: 1,
+                    description: "ID of the associated task",
+                  },
+                  status: {
+                    type: "string",
+                    example: "Completed",
+                    description: "Current status of the task",
+                  },
+                  updated_at: {
+                    type: "string",
+                    format: "date-time",
+                    example: "2024-10-17T06:53:08.910776Z",
+                    description:
+                      "Date and time when the task status was last updated",
+                  },
+                  updated_by: {
+                    type: "integer",
+                    example: 4,
+                    description: "ID of the user who updated the task",
+                  },
+                },
+              },
+            },
+          },
+          404: {
+            description: "Task not found",
+          },
+          500: {
+            description: "Error during retrieval of task history",
+          },
+        },
+      },
+    },
+    "/filterTask": {
+      post: {
+        summary: "Filter tasks",
+        description:
+          "Filters tasks based on specified criteria such as type, assignment, due date, brand name, and status.",
+        consumes: ["application/json"],
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "body",
+            in: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                type: {
+                  type: "string",
+                  example: "Brand",
+                  description: "Filter by task type",
+                },
+                assignedBy: {
+                  type: "integer",
+                  example: 4,
+                  description: "Filter by the user who created the task",
+                },
+                assignedTo: {
+                  type: "integer",
+                  example: 4,
+                  description: "Filter by the user assigned to the task",
+                },
+                teamOwner: {
+                  type: "integer",
+                  example: 2,
+                  description: "Filter by the team owner (optional)",
+                },
+                dueDatePassed: {
+                  type: "boolean",
+                  example: false,
+                  description: "Filter by whether the due date has passed",
+                },
+                brandName: {
+                  type: "string",
+                  example: "Adidas",
+                  description: "Filter by brand name",
+                },
+                inventoryName: {
+                  type: "string",
+                  example: null,
+                  description: "Filter by inventory name (if any)",
+                },
+                eventName: {
+                  type: "string",
+                  example: null,
+                  description: "Filter by event name (if any)",
+                },
+                sortBy: {
+                  type: "string",
+                  example: "createdAt",
+                  description: "Sort by specified field (e.g., createdAt)",
+                },
+                status: {
+                  type: "string",
+                  example: "Completed",
+                  description: "Filter by task status",
+                },
+                sortOrder: {
+                  type: "string",
+                  enum: ["ASC", "DESC"],
+                  example: "ASC",
+                  description: "Sort order (ascending or descending)",
+                },
+              },
+              required: [
+                "type",
+                "assignedBy",
+                "assignedTo",
+                "sortBy",
+                "status",
+                "sortOrder",
+              ],
+            },
+          },
+        ],
+        responses: {
+          200: {
+            description: "Successfully retrieved filtered tasks",
+            schema: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "integer",
+                    example: 1,
+                    description: "ID of the task",
+                  },
+                  title: {
+                    type: "string",
+                    example: "Evolution on clothing",
+                    description: "Title of the task",
+                  },
+                  description: {
+                    type: "string",
+                    example: "Design",
+                    description: "Description of the task",
+                  },
+                  type: {
+                    type: "string",
+                    example: "Brand",
+                    description: "Type of the task",
+                  },
+                  assigned_to: {
+                    type: "integer",
+                    example: 4,
+                    description: "User assigned to the task",
+                  },
+                  created_by: {
+                    type: "integer",
+                    example: 4,
+                    description: "User who created the task",
+                  },
+                  due_date: {
+                    type: "string",
+                    format: "date-time",
+                    example: "2024-10-17T06:53:08.910776Z",
+                    description: "Due date of the task",
+                  },
+                  status: {
+                    type: "string",
+                    example: "Completed",
+                    description: "Status of the task",
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Invalid filter parameters",
+          },
+          500: {
+            description: "Error during task filtering",
+          },
+        },
+      },
+    },
+    "/getAnalytics": {
+      post: {
+        summary: "Get analytics data",
+        description: "Retrieves analytics data based on the specified filter.",
+        consumes: ["application/json"],
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "body",
+            in: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                filter: {
+                  type: "string",
+                  example: "Last 3 Days",
+                  description: "Time period for which analytics are requested",
+                },
+              },
+              required: ["filter"],
+            },
+          },
+        ],
+        responses: {
+          200: {
+            description: "Analytics data retrieved successfully",
+            schema: {
+              type: "object",
+              properties: {
+                totalTasks: {
+                  type: "integer",
+                  example: 100,
+                  description:
+                    "Total number of tasks within the specified filter",
+                },
+                completedTasks: {
+                  type: "integer",
+                  example: 75,
+                  description:
+                    "Total number of completed tasks within the specified filter",
+                },
+                pendingTasks: {
+                  type: "integer",
+                  example: 25,
+                  description:
+                    "Total number of pending tasks within the specified filter",
+                },
+                taskBreakdown: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      taskType: {
+                        type: "string",
+                        example: "Brand",
+                        description: "Type of the task",
+                      },
+                      count: {
+                        type: "integer",
+                        example: 40,
+                        description: "Number of tasks of this type",
+                      },
+                    },
+                  },
+                  description: "Breakdown of tasks by type",
+                },
+              },
+            },
+          },
+          400: {
+            description: "Invalid filter value",
+          },
+          500: {
+            description: "Error during analytics retrieval",
+          },
+        },
+      },
+    },
+    "/deleteTask/{id}": {
+      delete: {
+        summary: "Delete a task by ID",
+        description: "Deletes a task based on its ID.",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            type: "integer",
+            description: "ID of the task to delete",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Task deleted successfully",
+          },
+          404: {
+            description: "Task not found",
+          },
+          500: {
+            description: "Error during task deletion",
           },
         },
       },

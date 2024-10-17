@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from 'typeorm';
 import { User } from './User';
 import { Task } from './Task';
 
@@ -16,9 +16,15 @@ export class Notification {
     @CreateDateColumn()
     createdAt: Date;
 
-    @ManyToOne(() => User, user => user.notifications, { onDelete: 'CASCADE' })
-    recipient: User;
+    // Define the recipientId as a foreign key
+    @Column()
+    recipientId: number; // Store the recipient's user ID
 
-    @ManyToOne(() => Task, task => task.notifications, { nullable: true })
-    task: Task; // Optional task reference if related to a task
+    // Use JoinColumn to specify the recipient relationship with the recipientId
+    @ManyToOne(() => User, user => user.notifications, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'recipientId' }) // Specify the column to join with
+    recipient: User; // Foreign key to the User who receives the notification
+
+    @ManyToOne(() => Task, task => task.notifications, { nullable: true, onDelete: 'SET NULL' }) 
+    task: Task;
 }

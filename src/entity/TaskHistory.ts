@@ -1,23 +1,28 @@
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    ManyToOne,
-    CreateDateColumn,
-} from 'typeorm';
-import { Task } from './Task'; // Assuming the Task entity is defined in Task.ts
-import { User } from './User'; // Assuming the User entity is defined in User.ts
+import { Entity, PrimaryGeneratedColumn, ManyToOne, Column, CreateDateColumn, JoinColumn } from 'typeorm';
+import { Task } from './Task';
+import { User } from './User';
 
 @Entity('TaskHistory')
 export class TaskHistory {
     @PrimaryGeneratedColumn()
     id: number;
 
+    // Store the task ID
+    @Column({ name: 'taskId', nullable: true }) // Set nullable to false
+    taskId: number;
+
+    // Use JoinColumn to specify the task relationship with the taskId
     @ManyToOne(() => Task, (task) => task.history, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'taskId' }) // Specify the column to join with
     task: Task; // Foreign key to the Task
 
-    @ManyToOne(() => User, (user) => user.taskHistories)
-    user: User; // Foreign key to the User who performed the action
+    @Column({ name: 'userId', nullable: false }) // Set nullable to false
+    userId: number;
+
+    // Foreign key to the User who performed the action
+    @ManyToOne(() => User, (user) => user.taskHistories, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'userId' }) // Specify the column to join with
+    user: User; 
 
     @Column()
     action: string; // Action performed (e.g., created, assigned, status_changed, comment_added)

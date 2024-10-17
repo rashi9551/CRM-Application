@@ -50,7 +50,6 @@ export default new class UserRepo {
                 await this.UserRepo.save(updatedData);
             } else if (updatedData.teamId !== undefined) {
                 const existingTeam = await this.TeamRepo.findOne({ where: { id: updatedData.teamId } });
-                console.log(existingTeam,"=-=-=-");
                 
                 if (!existingTeam) {
                     console.log("tem id deosnteixst");
@@ -163,7 +162,7 @@ export default new class UserRepo {
             const teams = await this.TeamRepo
                 .createQueryBuilder('team')
                 .leftJoinAndSelect('team.users', 'user') // Join with users to get team members
-                .leftJoinAndSelect('team.teamId', 'owner') // Join with team owner
+                .leftJoinAndSelect('team.teamOwner', 'owner') // Join with team owner
                 .getMany(); // Fetch all teams with their details
 
             return teams;
@@ -192,11 +191,15 @@ export default new class UserRepo {
                 where: { id },
                 relations: [
                     'team',
-                    'team.teamId',         // Fetch the owner of the team correctly
+                    'team.teamOwner',         // Fetch the owner of the team correctly
                     'brandOwnerships',
                     "brandOwnerships.brand",
                     'parent',
-                    'children'
+                    'children',
+                    'assignedTasks',
+                    'createdTasks',
+                    'notifications',
+
                 ] });
                 
         } catch (error) {
@@ -474,7 +477,7 @@ export default new class UserRepo {
             return { status: 500, message: "Error fetching TO hierarchy" };
         }
     };
-    async findInventoryByName(inventoryName: string): Promise<Inventory | undefined> {
+    async findInventoryByName(inventoryName: string): Promise<Inventory | undefined|null> {
         try {
             const lowerCaseInventoryName = inventoryName.toLowerCase();
 
@@ -487,7 +490,7 @@ export default new class UserRepo {
             throw new Error("Failed to find inventory by name");
         }
     }
-    async findEventByName(eventName: string): Promise<Event | undefined> {
+    async findEventByName(eventName: string): Promise<Event | null | undefined> {
         try {
             const lowerCaseEventName = eventName.toLowerCase();
 
@@ -534,6 +537,24 @@ export default new class UserRepo {
     async findEventById(eventId: number): Promise<Event |null> {
         try {
             const Event = await this.EventRepo.findOne({ where: { id: eventId} });
+            return Event; // Return true if the user exists, false otherwise
+        } catch (error) {
+            console.error('Error getting Event:', error);
+            throw new Error('Unable to check user estence.'); // Throw a more user-friendly error
+        }
+    }
+    async getAllInventory(): Promise<Inventory[] |null> {
+        try {
+            const Inventory = await this.InventoryRepo.find();
+            return Inventory; // Return true if the user exists, false otherwise
+        } catch (error) {
+            console.error('Error getting Event:', error);
+            throw new Error('Unable to check user estence.'); // Throw a more user-friendly error
+        }
+    }
+    async getAllEvent(): Promise<Event[] |null> {
+        try {
+            const Event = await this.EventRepo.find();
             return Event; // Return true if the user exists, false otherwise
         } catch (error) {
             console.error('Error getting Event:', error);

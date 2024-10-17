@@ -9,7 +9,7 @@ import { Notification } from '../entity/Notification';
 // Schedule the cron job
 export const scheduleTaskNotifications = () => {
 
-    cron.schedule('* * * * *', async () => {
+    cron.schedule('30 * * * *', async () => {
         console.log('Running cron job to save task notifications...');
         try {
             const now = new Date();
@@ -42,10 +42,10 @@ export const scheduleTaskNotifications = () => {
 
             // Save all notifications in a single operation
             if (notificationsToSave.length > 0) {
+                console.log('Notifications saved successfully.');
                 await TaskRepo.saveBatchNotification(notificationsToSave); // Assuming saveNotifications is a method that saves an array of notifications
             }
 
-            console.log('Notifications saved successfully.');
 
             const tasksToUpdate = tasks.filter(task => task.sla); // Filter tasks that need SLA update
             if (tasksToUpdate.length > 0) {

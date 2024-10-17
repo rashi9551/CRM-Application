@@ -387,7 +387,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: error.message || 'Error during brand deletion' };
         }
     }
-    getBrandDetail = async (id:number,loggedUserId:number): Promise<PromiseReturn > => {
+    getBrandDetail = async (id:number,loggedUserId:number,roles?:string[]): Promise<PromiseReturn > => {
         try {
             const existingBrand = await UserRepo.getBrandDetail(id);            
             // Check if the brand exists
@@ -402,11 +402,14 @@ export default new class UseCase {
             const brandOwnership = existingBrand.brandOwnerships.find(
                 ownership => ownership.boUser.id === loggedUserId
             );
+            const hasRoleAccess = roles?.includes('PO') && roles?.includes('TO');
             
-            if (!brandOwnership) {
+            const hasAccess = !!brandOwnership || hasRoleAccess;
+            
+            if (!hasAccess) {
                 return {
                     status: StatusCode.Forbidden as number,
-                    message: "You do not have permission to add contacts for this brand",
+                    message: "You do not have permission to getting contacts  details",
                 };
             }
             
@@ -489,7 +492,7 @@ export default new class UseCase {
                 };
             }
             
-            const existingBrandContact = await UserRepo.getBrandContactById(brandContactData.brandId)
+            const existingBrandContact = await UserRepo.getBrandContactById(brandContactData.id)
             
             
             
@@ -662,7 +665,42 @@ export default new class UseCase {
             };
         }
     };
+    getAllEvent = async (): Promise<PromiseReturn> => {
+        try {
+            const events=await userRepo.getAllEvent()
+
+            return { 
+                status: StatusCode.OK as number, 
+                message: "Event fetched successfully" ,
+                Event:events
+            };
+        } catch (error) {
+            console.error("Error during getting event:", error);
+            return { 
+                status: StatusCode.InternalServerError as number, 
+                message: "Error when creating event" 
+            };
+        }
+    };
+    getAllInventory = async (): Promise<PromiseReturn> => {
+        try {
+            const inventory=await userRepo.getAllInventory()
+
+            return { 
+                status: StatusCode.OK as number, 
+                message: "Inventory fetched successfully" ,
+                Inventory:inventory
+            };
+        } catch (error) {
+            console.error("Error during getting  inventory:", error);
+            return { 
+                status: StatusCode.InternalServerError as number, 
+                message: "Error when fetching inventory"
+            };
+        }
+    };
     
-    
+
 };
+
 

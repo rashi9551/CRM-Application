@@ -41,7 +41,6 @@ export default new class TaskRepo {
      // Existing method to find a user by ID
      async createTask(taskData: TaskData): Promise<Task | null> {
         try {
-            console.log(taskData);
             const task=this.TaskRepo.create(taskData)
             const createdTask = await this.TaskRepo.save(task); // Save the task to the database
             return createdTask; // Return the created task
@@ -51,11 +50,11 @@ export default new class TaskRepo {
         }
     }
     async saveTask(task: Task): Promise<Task> {
-        try {            
-            const savedTask = await this.TaskRepo.save(task); // Save the task to the database
+        try {                        
+            const savedTask = await this.TaskRepo.save(task); // Save the task to the database            
             return savedTask; // Return the saved task (whether new or updated)
         } catch (error) {
-            console.error("Error saving task:", error);
+            console.error("Error saving task:'''", error);
             throw new Error("Failed to save task");
         }
     }
@@ -209,9 +208,9 @@ export default new class TaskRepo {
             // Fetch all task history records related to the specified task ID
             const taskHistoryRecords = await this.TaskHistoryRepo.find({
                 where: {
-                    task: { id: taskId }, // Filter by task ID
+                    taskId: taskId, // Filter by task ID
                 },
-                relations: ['user'], // Optionally load related User entity
+                relations: ['user','task'], // Optionally load related User entity
                 order: {
                     createdAt: 'DESC', // Sort by creation date if needed
                 },
@@ -224,11 +223,11 @@ export default new class TaskRepo {
             throw new Error("Failed to fetch task history");
         }
     }
-    async getExistingNotification(message:string,newAssignedUserId:number,existingTitle:string,taskId:number): Promise<Notification | null> {
+    async getExistingNotification(message:string,taskId:number,recipientId:number): Promise<Notification | null> {
         try {
             const existingNotification = await this.NotificationRepo.findOne({
                 where: {
-                    recipient: { id: newAssignedUserId },
+                    recipientId:recipientId,
                     task: { id: taskId },
                     message: message,
                     isRead: false // You can add more conditions here if needed
@@ -244,7 +243,7 @@ export default new class TaskRepo {
 
     async saveNotification(notification: Notification): Promise<Notification> {
         try {
-            const savedNotification = await this.NotificationRepo.save(notification); // Save the notification to the database
+            const savedNotification = await this.NotificationRepo.save(notification); // Save the notification to the database            
             return savedNotification; // Return the saved notification
         } catch (error) {
             console.error("Error saving notification:", error);
@@ -289,7 +288,6 @@ export default new class TaskRepo {
                 query.andWhere("task.type = :taskType", { taskType: filters.type });
             }
             if (filters.assignedBy) {
-                console.log(filters.assignedBy, "===-");
                 query.andWhere("task.created_by = :assignedBy", { assignedBy: filters.assignedBy });
             }
             if (filters.assignedTo) {
@@ -302,13 +300,16 @@ export default new class TaskRepo {
                 query.andWhere("task.due_date < NOW()"); // Assuming due_date is a field in Task
             }
             if (filters.brandName) {
-                query.andWhere("brand.name LIKE :brandName", { brandName: `%${filters.brandName}%` });
+                query.andWhere("brand.brandName LIKE :brandName", { brandName: `%${filters.brandName}%` });
             }
             if (filters.inventoryName) {
                 query.andWhere("LOWER(TRIM(inventory.name)) LIKE LOWER(:inventoryName)", { inventoryName: `%${filters.inventoryName.trim().toLowerCase()}%` });
             }
             if (filters.eventName) {
                 query.andWhere("event.name LIKE :eventName", { eventName: `%${filters.eventName}%` });
+            }
+            if (filters.status) {
+                query.andWhere("task.status = :status", { status: filters.status });
             }
     
             // Apply sorting

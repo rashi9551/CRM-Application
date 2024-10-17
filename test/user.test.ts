@@ -1,40 +1,42 @@
-import useCase from '../src/app/useCase/useCase'; // Adjust the import according to your file structure
 import userRepo from '../src/app/repository/UserRepo'; // Adjust accordingly
-import { GetAllUser, Department, RoleName, UserData, BrandData, BrandContactData, BrandOwnershipData, updatingUserData } from '../src/interfaces/interface'; // Adjust accordingly
+import { GetAllUser, Department, RoleName, UserData, BrandData, BrandContactData, BrandOwnershipData, updatingUserData, EventData, InventoryData } from '../src/interfaces/interface'; // Adjust accordingly
 import { StatusCode } from '../src/interfaces/enum';
 import { User } from '../src/entity/User';
 import { Team } from '../src/entity/Team';
+import { Event } from '../src/entity/Event';
 import bcrypt from 'bcryptjs';
 import { Brand } from '../src/entity/Brand';
 import { BrandContact } from '../src/entity/BrandContact';
+import useCase from '../src/app/useCase/userUseCase'
+import { Inventory } from '../src/entity/inventory';
 
 
-const userRepoMock = userRepo as jest.Mocked<typeof userRepo>;
 
 
- const mockUserCreateResponseData:User={
-     name: "Rashid",
-     department: Department.DEVELOPMENT,
-     phoneNumber: "9867452323",
-     email: "rashid@gmail.com",
-     password: "$2a$10$6hmonDVFAysPWVrLft9D4.RS3/4bT.LXHuItFJQnI4aSSV4WFTjnG",
-     roles: [
-         RoleName.TO
-     ],
-     parentId: 1,
-     teamId: 1,
-     id: 2,
-     createdAt: new Date(),
-     parent: new User,
-     children: [],
-     brandOwnerships: [],
-     team: new Team,
-     userTeams: [],
-     assignedTasks: [],
-     createdTasks: [],
-     comments: [],
-     notifications: []
- }
+const mockUserCreateResponseData:User={
+    name: "Rashid",
+    department: Department.DEVELOPMENT,
+    phoneNumber: "9867452323",
+    email: "rashid@gmail.com",
+    password: "$2a$10$6hmonDVFAysPWVrLft9D4.RS3/4bT.LXHuItFJQnI4aSSV4WFTjnG",
+    roles: [
+        RoleName.TO
+    ],
+    parentId: 1,
+    teamId: 1,
+    id: 2,
+    createdAt: new Date(),
+    parent: new User,
+    children: [],
+    brandOwnerships: [],
+    team: new Team,
+    userTeams: [],
+    assignedTasks: [],
+    createdTasks: [],
+    comments: [],
+    notifications: [],
+    taskHistories: []
+}
 
 const mockCreateUserData:UserData={
     name: "Rashid",
@@ -47,6 +49,7 @@ const mockCreateUserData:UserData={
     parentId: 1
 }
 
+const userRepoMock = userRepo as jest.Mocked<typeof userRepo>;
 
 jest.mock('../src/app/repository/UserRepo', () => ({
     findUserByEmail: jest.fn(),
@@ -61,6 +64,12 @@ jest.mock('../src/app/repository/UserRepo', () => ({
     getUserById: jest.fn(),
     updateChildrenParentId: jest.fn(),
     deleteUserById: jest.fn(),
+    createEvent: jest.fn(),
+    findEventByName: jest.fn(),
+    findInventoryByName: jest.fn(),
+    createInventory: jest.fn(),
+    getAllInventory: jest.fn(),
+    getAllEvent: jest.fn(),
 }));
 
 
@@ -664,3 +673,223 @@ describe('User API - deleteUser', () => {
         });
     });
 });
+
+
+
+const mockEventData :EventData= {
+    name: "BabyJean",
+    date: new Date,
+    location: "madiwala",
+    details: "dabzee is coming", // Fixed typo "ocming" to "coming"
+};
+
+const mockCreatedEvent: Event = {
+    ...mockEventData,
+    id: 2, // Set the ID for the mock event
+    createdAt: new Date(),
+    tasks: []
+};
+
+describe('Event API - creatingEvent', () => {
+    afterEach(() => {
+        jest.clearAllMocks(); // Clear mocks after each test
+    });
+
+    it('should create an event successfully if no event with the same name exists', async () => {
+
+
+        userRepoMock.findEventByName.mockResolvedValue(null); // No existing event
+        userRepoMock.createEvent.mockResolvedValue(mockCreatedEvent); // Mock successful creation
+
+        // Act: Call the creatingEvent method
+        const response = await useCase.creatingEvent(mockEventData);
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.OK,
+            message: "Event created successfully",
+            event: mockCreatedEvent,
+        });
+    });
+
+    it('should return conflict if an event with the same name already exists', async () => {
+
+        userRepoMock.findEventByName.mockResolvedValue(mockCreatedEvent); // Existing event found
+
+        // Act: Call the creatingEvent method
+        const response = await useCase.creatingEvent(mockEventData);
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.Conflict,
+            message: "Event already exists with the same name",
+        });
+    });
+
+    it('should return internal server error on unexpected error', async () => {
+        // Arrange: Create mock event data
+        userRepoMock.findEventByName.mockResolvedValue(null); // No existing event
+        userRepoMock.createEvent.mockImplementation(() => {
+            throw new Error("Unexpected error during event creation");
+        });
+    
+        // Act: Call the creatingEvent method
+        const response = await useCase.creatingEvent(mockEventData); // Call the method you are testing
+    
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.InternalServerError,
+            message: "Error when creating event",
+        });
+    });
+    
+
+});
+
+
+
+const mockInventoryData: InventoryData = {
+    name: "Sample Inventory",
+    quantity: 100,
+    description: Department.DESIGN,
+};
+
+const mockCreatedInventory: Inventory = {
+    ...mockInventoryData,
+    id: 2, // Set the ID for the mock inventory
+    createdAt: new Date(),
+    tasks: []
+};
+
+describe('Inventory API - createInventory', () => {
+    afterEach(() => {
+        jest.clearAllMocks(); // Clear mocks after each test
+    });
+
+    it('should create an inventory successfully if no inventory with the same name exists', async () => {
+        userRepoMock.findInventoryByName.mockResolvedValue(null); // No existing inventory
+        userRepoMock.createInventory.mockResolvedValue(mockCreatedInventory); // Mock successful creation
+
+        // Act: Call the createInventory method
+        const response = await useCase.createInventory(mockInventoryData);
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.OK,
+            message: "Inventory created successfully",
+            inventory: mockCreatedInventory,
+        });
+    });
+
+    it('should return conflict if an inventory with the same name already exists', async () => {
+        userRepoMock.findInventoryByName.mockResolvedValue(mockCreatedInventory); // Existing inventory found
+
+        // Act: Call the createInventory method
+        const response = await useCase.createInventory(mockInventoryData);
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.Conflict,
+            message: "inventory already exists with the same name",
+        });
+    });
+
+    it('should return internal server error on unexpected error', async () => {
+        // Arrange: Create mock inventory data
+        userRepoMock.findInventoryByName.mockResolvedValue(null); // No existing inventory
+        userRepoMock.createInventory.mockImplementation(() => {
+            throw new Error("Unexpected error during inventory creation");
+        });
+
+        // Act: Call the createInventory method
+        const response = await useCase.createInventory(mockInventoryData); // Call the method you are testing
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.InternalServerError,
+            message: "Error when creating inventory",
+        });
+    });
+});
+
+
+describe('Event API - getAllEvent', () => {
+    afterEach(() => {
+        jest.clearAllMocks(); // Clear mocks after each test
+    });
+
+    it('should fetch all events successfully', async () => {
+        // Arrange: Mock events array
+        const mockEvents = [mockCreatedEvent]; // Assuming mockCreatedEvent is defined
+
+        userRepoMock.getAllEvent.mockResolvedValue(mockEvents); // Mock successful retrieval
+
+        // Act: Call the getAllEvent method
+        const response = await useCase.getAllEvent();
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.OK,
+            message: "Event fetched successfully",
+            Event: mockEvents, // Expecting an array here
+        });
+    });
+
+    it('should return internal server error on unexpected error', async () => {
+        // Arrange: Simulate an unexpected error
+        userRepoMock.getAllEvent.mockImplementation(() => {
+            throw new Error("Unexpected error during fetching events");
+        });
+
+        // Act: Call the getAllEvent method
+        const response = await useCase.getAllEvent(); // Call the method you are testing
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.InternalServerError,
+            message: "Error when creating event", // This message is fine as is, for events
+        });
+    });
+});
+
+
+
+describe('Inventory API - getAllInventory', () => {
+    afterEach(() => {
+        jest.clearAllMocks(); // Clear mocks after each test
+    });
+
+    it('should fetch all inventory successfully', async () => {
+        // Arrange: Mock inventory array
+        const mockInventories = [mockCreatedInventory]; // Assuming mockCreatedInventory is defined
+
+        userRepoMock.getAllInventory.mockResolvedValue(mockInventories); // Mock successful retrieval
+
+        // Act: Call the getAllInventory method
+        const response = await useCase.getAllInventory();
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.OK,
+            message: "Inventory fetched successfully",
+            Inventory: mockInventories, // Expecting an array here
+        });
+    });
+
+    it('should return internal server error on unexpected error', async () => {
+        // Arrange: Simulate an unexpected error
+        userRepoMock.getAllInventory.mockImplementation(() => {
+            throw new Error("Unexpected error during fetching inventory");
+        });
+
+        // Act: Call the getAllInventory method
+        const response = await useCase.getAllInventory(); // Call the method you are testing
+
+        // Assert: Check the response
+        expect(response).toEqual({
+            status: StatusCode.InternalServerError,
+            message: "Error when fetching inventory", // Changed to be more specific
+        });
+    });
+});
+

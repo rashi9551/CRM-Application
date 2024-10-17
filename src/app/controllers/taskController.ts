@@ -9,7 +9,7 @@ export default new class TaskController{
         try {
             console.log("user creating  task...");
             const taskData:TaskData=req.body
-            const createTaskResponse=await TaskUseCase.createTask(taskData)
+            const createTaskResponse=await TaskUseCase.createTask(taskData,+req.id)
             res.status(createTaskResponse.status).json(createTaskResponse)
         } catch (error) {
             console.log(error);
@@ -124,6 +124,7 @@ export default new class TaskController{
             inventoryName,
             eventName,
             sortBy,
+            status, 
             sortOrder,
         }:FilterOptions = req.body;
 
@@ -137,6 +138,7 @@ export default new class TaskController{
                 brandName,
                 inventoryName,
                 eventName,
+                status, 
                 sortBy,
                 sortOrder,
             });

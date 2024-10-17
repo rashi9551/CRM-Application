@@ -168,7 +168,7 @@ export default new class UserController{
         try {
             console.log("admin or bo  getting  a brand details...");
             const {id}=req.params
-            const  getBrandResponse=await useCase.getBrandDetail(+id,req.id)
+            const  getBrandResponse=await useCase.getBrandDetail(+id,req.id,req.role)
             res.status(getBrandResponse.status).json(getBrandResponse)
         } catch (error) {
             console.log(error);
@@ -232,11 +232,31 @@ export default new class UserController{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
         }
     }
+    getAllInventory=async(req:Request,res:Response)=>{
+        try {
+            console.log("admin getting all  Inventory...");
+            const createInventoryResponse=await useCase.getAllInventory()
+            res.status(createInventoryResponse.status).json(createInventoryResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
     createEvent=async(req:Request,res:Response)=>{
         try {
             console.log("admin creating  event...");
             const eventData:EventData=req.body
             const eventDataResponse=await useCase.creatingEvent(eventData)
+            res.status(eventDataResponse.status).json(eventDataResponse)
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error  ' }); 
+        }
+    }
+    getAllEvent=async(req:Request,res:Response)=>{
+        try {
+            console.log("getting all event...");
+            const eventDataResponse=await useCase.getAllEvent()
             res.status(eventDataResponse.status).json(eventDataResponse)
         } catch (error) {
             console.log(error);

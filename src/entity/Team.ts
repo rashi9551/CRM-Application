@@ -17,7 +17,7 @@ export class Team {
 
     @ManyToOne(() => User, user => user.userTeams, { nullable: false, onDelete: 'CASCADE' })
     @JoinColumn({ name: 'to_user_id' })
-    teamId: User;
+    teamOwner: User;
 
     @OneToMany(() => User, user => user.team, { onDelete: 'CASCADE' }) // Cascade delete for users in this team
     users: User[]; 

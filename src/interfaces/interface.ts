@@ -59,6 +59,13 @@ export enum AnalyticsFilter {
     AllTime = 'All Time',
 }
 
+export enum Type {
+    Brand = 'Brand',
+    Event = 'Event',
+    Inventory = 'Inventory',
+    General = 'General'
+  }
+
 export interface GetAllUser {
     id: number;
     name: string;
@@ -89,7 +96,9 @@ export interface PromiseReturn{
     Notification?: Partial<Notification>;  
     task?:Task[]
     inventory?:Inventory
+    Inventory?:Inventory[]
     event?:Event
+    Event?:Event[]
     analytics?:Analytics
     UnreadNotification?:Notification[]
     BrandContact?:BrandContact
@@ -175,7 +184,7 @@ export interface TaskData {
     id?: number;                       // Optional ID for existing tasks
     title: string;                    // Title of the task
     description?: string;             // Description should be a string, mark as optional
-    type: string; 
+    type: Type; 
     status:TaskStatus;                    // Type of the task
     assigned_to: number;               // ID of the user assigned to the task
     created_by: number;                // ID of the user who created the task
@@ -202,6 +211,7 @@ export interface FilterOptions {
     dueDatePassed?: boolean;
     brandName?: string;
     inventoryName?: string;
+    status?: string;
     eventName?: string;
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';

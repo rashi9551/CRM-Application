@@ -103,8 +103,9 @@ export class Task {
     @OneToMany(() => TaskComment, comment => comment.task, { cascade: true })
     comments: TaskComment[];
 
-    @OneToMany(() => Notification, notification => notification.recipient)
+    @OneToMany(() => Notification, notification => notification.task, { cascade: true }) // Ensure cascade is true
     notifications: Notification[];
+
 
     @OneToMany(() => TaskHistory, taskHistory => taskHistory.task)
     history: TaskHistory[]; // Task history records

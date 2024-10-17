@@ -38,7 +38,9 @@ router.get('/searchUser',verifyToken,UserController.searchUser)
 
 
 router.post('/createInventory',verifyToken,userController.createInventory);
+router.get('/getAllInventory',verifyToken,userController.getAllInventory);
 router.post('/createEvent',verifyToken,userController.createEvent);
+router.get('/getAllEvent',verifyToken,userController.getAllEvent);
 
 
 router.get('/getAllTasks',verifyToken,TaskController.getTasks);

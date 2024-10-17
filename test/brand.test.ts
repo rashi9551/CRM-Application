@@ -1,4 +1,3 @@
-import useCase from '../src/app/useCase/useCase'; // Adjust the import according to your file structure
 import userRepo from '../src/app/repository/UserRepo'; // Adjust accordingly
 import { GetAllUser, Department, RoleName, UserData, BrandData, BrandContactData, BrandOwnershipData, updatingUserData } from '../src/interfaces/interface'; // Adjust accordingly
 import { StatusCode } from '../src/interfaces/enum';
@@ -7,6 +6,7 @@ import { Team } from '../src/entity/Team';
 import bcrypt from 'bcryptjs';
 import { Brand } from '../src/entity/Brand';
 import { BrandContact } from '../src/entity/BrandContact';
+import useCase from '../src/app/useCase/userUseCase'
 
 const team:Team=
     {
@@ -35,7 +35,8 @@ const team:Team=
                 assignedTasks: [],
                 createdTasks: [],
                 comments: [],
-                notifications: []
+                notifications: [],
+                taskHistories: []
             },
             {
                 id: 2,
@@ -58,10 +59,11 @@ const team:Team=
                 assignedTasks: [],
                 createdTasks: [],
                 comments: [],
-                notifications: []
+                notifications: [],
+                taskHistories: []
             }
         ],
-        teamId: {
+        teamOwner: {
             id: 2,
             name: "rashid",
             department: "Development",
@@ -82,7 +84,8 @@ const team:Team=
             assignedTasks: [],
             createdTasks: [],
             comments: [],
-            notifications: []
+            notifications: [],
+            taskHistories: []
         }
     }
 
@@ -108,7 +111,8 @@ const mockUserCreateResponseData:User={
     assignedTasks: [],
     createdTasks: [],
     comments: [],
-    notifications: []
+    notifications: [],
+    taskHistories: []
 }
 
 const BrandCreateData:BrandData={
