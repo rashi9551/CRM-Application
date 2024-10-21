@@ -16,6 +16,7 @@ import { TaskComment } from '../src/entity/TaskComment';
 import { TaskHistory } from '../src/entity/TaskHistory';
 import { Notification } from '../src/entity/Notification';
 import { validateOrReject } from 'class-validator';
+import { BrandCreateReponseData } from './brand.test';
 
 
 
@@ -30,7 +31,7 @@ const mockUserCreateResponseData:User={
     ],
     parentId: 1,
     teamId: 1,
-    id: 2,
+    id: 4,
     createdAt: new Date(),
     parent: new User,
     children: [],
@@ -88,6 +89,11 @@ jest.mock('../src/app/repository/UserRepo', () => ({
     findInventoryById: jest.fn(),
     findEventById: jest.fn(),
     getBrandDetail: jest.fn(),
+    addingBrandContact: jest.fn(),
+    findBrandByName: jest.fn(),
+    findBrandByID: jest.fn(),
+    createBrand: jest.fn(),
+    saveBrand: jest.fn(),
 }));
 
 const taskRepoMock = TaskRepo as jest.Mocked<typeof TaskRepo>;
@@ -111,6 +117,8 @@ jest.mock('../src/app/repository/TaskRepo', () => ({
     getDelegatedToOthersTask: jest.fn(),
     deleteTask: jest.fn(),
     saveTask: jest.fn(),
+    createTask: jest.fn(),
+
 }));
 
 
@@ -485,7 +493,6 @@ describe('NotificationSending', () => {
             message,
             isRead: false,
             recipientId: assignedUser.id,  // Adjust based on your actual implementation
-            task: expect.any(Object),
         }));
         
     });
@@ -1071,164 +1078,307 @@ const mockTask: Task = {
 
     
 
-    // it('should return 404 if task not found', async () => {
-    //     // Arrange
-    //     const taskData :TaskData= {
-    //         id: 999, title: 'Updated Title',
-    //         type: Type.Brand,
-    //         status:TaskStatus.Pending,
-    //         assigned_to: 4,
-    //         created_by: 4,
-    //         due_date: ''
-    //     };    
-    //         const loggedUserId = 4;
+//     it('should return 404 if task not found', async () => {
+//         // Arrange
+//         const taskData :TaskData= {
+//             id: 999, title: 'Updated Title',
+//             type: Type.Brand,
+//             status:TaskStatus.Pending,
+//             assigned_to: 4,
+//             created_by: 4,
+//             due_date: ''
+//         };    
+//             const loggedUserId = 4;
 
-    //     // Mock non-existent task
-    //     taskRepoMock.findTaskById.mockResolvedValue(null);
-    //     taskRepoMock.saveTask.mockRejectedValue(task);
+//         // Mock non-existent task
+//         taskRepoMock.findTaskById.mockResolvedValue(null);
+//         taskRepoMock.saveTask.mockRejectedValue(task);
 
-    //     // Act
-    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+//         // Act
+//         const result = await taskUseCase.updateTask(taskData, loggedUserId);
 
-    //     // Assert
-    //     expect(result.status).toBe(StatusCode.NotFound);
-    //     expect(result.message).toBe("Task not found.");
-    // });
+//         // Assert
+//         expect(result.status).toBe(StatusCode.NotFound);
+//         expect(result.message).toBe("Task not found.");
+//     });
 
-    // it('should return 403 if user is unauthorized to update', async () => {
-    //     // Arrange
-    //     const taskData :TaskData= {
-    //         id: 999, title: 'Updated Title',
-    //         type: Type.Brand,
-    //         status:TaskStatus.Pending,
-    //         assigned_to: 2,
-    //         created_by: 3,
-    //         due_date: ''
-    //     };        
-    //     const loggedUserId = 200; // User without permission
+//     it('should return 403 if user is unauthorized to update', async () => {
+//         // Arrange
+//         const taskData :TaskData= {
+//             id: 999, title: 'Updated Title',
+//             type: Type.Brand,
+//             status:TaskStatus.Pending,
+//             assigned_to: 2,
+//             created_by: 3,
+//             due_date: ''
+//         };        
+//         const loggedUserId = 200; // User without permission
 
-    //     // Mock existing task with different creator and assignee
-    //     taskRepoMock.findTaskById.mockResolvedValue(task);
-    //     taskRepoMock.saveTask.mockRejectedValue(task);
+//         // Mock existing task with different creator and assignee
+//         taskRepoMock.findTaskById.mockResolvedValue(task);
+//         taskRepoMock.saveTask.mockRejectedValue(task);
 
-    //     // Act
-    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+//         // Act
+//         const result = await taskUseCase.updateTask(taskData, loggedUserId);
 
-    //     // Assert
-    //     expect(result.status).toBe(StatusCode.Unauthorized);
-    //     expect(result.message).toBe("Only the user who created the task, the assignee, or users with admin or management roles have permission to update it.");
-    // });
+//         // Assert
+//         expect(result.status).toBe(StatusCode.Unauthorized);
+//         expect(result.message).toBe("Only the user who created the task, the assignee, or users with admin or management roles have permission to update it.");
+//     });
 
-    // it('should return 400 if trying to update a completed task', async () => {
-    //     // Arrange
-    //     const taskData:TaskData ={
-    //         id: 999, title: 'Updated Title',
-    //         type: Type.Brand,
-    //         status:TaskStatus.Pending,
-    //         assigned_to: 4,
-    //         created_by: 4,
-    //         due_date: ''
-    //     }; 
-    //     const loggedUserId = 4;
+//     it('should return 400 if trying to update a completed task', async () => {
+//         // Arrange
+//         const taskData:TaskData ={
+//             id: 999, title: 'Updated Title',
+//             type: Type.Brand,
+//             status:TaskStatus.Pending,
+//             assigned_to: 4,
+//             created_by: 4,
+//             due_date: ''
+//         }; 
+//         const loggedUserId = 4;
 
-    //     // Mock existing task as completed
-    //     taskRepoMock.findTaskById.mockResolvedValue({...task,status:TaskStatus.Completed});
-    //     taskRepoMock.saveTask.mockRejectedValue(task);
+//         // Mock existing task as completed
+//         taskRepoMock.findTaskById.mockResolvedValue({...task,status:TaskStatus.Completed});
+//         taskRepoMock.saveTask.mockRejectedValue(task);
 
-    //     // Act
-    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+//         // Act
+//         const result = await taskUseCase.updateTask(taskData, loggedUserId);
 
-    //     // Assert
-    //     expect(result.status).toBe(StatusCode.BadRequest);
-    //     expect(result.message).toBe("Cannot update a completed task.");
-    // });
+//         // Assert
+//         expect(result.status).toBe(StatusCode.BadRequest);
+//         expect(result.message).toBe("Cannot update a completed task.");
+//     });
 
-    // it('should return 403 if non-assignee tries to change status to completed', async () => {
-    //     // Arrange
-    //     const taskData:TaskData ={
-    //         id: 999, title: 'Updated Title',
-    //         type: Type.Brand,
-    //         status:TaskStatus.Completed,
-    //         assigned_to: 3,
-    //         created_by: 4,
-    //         due_date: ''
-    //     };         
-    //     const loggedUserId = 4; // Not the assignee
+//     it('should return 403 if non-assignee tries to change status to completed', async () => {
+//         // Arrange
+//         const taskData:TaskData ={
+//             id: 999, title: 'Updated Title',
+//             type: Type.Brand,
+//             status:TaskStatus.Completed,
+//             assigned_to: 3,
+//             created_by: 4,
+//             due_date: ''
+//         };         
+//         const loggedUserId = 4; // Not the assignee
 
-    //     // Mock existing task
-    //     taskRepoMock.findTaskById.mockResolvedValue(task);
-    //     taskRepoMock.saveTask.mockRejectedValue(task);
+//         // Mock existing task
+//         taskRepoMock.findTaskById.mockResolvedValue(task);
+//         taskRepoMock.saveTask.mockRejectedValue(task);
 
-    //     // Act
-    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
-    //             console.log(result,"=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+//         // Act
+//         const result = await taskUseCase.updateTask(taskData, loggedUserId);
+//                 console.log(result,"=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 
-    //     // Assert
-    //     expect(result.status).toBe(StatusCode.InternalServerError);
-    //     expect(result.message).toBe("Only the user who created the task, the assignee, or users with admin or management roles have permission to update it.");
-    // });
+//         // Assert
+//         expect(result.status).toBe(StatusCode.InternalServerError);
+//         expect(result.message).toBe("Only the user who created the task, the assignee, or users with admin or management roles have permission to update it.");
+//     });
 
-    // it('should allow the creator to reassign the task', async () => {
-    //     // Arrange
-    //     const mockTask:Task={...task}
-    //     mockTask.status=TaskStatus.Pending
-    //     const taskData:TaskData ={
-    //         id: 999, title: 'Updated Title',
-    //         type: Type.Brand,
-    //         status:TaskStatus.Pending,
-    //         assigned_to: 4,
-    //         created_by: 4,
-    //         due_date: ''
-    //     };  // New assignee
-    //     const loggedUserId = 4; // The creator
+//     it('should allow the creator to reassign the task', async () => {
+//         // Arrange
+//         const mockTask:Task={...task}
+//         mockTask.status=TaskStatus.Pending
+//         const taskData:TaskData ={
+//             id: 999, title: 'Updated Title',
+//             type: Type.Brand,
+//             status:TaskStatus.Pending,
+//             assigned_to: 4,
+//             created_by: 4,
+//             due_date: ''
+//         };  // New assignee
+//         const loggedUserId = 4; // The creator
 
-    //     // Mock existing task
-    //     taskRepoMock.findTaskById.mockResolvedValue(mockTask);
+//         // Mock existing task
+//         taskRepoMock.findTaskById.mockResolvedValue(mockTask);
 
-    //     taskRepoMock.saveTask.mockResolvedValue({
-    //         ...task,
-    //         assigned_to: 4,
-    //     });
+//         taskRepoMock.saveTask.mockResolvedValue({
+//             ...task,
+//             assigned_to: 4,
+//         });
 
-    //     // Act
-    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+//         // Act
+//         const result = await taskUseCase.updateTask(taskData, loggedUserId);
 
-    //     // Assert
-    //     expect(result.status).toBe(StatusCode.Created);
-    //     expect(result.message).toBe("Task updated successfully.");
-    //     expect(result.Task?.assigned_to).toBe(3); // Verify the task was reassigned
-    // });
+//         // Assert
+//         expect(result.status).toBe(StatusCode.Created);
+//         expect(result.message).toBe("Task updated successfully.");
+//         expect(result.Task?.assigned_to).toBe(3); // Verify the task was reassigned
+//     });
 
 
 
-    // it('should handle unexpected errors', async () => {
-    //     // Arrange
-    //     const mockTask:Task={...task}
-    //     mockTask.status=TaskStatus.Pending
-    //     const taskData:TaskData ={
-    //         id: 1, title: 'Updated Title',
-    //         type: Type.Brand,
-    //         status:TaskStatus.Pending,
-    //         assigned_to: 4,
-    //         created_by: 4,
-    //         due_date: ''
-    //     };
-    //     const loggedUserId = 4;
+//     it('should handle unexpected errors', async () => {
+//         // Arrange
+//         const mockTask:Task={...task}
+//         mockTask.status=TaskStatus.Pending
+//         const taskData:TaskData ={
+//             id: 1, title: 'Updated Title',
+//             type: Type.Brand,
+//             status:TaskStatus.Pending,
+//             assigned_to: 4,
+//             created_by: 4,
+//             due_date: ''
+//         };
+//         const loggedUserId = 4;
         
-    //     // Mock existing task
-    //     taskRepoMock.findTaskById.mockResolvedValue(mockTask);
+//         // Mock existing task
+//         taskRepoMock.findTaskById.mockResolvedValue(mockTask);
 
-    //     // Simulate unexpected error during saving
-    //     taskRepoMock.saveTask.mockRejectedValue(new Error("Unexpected database error"));
+//         // Simulate unexpected error during saving
+//         taskRepoMock.saveTask.mockRejectedValue(new Error("Unexpected database error"));
 
-    //     // Act
-    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+//         // Act
+//         const result = await taskUseCase.updateTask(taskData, loggedUserId);
         
 
-    //     // Assert
-    //     expect(result.status).toBe(StatusCode.InternalServerError);
-    //     expect(result.message).toBe("Internal server error.");
-    // });
+//         // Assert
+//         expect(result.status).toBe(StatusCode.InternalServerError);
+//         expect(result.message).toBe("Internal server error.");
+//     });
 // });
 
+
+
+describe('createTask', () => {
+    const taskData: TaskData = {
+        assigned_to: 4,
+        created_by: 4,
+        brand_id: 3,
+        inventoryId: 4,
+        eventId: 5,
+        title: 'Test Task',
+        type: Type.Brand,
+        status: TaskStatus.Completed,
+        due_date: '2024-10-30'
+    };
+    let mockNotificationService: any;
+    let mockTaskHistoryService: any;
+
+    beforeEach(() => {
+        jest.clearAllMocks(); // Clear mocks before each test
+
+
+        mockNotificationService = jest.fn();
+        mockTaskHistoryService = jest.fn();
+    });
+
+    it('should create a task successfully when all data is valid', async () => {
+        // Arrange
+        userRepoMock.getUserById.mockResolvedValueOnce(mockUserCreateResponseData) // Mock assigned user found
+            .mockResolvedValueOnce(mockUserCreateResponseData); // Mock created user found
+            userRepoMock.getBrandDetail.mockResolvedValue(BrandCreateReponseData); // Mock brand found
+        userRepoMock.findInventoryById.mockResolvedValue(new Inventory); // Mock inventory found
+        userRepoMock.findEventById.mockResolvedValue(new Event); // Mock event found
+        taskRepoMock.createTask.mockResolvedValue(task); // Mock task creation
+
+        // Act
+        const result = await taskUseCase.createTask(taskData, 4);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.Created,
+            message: "Task created successfully.",
+            Task: taskData,
+        });
+        expect(userRepoMock.getUserById).toHaveBeenCalledWith(taskData.assigned_to);
+        expect(userRepoMock.getUserById).toHaveBeenCalledWith(taskData.created_by);
+        expect(userRepoMock.getBrandDetail).toHaveBeenCalledWith(taskData.brand_id);
+        expect(userRepoMock.findInventoryById).toHaveBeenCalledWith(taskData.inventoryId);
+        expect(userRepoMock.findEventById).toHaveBeenCalledWith(taskData.eventId);
+    });
+
+    // it('should return 404 if the assigned user does not exist', async () => {
+    //     // Arrange
+    //     userRepoMock.getUserById.mockResolvedValueOnce(null); // Mock assigned user not found
+
+    //     // Act & Assert
+    //     const result = await taskUseCase.createTask(taskData, 1);
+    //     expect(result).toEqual({
+    //         status: StatusCode.NotFound,
+    //         message: 'AssignedUser Not Found',
+    //     });
+    //     expect(userRepoMock.getUserById).toHaveBeenCalledWith(taskData.assigned_to);
+    // });
+
+    // it('should return 404 if the created user does not exist', async () => {
+    //     // Arrange
+    //     userRepoMock.getUserById
+    //         .mockResolvedValueOnce({ id: 1, name: 'Assignee' }) // Mock assigned user found
+    //         .mockResolvedValueOnce(null); // Mock created user not found
+
+    //     // Act & Assert
+    //     const result = await taskUseCase.createTask(taskData, 1);
+    //     expect(result).toEqual({
+    //         status: StatusCode.NotFound,
+    //         message: 'CreatedUser Not Found',
+    //     });
+    //     expect(userRepoMock.getUserById).toHaveBeenCalledWith(taskData.created_by);
+    // });
+
+    // it('should return 404 if the brand does not exist', async () => {
+    //     // Arrange
+    //     userRepoMock.getUserById.mockResolvedValue({ id: 1, name: 'Assignee' }); // Mock users found
+    //     userRepoMock.getBrandDetail.mockResolvedValueOnce(null); // Mock brand not found
+
+    //     // Act & Assert
+    //     const result = await taskUseCase.createTask(taskData, 1);
+    //     expect(result).toEqual({
+    //         status: StatusCode.NotFound,
+    //         message: 'Brand not found',
+    //     });
+    //     expect(taskRepoMock.getBrandDetail).toHaveBeenCalledWith(taskData.brand_id);
+    // });
+
+    // it('should return 404 if the inventory does not exist', async () => {
+    //     // Arrange
+    //     userRepoMock.getUserById.mockResolvedValue({ id: 1, name: 'Assignee' }); // Mock users found
+    //     userRepoMock.getBrandDetail.mockResolvedValue({ id: 3 }); // Mock brand found
+    //     userRepoMock.findInventoryById.mockResolvedValueOnce(null); // Mock inventory not found
+
+    //     // Act & Assert
+    //     const result = await taskUseCase.createTask(taskData, 1);
+    //     expect(result).toEqual({
+    //         status: StatusCode.NotFound,
+    //         message: 'Inventory not found',
+    //     });
+    //     expect(userRepoMock.findInventoryById).toHaveBeenCalledWith(taskData.inventoryId);
+    // });
+
+    // it('should return 404 if the event does not exist', async () => {
+    //     // Arrange
+    //     userRepoMock.getUserById.mockResolvedValue({ id: 1, name: 'Assignee' }); // Mock users found
+    //     userRepoMock.getBrandDetail.mockResolvedValue({ id: 3 }); // Mock brand found
+    //     userRepoMock.findInventoryById.mockResolvedValue({ id: 4 }); // Mock inventory found
+    //     userRepoMock.findEventById.mockResolvedValueOnce(null); // Mock event not found
+
+    //     // Act & Assert
+    //     const result = await taskUseCase.createTask(taskData, 1);
+    //     expect(result).toEqual({
+    //         status: StatusCode.NotFound,
+    //         message: 'Event not found',
+    //     });
+    //     expect(userRepoMock.findEventById).toHaveBeenCalledWith(taskData.eventId);
+    // });
+
+    // it('should assign task type as "General" if no brand, inventory, or event is provided', async () => {
+    //     // Arrange
+    //     const generalTaskData = { ...taskData, brand_id: undefined, inventoryId: undefined, eventId: undefined };
+    //     userRepoMock.getUserById.mockResolvedValue({ id: 1, name: 'Assignee' }); // Mock users found
+    //     userRepoMock.createTask.mockResolvedValue(generalTaskData); // Mock task creation
+
+    //     // Act
+    //     const result = await taskUseCase.createTask(generalTaskData, 1);
+
+    //     // Assert
+    //     expect(result).toEqual({
+    //         status: StatusCode.Created,
+    //         message: "Task created successfully.",
+    //         Task: generalTaskData,
+    //     });
+    //     expect(generalTaskData.type).toBe(Type.General);
+    // });
+
+    
+});
 

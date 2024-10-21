@@ -122,7 +122,7 @@ const BrandCreateData:BrandData={
     id: 0
 }
 
-const BrandCreateReponseData:Brand={
+export const BrandCreateReponseData:Brand={
     brandName: "Adidas",
     revenue: 890000,
     dealClosedValue: 9839489,

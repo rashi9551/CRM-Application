@@ -13,6 +13,7 @@ import UserRepo from './UserRepo'
 import { Notification } from '../../entity/Notification';
 import { TaskHistory } from '../../entity/TaskHistory';
 import { TaskComment } from '../../entity/TaskComment';
+import { log } from 'console';
 
 export default new class TaskRepo {
 
@@ -241,10 +242,14 @@ export default new class TaskRepo {
     }
     
 
-    async saveNotification(notification: Notification): Promise<Notification> {
+    async saveNotification(notificationData: Notification): Promise<Notification> {
         try {
-            const savedNotification = await this.NotificationRepo.save(notification); // Save the notification to the database            
-            return savedNotification; // Return the saved notification
+            // Log notificationData before creating to ensure data is correct
+            console.log('Notification Data:', notificationData);
+
+            const notification = this.NotificationRepo.create(notificationData);
+            const savedNotification = await this.NotificationRepo.save(notification);
+            return savedNotification;
         } catch (error) {
             console.error("Error saving notification:", error);
             throw new Error("Failed to save notification");

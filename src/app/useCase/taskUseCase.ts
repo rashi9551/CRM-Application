@@ -70,6 +70,8 @@ export default new class TaskUseCase {
                 const fieldName = firstError.property;
                 return { status: StatusCode.BadRequest as number, message: `${fieldName}: ${firstConstraintMessage}`};
             }
+            console.log(error,"=--=-==--=-=--=-=-=-=-=-=-=-=-=-==-=-=");
+            
             console.error("Error during task creation:", error);
             return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
@@ -110,13 +112,13 @@ export default new class TaskUseCase {
                 delete existingTask.assignedTo
                 delete existingTask.createdBy
                 // Handle task status update and reassignment logic
-                const { flag, flag2, updatedTask } = await handleTaskUpdate(existingTask, taskData, loggedUserId);
-                console.log(flag, flag2, updatedTask, "this was reassigning time okey");
+                const { isGeneralUpdate, isStatusChanging, updatedTask } = await handleTaskUpdate(existingTask, taskData, loggedUserId);
+                console.log(isGeneralUpdate, isStatusChanging, updatedTask, "this was reassigning time okey");
                 const savedTask = await TaskRepo.saveTask(updatedTask); // <--- Saving the updated task here
                 console.log(savedTask);
                 
                 // Further logic for saving and processing the updated task
-                const { taskHistory, notification } = await handleHistoryAndNotifications(flag, flag2, savedTask, loggedUserId,assignedTo,createdBy);
+                const { taskHistory, notification } = await handleHistoryAndNotifications(isGeneralUpdate, isStatusChanging, savedTask, loggedUserId,assignedTo,createdBy);
                 delete notification?.task
                 return { status: 200, message: "Task updated successfully", taskHistory, Notification:notification,Task:savedTask };
             
@@ -256,27 +258,37 @@ export default new class TaskUseCase {
     };
 
 
-    NotificationSending=async(message:string,task:Task,assignedUser:User,recipientId:number):Promise<Notification | null> => {
+    NotificationSending = async (
+        message: string,
+        task: Task,
+        assignedUser: User,
+        recipientId: number
+    ): Promise<Notification | null> => {
         try {
-            const existingNotification=await TaskRepo.getExistingNotification(message,task.id,recipientId)
-            // If no duplicate notification exists, create a new one
+    
+            // Check if a similar notification already exists
+            const existingNotification = await TaskRepo.getExistingNotification(message, task.id, recipientId);
+    
             if (!existingNotification) {
+                // Create a new notification
                 const notification = new Notification();
                 notification.message = message;
                 notification.isRead = false;
-                notification.recipientId=recipientId
-                notification.task = task; 
+                notification.recipientId = recipientId;  // Set the recipientId directlyclear
+
                 return await TaskRepo.saveNotification(notification);
-            }else{
-                console.log("already notification exist");
-                return null
+            } else {
+                console.log("Notification already exists",message);
+                return null;
             }
         } catch (error) {
+            console.log(error);
             console.error("Error during task creation:", error);
             throw new Error("Failed to save notification");
-
         }
-    }
+    };
+    
+    
 
 
     TaskHistoryLogging = async (task: Task, action: string, details: string, loggedUserId: number): Promise<TaskHistory> => {

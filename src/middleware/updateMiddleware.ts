@@ -12,15 +12,15 @@ export const checkTaskPermission = (existingTask: Task, loggedUserId?: number, r
 
 
 export const handleTaskUpdate = async (existingTask: Task, taskData: TaskData, loggedUserId?: number) => {
-    let flag = true;
-    let flag2 = true;
+    let isGeneralUpdate = true;
+    let isStatusChanging = true;
 
     // Handle task status change
     if (taskData.status && taskData.status === TaskStatus.Completed) {
         if (existingTask.assigned_to !== loggedUserId) {
             throw new Error("Only the assigned user can update the task to completed.");
         }
-        flag = false;
+        isGeneralUpdate = false;
     }
 
     // Handle reassignment logic
@@ -28,9 +28,10 @@ export const handleTaskUpdate = async (existingTask: Task, taskData: TaskData, l
         if (existingTask.created_by !== loggedUserId) {
             throw new Error(`Only the creator of the task can reassign it.`);
         }
-        flag = false;
-        flag2 = false;
+        isGeneralUpdate = false;
+        isStatusChanging = false;
         existingTask.assigned_to = taskData.assigned_to;
+        
         console.log("re assigning okeey");
         
     }
@@ -41,15 +42,15 @@ export const handleTaskUpdate = async (existingTask: Task, taskData: TaskData, l
     // Validate the updated task entity
     await validateOrReject(existingTask);
 
-    return { flag, flag2, updatedTask: existingTask };
+    return { isGeneralUpdate, isStatusChanging, updatedTask: existingTask };
 };
 
 
-export const handleHistoryAndNotifications = async (flag: boolean, flag2: boolean, savedTask: Task, loggedUserId: number,assignedTo:User,createdBy:User) => {
+export const handleHistoryAndNotifications = async (isGeneralUpdate: boolean, isStatusChanging: boolean, savedTask: Task, loggedUserId: number,assignedTo:User,createdBy:User) => {
     let taskHistory;
     let notification;
 
-    if (flag) {
+    if (isGeneralUpdate) {
        console.log(" the task has been updated");
        console.log(savedTask,assignedTo);
        
@@ -57,12 +58,12 @@ export const handleHistoryAndNotifications = async (flag: boolean, flag2: boolea
             taskUseCase.TaskHistoryLogging(savedTask, TaskHistoryAction.TASK_UPDATED, `The Task ${savedTask.title} was updated.`, loggedUserId),
             taskUseCase.NotificationSending(`Your task has been updated: ${savedTask.title}`, savedTask, assignedTo, assignedTo.id),
         ]);
-    } else if (flag2) {
+    } else if (isStatusChanging) {
         console.log("the task was completed adn the history is logging");
 
         taskHistory = await taskUseCase.TaskHistoryLogging(savedTask, TaskHistoryAction.TASK_COMPLETED, `The Task ${savedTask.title} was completed.`, loggedUserId);
     } else {
-        console.log("it reassiging and notification going",savedTask);
+        console.log(savedTask.assigned_to,"it reassiging and notification going",savedTask);
         
         [taskHistory, notification] = await Promise.all([
             taskUseCase.TaskHistoryLogging(savedTask, TaskHistoryAction.TASK_REASSIGNED, `The Task ${savedTask.title} was reassigned.`, loggedUserId),
