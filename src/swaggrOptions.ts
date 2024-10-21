@@ -6,11 +6,11 @@ const swaggerOptions = {
     description:
       "API documentation for managing users, brands, and teams in the sales-oriented organization.",
   },
-  // host: "type-orm-production.up.railway.app",
-  host: "localhost:3001",
+  host: "type-orm-production.up.railway.app",
+  // host: "localhost:3001",
   basePath: "/api",
-  // schemes: ["https"],
-  schemes: ["http"],
+  schemes: ["https"],
+  // schemes: ["http"],
   paths: {
     "/login": {
       post: {
