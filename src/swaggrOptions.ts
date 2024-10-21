@@ -1737,6 +1737,107 @@ const swaggerOptions = {
         },
       },
     },
+
+    "/addComment": {
+      "post": {
+        "summary": "Add a comment to a task with image uploads",
+        "description": "Allows a user to add a comment to a task, including uploading two image files. Token verification is required.",
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "Bearer token for user authentication",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "taskId",
+            "in": "formData",
+            "description": "ID of the task to which the comment is added",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "name": "comment",
+            "in": "formData",
+            "description": "Text content of the comment",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "files",
+            "in": "formData",
+            "description": "Array of image files to be uploaded (2 files expected)",
+            "required": true,
+            "type": "array",
+            "items": {
+              "type": "file"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment added successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Comment added successfully"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "comment": {
+                      "type": "string",
+                      "example": "This is a sample comment"
+                    },
+                    "filePaths": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "uploads/image1.png"
+                      }
+                    },
+                    "fileTypes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "image/png"
+                      }
+                    },
+                    "taskId": {
+                      "type": "integer",
+                      "example": 123
+                    },
+                    "userId": {
+                      "type": "integer",
+                      "example": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (e.g., missing fields, invalid file types)"
+          },
+          "401": {
+            "description": "Unauthorized (invalid or missing token)"
+          },
+          "500": {
+            "description": "Internal server error during comment creation"
+          }
+        }
+      }
+    }
+
   },
   securityDefinitions: {
     Bearer: {
