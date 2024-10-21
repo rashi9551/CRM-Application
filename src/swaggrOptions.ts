@@ -1196,7 +1196,7 @@ const swaggerOptions = {
       get: {
         summary: "Get all tasks",
         description:
-          "Retrieves a list of all tasks, with optional filtering based on completion status.",
+          "Retrieves a list of all tasks, with optional filtering based on completion status and pagination.",
         produces: ["application/json"],
         parameters: [
           {
@@ -1215,69 +1215,98 @@ const swaggerOptions = {
             example: false,
             description: "Filter tasks based on their completion status",
           },
+          {
+            name: "page",
+            in: "query",
+            required: false,
+            type: "integer",
+            example: 1,
+            description: "The page number for pagination (default is 1)",
+          },
+          {
+            name: "pageSize",
+            in: "query",
+            required: false,
+            type: "integer",
+            example: 10,
+            description:
+              "The number of tasks to retrieve per page (default is 10)",
+          },
         ],
         responses: {
-          200: {
+          "200": {
             description: "Successfully retrieved tasks",
             schema: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  id: {
-                    type: "integer",
-                    example: 1,
-                    description: "ID of the task",
+              type: "object",
+              properties: {
+                tasks: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: {
+                        type: "integer",
+                        example: 1,
+                        description: "ID of the task",
+                      },
+                      title: {
+                        type: "string",
+                        example: "Evolution on clothing",
+                        description: "Title of the task",
+                      },
+                      description: {
+                        type: "string",
+                        example: "Design",
+                        description: "Description of the task",
+                      },
+                      type: {
+                        type: "string",
+                        example: "Brand",
+                        description: "Type of the task",
+                      },
+                      assigned_to: {
+                        type: "integer",
+                        example: 4,
+                        description:
+                          "User ID of the person assigned to the task",
+                      },
+                      created_by: {
+                        type: "integer",
+                        example: 4,
+                        description:
+                          "User ID of the person who created the task",
+                      },
+                      due_date: {
+                        type: "string",
+                        format: "date-time",
+                        example: "2024-10-17T06:53:08.910776Z",
+                        description: "Due date for the task",
+                      },
+                      brand_id: {
+                        type: "integer",
+                        example: 1,
+                        description: "ID of the brand associated with the task",
+                      },
+                      isCompleted: {
+                        type: "boolean",
+                        example: false,
+                        description: "Indicates if the task is completed",
+                      },
+                    },
                   },
-                  title: {
-                    type: "string",
-                    example: "Evolution on clothing",
-                    description: "Title of the task",
-                  },
-                  description: {
-                    type: "string",
-                    example: "Design",
-                    description: "Description of the task",
-                  },
-                  type: {
-                    type: "string",
-                    example: "Brand",
-                    description: "Type of the task",
-                  },
-                  assigned_to: {
-                    type: "integer",
-                    example: 4,
-                    description: "User ID of the person assigned to the task",
-                  },
-                  created_by: {
-                    type: "integer",
-                    example: 4,
-                    description: "User ID of the person who created the task",
-                  },
-                  due_date: {
-                    type: "string",
-                    format: "date-time",
-                    example: "2024-10-17T06:53:08.910776Z",
-                    description: "Due date for the task",
-                  },
-                  brand_id: {
-                    type: "integer",
-                    example: 1,
-                    description: "ID of the brand associated with the task",
-                  },
-                  isCompleted: {
-                    type: "boolean",
-                    example: false,
-                    description: "Indicates if the task is completed",
-                  },
+                },
+                totalTasks: {
+                  type: "integer",
+                  example: 100,
+                  description: "Total number of tasks available",
                 },
               },
             },
           },
-          404: {
+          "404": {
             description: "No tasks found",
           },
-          500: {
+          "500": {
             description: "Error during retrieval of tasks",
           },
         },
@@ -1739,105 +1768,368 @@ const swaggerOptions = {
     },
 
     "/addComment": {
-      "post": {
-        "summary": "Add a comment to a task with image uploads",
-        "description": "Allows a user to add a comment to a task, including uploading two image files. Token verification is required.",
-        "consumes": [
-          "multipart/form-data"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
+      post: {
+        summary: "Add a comment to a task with image uploads",
+        description:
+          "Allows a user to add a comment to a task, including uploading two image files. Token verification is required.",
+        consumes: ["multipart/form-data"],
+        produces: ["application/json"],
+        parameters: [
           {
-            "name": "Authorization",
-            "in": "header",
-            "description": "Bearer token for user authentication",
-            "required": true,
-            "type": "string"
+            name: "Authorization",
+            in: "header",
+            description: "Bearer token for user authentication",
+            required: true,
+            type: "string",
           },
           {
-            "name": "taskId",
-            "in": "formData",
-            "description": "ID of the task to which the comment is added",
-            "required": true,
-            "type": "integer"
+            name: "taskId",
+            in: "formData",
+            description: "ID of the task to which the comment is added",
+            required: true,
+            type: "integer",
           },
           {
-            "name": "comment",
-            "in": "formData",
-            "description": "Text content of the comment",
-            "required": true,
-            "type": "string"
+            name: "comment",
+            in: "formData",
+            description: "Text content of the comment",
+            required: true,
+            type: "string",
           },
           {
-            "name": "files",
-            "in": "formData",
-            "description": "Array of image files to be uploaded (2 files expected)",
-            "required": true,
-            "type": "array",
-            "items": {
-              "type": "file"
-            }
-          }
+            name: "files",
+            in: "formData",
+            description:
+              "Array of image files to be uploaded (2 files expected)",
+            required: true,
+            type: "array",
+            items: {
+              type: "file",
+            },
+          },
         ],
-        "responses": {
+        responses: {
           "200": {
-            "description": "Comment added successfully",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "example": "Comment added successfully"
+            description: "Comment added successfully",
+            schema: {
+              type: "object",
+              properties: {
+                message: {
+                  type: "string",
+                  example: "Comment added successfully",
                 },
-                "data": {
-                  "type": "object",
-                  "properties": {
-                    "comment": {
-                      "type": "string",
-                      "example": "This is a sample comment"
+                data: {
+                  type: "object",
+                  properties: {
+                    comment: {
+                      type: "string",
+                      example: "This is a sample comment",
                     },
-                    "filePaths": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "example": "uploads/image1.png"
-                      }
+                    filePaths: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                        example: "uploads/image1.png",
+                      },
                     },
-                    "fileTypes": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "example": "image/png"
-                      }
+                    fileTypes: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                        example: "image/png",
+                      },
                     },
-                    "taskId": {
-                      "type": "integer",
-                      "example": 123
+                    taskId: {
+                      type: "integer",
+                      example: 123,
                     },
-                    "userId": {
-                      "type": "integer",
-                      "example": 1
-                    }
-                  }
-                }
-              }
-            }
+                    userId: {
+                      type: "integer",
+                      example: 1,
+                    },
+                  },
+                },
+              },
+            },
           },
           "400": {
-            "description": "Bad request (e.g., missing fields, invalid file types)"
+            description:
+              "Bad request (e.g., missing fields, invalid file types)",
           },
           "401": {
-            "description": "Unauthorized (invalid or missing token)"
+            description: "Unauthorized (invalid or missing token)",
           },
           "500": {
-            "description": "Internal server error during comment creation"
-          }
-        }
-      }
-    }
-
+            description: "Internal server error during comment creation",
+          },
+        },
+      },
+    },
+    "/getComment/{id}": {
+      get: {
+        summary: "Fetch comments for a specific task",
+        description:
+          "Allows a user to fetch comments for a specified task with pagination support. Token verification is required.",
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "Authorization",
+            in: "header",
+            description: "Bearer token for user authentication",
+            required: true,
+            type: "string",
+          },
+          {
+            name: "id",
+            in: "path",
+            description: "ID of the task for which comments are fetched",
+            required: true,
+            type: "integer",
+          },
+          {
+            name: "page",
+            in: "query",
+            description: "The page number for pagination (default is 1)",
+            required: false,
+            type: "integer",
+            example: 1,
+          },
+          {
+            name: "pageSize",
+            in: "query",
+            description:
+              "The number of comments to fetch per page (default is 10)",
+            required: false,
+            type: "integer",
+            example: 10,
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Comments fetched successfully",
+            schema: {
+              type: "object",
+              properties: {
+                status: {
+                  type: "integer",
+                  example: 200,
+                },
+                message: {
+                  type: "string",
+                  example: "Comments fetched successfully",
+                },
+                TaskComment: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: {
+                        type: "integer",
+                        example: 6,
+                      },
+                      comment: {
+                        type: "string",
+                        example: "you want more pace",
+                      },
+                      createdAt: {
+                        type: "string",
+                        format: "date-time",
+                        example: "2024-10-21T09:17:17.393Z",
+                      },
+                      filePaths: {
+                        type: "array",
+                        items: {
+                          type: "string",
+                          example: "uploads/1729502237378-Adhaar.jpg",
+                        },
+                      },
+                      taskId: {
+                        type: "integer",
+                        example: 2,
+                      },
+                      userId: {
+                        type: "integer",
+                        example: 1,
+                      },
+                    },
+                  },
+                },
+                totalTasks: {
+                  type: "integer",
+                  example: 4,
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Bad request (e.g., missing fields, invalid task ID)",
+          },
+          "401": {
+            description: "Unauthorized (invalid or missing token)",
+          },
+          "500": {
+            description: "Internal server error during fetching comments",
+          },
+        },
+      },
+    },
+    "/deleteComment/{id}": {
+      delete: {
+        summary: "Delete a comment by ID",
+        description:
+          "Allows a user to delete a specific comment based on its ID. Token verification is required.",
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "Authorization",
+            in: "header",
+            description: "Bearer token for user authentication",
+            required: true,
+            type: "string",
+          },
+          {
+            name: "id",
+            in: "path",
+            description: "ID of the comment to be deleted",
+            required: true,
+            type: "integer",
+          },
+        ],
+        responses: {
+          "201": {
+            description: "Comment deleted successfully",
+            schema: {
+              type: "object",
+              properties: {
+                status: {
+                  type: "integer",
+                  example: 201,
+                },
+                message: {
+                  type: "string",
+                  example: "Comment deleted successfully",
+                },
+              },
+            },
+          },
+          "400": {
+            description:
+              "Bad request (e.g., missing fields, invalid comment ID)",
+          },
+          "401": {
+            description: "Unauthorized (invalid or missing token)",
+          },
+          "404": {
+            description: "Not found (comment ID does not exist)",
+          },
+          "500": {
+            description: "Internal server error during comment deletion",
+          },
+        },
+      },
+    },
+    "/updateComment": {
+      put: {
+        summary: "Update a comment",
+        description:
+          "Allows a user to update an existing comment, including uploading multiple files. Token verification is required.",
+        consumes: ["multipart/form-data"],
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "Authorization",
+            in: "header",
+            description: "Bearer token for user authentication",
+            required: true,
+            type: "string",
+          },
+          {
+            name: "id",
+            in: "formData",
+            description: "ID of the comment to be updated",
+            required: true,
+            type: "integer",
+          },
+          {
+            name: "taskId",
+            in: "formData",
+            description: "ID of the task associated with the comment",
+            required: true,
+            type: "integer",
+          },
+          {
+            name: "comment",
+            in: "formData",
+            description: "Updated text content of the comment",
+            required: true,
+            type: "string",
+          },
+          {
+            name: "files",
+            in: "formData",
+            description: "Upload multiple files associated with the comment",
+            required: false,
+            type: "file",
+            collectionFormat: "multi",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Comment updated successfully",
+            schema: {
+              type: "object",
+              properties: {
+                status: {
+                  type: "integer",
+                  example: 200,
+                },
+                message: {
+                  type: "string",
+                  example: "Comment updated successfully",
+                },
+                updatedComment: {
+                  type: "object",
+                  properties: {
+                    id: {
+                      type: "integer",
+                      example: 1,
+                    },
+                    comment: {
+                      type: "string",
+                      example: "you didn't want more pace",
+                    },
+                    taskId: {
+                      type: "integer",
+                      example: 1,
+                    },
+                    filePaths: {
+                      type: "array",
+                      items: {
+                        type: "string",
+                        example: "uploads/file1.png",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": {
+            description:
+              "Bad request (e.g., missing fields, invalid comment ID)",
+          },
+          "401": {
+            description: "Unauthorized (invalid or missing token)",
+          },
+          "404": {
+            description: "Not found (comment ID does not exist)",
+          },
+          "500": {
+            description: "Internal server error during comment update",
+          },
+        },
+      },
+    },
   },
   securityDefinitions: {
     Bearer: {

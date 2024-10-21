@@ -180,11 +180,16 @@ export default new class TaskUseCase {
         }
     };
     
-    getTasks = async (filter: TaskType,loggedUserId:number,role?:String[],isCompleted?:boolean): Promise<PromiseReturn> => {
+    getTasks = async (filter: TaskType, loggedUserId: number, role?: string[], isCompleted?: boolean, page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {  
-            if(filter===TaskType.AllTasks){
-                const tasks = await TaskRepo.getAllTasks(isCompleted);            
-                if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched All Tasks",task:tasks};
+            let tasks: Task[];
+            let totalTasks: number;
+    
+            if (filter === TaskType.AllTasks) {
+                const result = await TaskRepo.getAllTasks(isCompleted, page, pageSize);
+                tasks = result.tasks;
+                totalTasks = result.totalCount; // Assuming the method returns both tasks and the total count
+                return { status: StatusCode.OK as number, message: "Successfully fetched All Tasks", task:tasks, totalTasks };
             } 
             if(filter===TaskType.YourTasks){
                 const tasks = await TaskRepo.getYourTask(loggedUserId,isCompleted);            
@@ -193,15 +198,15 @@ export default new class TaskUseCase {
             if(filter===TaskType.TeamTasks){
                 const hasAccess = role?.some(r => [RoleName.TO].includes(r as RoleName));
                 if (hasAccess) {
-                    const tasks = await TaskRepo.getTeamTask(loggedUserId,isCompleted);            
-                    if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched team Tasks",task:tasks};
+                    const {totalCount,tasks} = await TaskRepo.getTeamTask(loggedUserId, isCompleted, page, pageSize);            
+                    if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched team Tasks",task:tasks,totalTasks:totalCount};
                 } else {
                     return {status: StatusCode.Unauthorized as number,message: "only TO Can View The TeamTask",};
                 }
             } 
             if(filter===TaskType.DelegatedToOthers){
-                const tasks = await TaskRepo.getDelegatedToOthersTask(loggedUserId,isCompleted);            
-                if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched DelegatedToOthers Tasks",task:tasks};
+                const {tasks,totalCount} = await TaskRepo.getDelegatedToOthersTask(loggedUserId, isCompleted, page, pageSize);            
+                if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched DelegatedToOthers Tasks",task:tasks,totalTasks:totalCount};
             } 
             return { status: StatusCode.BadRequest as number, message: "select appropriate filter." };
         }
@@ -320,8 +325,6 @@ export default new class TaskUseCase {
             throw new Error("Failed to save task history");
         }
     };
-    
-
 
     createComment = async (commentData: TaskCommentData,loggedUserId?:number,roles?:string[]): Promise<PromiseReturn> => {
         try {
@@ -358,6 +361,105 @@ export default new class TaskUseCase {
         }
     };
 
+    updateComment = async (commentData: TaskCommentData, loggedUserId?: number, roles?: string[]): Promise<PromiseReturn> => {
+        try {
+            // Fetch comment with task in a single query
+            const existingComment = await TaskRepo.findCommentById(commentData.commentId);
+            if (!existingComment || !existingComment.task) {
+                return { status: StatusCode.NotFound as number, message: "Comment or Task not found." };
+            }
+    
+            const hasAccess = existingComment.userId === loggedUserId
+            if (!hasAccess) {
+                return { 
+                    status: StatusCode.Unauthorized as number, 
+                    message: `You do not have permission to update comment on task: ${existingComment.task.title}.` 
+                };
+            }
+    
+            const existingUser: User = await UserRepo.getUserById(commentData.userId);
+            if (!existingUser) {
+                return { status: StatusCode.NotFound as number, message: "Comment user not found." };
+            }
+            // Update the comment (partial update)
+            Object.assign(existingComment, commentData);
+            const savedComment = await TaskRepo.createComment(existingComment);
+            return { 
+                status: StatusCode.OK as number, 
+                message: 'Comment updated successfully', 
+                taskComent: savedComment 
+            };
+        } catch (error) {
+            console.error("Error when updating comment:", error);
+            throw error;
+        }
+    };
+    
+    async getComment(
+        taskId: number,
+        loggedUserId?: number,
+        roles?: string[],
+        page: number = 1,
+        pageSize: number = 10
+    ): Promise<PromiseReturn> {
+        try {
+            const existingTask = await TaskRepo.findTaskById(taskId);
+            if (!existingTask) {
+                return { status: StatusCode.NotFound as number, message: "Task doesn't exist." };
+            }
+    
+            const hasAccess = 
+                existingTask.assigned_to === loggedUserId || 
+                existingTask.created_by === loggedUserId || 
+                roles?.some(role => [RoleName.ADMIN, RoleName.MANAGEMENT].includes(role as RoleName)) ||
+                (roles?.includes(RoleName.TO) && existingTask.assignedTo.team.toUserId === loggedUserId);
+    
+            if (!hasAccess) {
+                return { 
+                    status: StatusCode.Unauthorized as number, 
+                    message: `You do not have permission to get comments on task: ${taskId}.` 
+                };
+            }
+    
+            // Use the new repository method to fetch comments with pagination
+            const [comments, totalCount] = await TaskRepo.findCommentsWithPagination(taskId, page, pageSize);
+    
+            return { 
+                status: StatusCode.OK as number, 
+                message: 'Comments fetched successfully', 
+                TaskComment: comments,
+                totalTasks:totalCount // Total count of comments for the task
+            };
+        } catch (error) {
+            console.error("Error when fetching comments:", error);
+            throw error;
+        }
+    }
+    
+
+    deleteComment = async (commentId: number,loggedUserId?:number): Promise<PromiseReturn> => {
+        try {
+            const existingComment = await TaskRepo.findCommentById(commentId);
+            if (!existingComment) {
+                return { status: StatusCode.NotFound as number, message: "comment doesn't exist." };
+            }
+            
+            const hasAccess = existingComment.userId === loggedUserId 
+
+            if (!hasAccess) {
+                return { 
+                    status: StatusCode.Unauthorized as number, 
+                    message: `You do not have permission to delete comment: ${commentId}.` 
+                };
+            }
+            await TaskRepo.deleteComment(commentId); 
+            return { status: StatusCode.Created as number, message: 'Comment deleted successfully' };
+        } catch (error) {
+            console.error("Error when creating comment:", error);
+            throw error;
+        }
+    };
+
     getFilteredAndSortedTasks = async (filterOptions?:FilterOptions): Promise<PromiseReturn | null> => {
         try { 
             const filterTask = await TaskRepo.getFilteredAndSortedTasks(filterOptions); 
@@ -374,8 +476,6 @@ export default new class TaskUseCase {
             throw error;
         }
     };
-
-
 
     async getAnalytics(filter: string): Promise<PromiseReturn> {
         const now = new Date();

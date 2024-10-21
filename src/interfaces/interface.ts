@@ -82,6 +82,7 @@ export interface GetAllUser {
 
 export interface PromiseReturn{
     status: number; 
+    totalTasks?: number; 
     User?:User
     user?:User[] | GetAllUser[]
     message?:string
@@ -91,6 +92,7 @@ export interface PromiseReturn{
     Brand?:Brand
     Task?:Task
     taskComent?:TaskComment
+    TaskComment?:TaskComment[]
     TaskHistory?: Partial<TaskHistory>;  // Make TaskHistory optional
     taskHistory?: Partial<TaskHistory>[];  // Make TaskHistory optional
     Notification?: Partial<Notification>;  
@@ -197,6 +199,7 @@ export interface TaskData {
 }
 
 export interface TaskCommentData {
+    commentId?:number,
     comment: string;           // The content of the comment
     filePaths?: string[];      // Optional array of file paths for attached files
     fileTypes?: string[];      // Optional array of file types for attached files

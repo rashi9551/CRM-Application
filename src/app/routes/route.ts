@@ -55,6 +55,9 @@ router.get('/getTaskHistory/:id',verifyToken,TaskController.getHistory);
 
 
 router.post('/addComment', verifyToken, uploadMiddleware, TaskController.addComment); // Add upload middleware here
+router.delete('/deleteComment/:id',verifyToken,TaskController.deleteComment);
+router.get('/getComment/:id',verifyToken,TaskController.getComment);
+router.put('/updateComment', verifyToken, uploadMiddleware, TaskController.updateComment); // Add upload middleware here
 
 router.get('/filterTask',verifyToken,TaskController.getFilteredAndSortedTasks);
 router.get('/getAnalytics',verifyToken,isAdminOrManagement,TaskController.getAnalytics);

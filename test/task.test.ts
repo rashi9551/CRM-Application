@@ -722,7 +722,7 @@ describe('getTasks', () => {
 
     it('should return all tasks when the filter is "AllTasks"', async () => {
         // Arrange
-        taskRepoMock.getAllTasks.mockResolvedValue(tasks); // Mock tasks data
+        taskRepoMock.getAllTasks.mockResolvedValue({tasks,totalCount:5}); // Mock tasks data
 
         // Act
         const result = await taskUseCase.getTasks(TaskType.AllTasks, loggedUserId, role, isCompleted);
@@ -754,7 +754,7 @@ describe('getTasks', () => {
 
     it('should return team tasks when the filter is "TeamTasks" and the user has TO role', async () => {
         // Arrange
-        taskRepoMock.getTeamTask.mockResolvedValue(tasks); // Mock tasks data
+        taskRepoMock.getTeamTask.mockResolvedValue({tasks,totalCount:5}); // Mock tasks data
 
         // Act
         const result = await taskUseCase.getTasks(TaskType.TeamTasks, loggedUserId, role, isCompleted);
@@ -785,7 +785,7 @@ describe('getTasks', () => {
 
     it('should return delegated to others tasks when the filter is "DelegatedToOthers"', async () => {
         // Arrange
-        taskRepoMock.getDelegatedToOthersTask.mockResolvedValue(tasks); // Mock tasks data
+        taskRepoMock.getDelegatedToOthersTask.mockResolvedValue({tasks,totalCount:5}); // Mock tasks data
 
         // Act
         const result = await taskUseCase.getTasks(TaskType.DelegatedToOthers, loggedUserId, role, isCompleted);

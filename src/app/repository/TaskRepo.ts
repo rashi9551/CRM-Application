@@ -71,18 +71,18 @@ export default new class TaskRepo {
             throw new Error("Failed to save task");
         }
     }
-    async getAllTasks(isComplete: boolean): Promise<Task[] | null> {
-        try {
-            const statusToCheck = isComplete ? TaskStatus.Completed : TaskStatus.Pending;
-            const gettingAllTasks = await this.TaskRepo.find({
-                where: { status: statusToCheck }, // Filter tasks based on the status
-                relations: ['assignedTo', 'createdBy', 'brand', 'inventory', 'event'], // Include any other relations you need
-            });
-            return gettingAllTasks;
-        } catch (error) {
-            console.error("Error getting all tasks:", error);
-            throw error;
-        }
+    async getAllTasks(isCompleted?: boolean, page?: number, pageSize?: number): Promise<{ tasks: Task[], totalCount: number }> {
+        const statusCondition = isCompleted ? TaskStatus.Completed : TaskStatus.Pending;
+
+        const [tasks, totalCount] = await this.TaskRepo.findAndCount({
+            where: {status:statusCondition},
+            skip: (page - 1) * pageSize, // Skip the number of tasks based on the current page
+            take: pageSize, // Limit the number of tasks returned
+            relations: [
+                // Your existing relations
+            ]
+        });
+        return { tasks, totalCount };
     }
 
     async getYourTask(userId: number, isComplete: boolean): Promise<Task[]> {
@@ -104,11 +104,16 @@ export default new class TaskRepo {
         }
     }
     
-    async getDelegatedToOthersTask(created_by: number,isComplete: boolean): Promise<Task[]> {
+    async getDelegatedToOthersTask(
+        created_by: number,
+        isComplete: boolean,
+        page: number = 1,
+        pageSize: number = 10
+    ): Promise<{ tasks: Task[]; totalCount: number }> {
         try {
             const statusCondition = isComplete ? TaskStatus.Completed : TaskStatus.Pending;
-
-            return await this.TaskRepo.createQueryBuilder("task")
+    
+            const [tasks, totalCount] = await this.TaskRepo.createQueryBuilder("task")
                 .leftJoinAndSelect("task.assignedTo", "assignedTo") // Join with assigned user
                 .leftJoinAndSelect("task.createdBy", "createdBy") // Join with creator user
                 .leftJoinAndSelect("task.brand", "brand") // Join with brand
@@ -116,18 +121,27 @@ export default new class TaskRepo {
                 .leftJoinAndSelect("task.event", "event") // Join with event
                 .where("task.created_by = :created_by", { created_by })
                 .andWhere("task.status = :status", { status: statusCondition }) // Check completion status
-                .getMany(); // Filter by creator user
+                .skip((page - 1) * pageSize) // Pagination
+                .take(pageSize) // Pagination
+                .getManyAndCount(); // Get both tasks and count
+    
+            return { tasks, totalCount }; // Return both tasks and the total count
         } catch (error) {
-            console.error("Error fetching user's tasks:", error);
+            console.error("Error fetching delegated tasks:", error);
             throw new Error("Failed to fetch tasks");
         }
     }
+    
 
 
-    async getTeamTask(userId: number,isComplete: boolean): Promise<Task[]> {
+    async getTeamTask(
+        userId: number,
+        isComplete: boolean,
+        page: number = 1,
+        pageSize: number = 10
+    ): Promise<{ tasks: Task[]; totalCount: number }> {
         try {
-            // Fetch the team ID of the user
-            const user=await UserRepo.findUserById(userId)
+            const user = await UserRepo.findUserById(userId);
     
             if (!user || !user.team) {
                 throw new Error("admin can't have the team task");
@@ -135,9 +149,8 @@ export default new class TaskRepo {
     
             const teamId = user.team.id; // Assuming the team has an 'id' field
             const statusCondition = isComplete ? TaskStatus.Completed : TaskStatus.Pending;
-
-            // Fetch tasks assigned to all users in the same team
-            return await this.TaskRepo.createQueryBuilder("task")
+    
+            const [tasks, totalCount] = await this.TaskRepo.createQueryBuilder("task")
                 .leftJoinAndSelect("task.assignedTo", "assignedTo")
                 .leftJoinAndSelect("task.createdBy", "createdBy")
                 .leftJoinAndSelect("task.brand", "brand")
@@ -145,7 +158,11 @@ export default new class TaskRepo {
                 .leftJoinAndSelect("task.event", "event")
                 .where("assignedTo.team_id = :teamId", { teamId }) // Replace with the correct foreign key name
                 .andWhere("task.status = :status", { status: statusCondition }) // Check completion status
-                .getMany();// Fetch all tasks assigned to users in the team
+                .skip((page - 1) * pageSize) // Pagination
+                .take(pageSize) // Pagination
+                .getManyAndCount(); // Get both tasks and count
+    
+            return { tasks, totalCount }; // Return both tasks and the total count
         } catch (error) {
             if (error.message === "admin can't have the team task") {
                 throw new Error("admin can't have the team task");
@@ -154,6 +171,7 @@ export default new class TaskRepo {
             throw new Error("Failed to fetch team tasks");
         }
     }
+    
     async findTaskById(taskId: number): Promise<Task| null> {
         try {
             // Fetch the team ID of the user
@@ -279,6 +297,44 @@ export default new class TaskRepo {
             throw error;
         }
     }
+    async findCommentById(commentId: number): Promise<TaskComment | null> {
+        try {
+            const comment = await this.CommentRepo.findOne({
+                where: { id: commentId },
+                relations: ['task', 'user']  // Including related entities
+            });
+            
+            return comment;
+        } catch (error) {
+            console.error("Error when finding comment by ID:", error);
+            throw error;
+        }
+    }
+    
+    async deleteComment(commentId: number): Promise<string> {
+        try {
+            const result = await this.CommentRepo.delete(commentId);
+            return `Comment with ID ${commentId} deleted successfully`;
+        } catch (error) {
+            console.error("Error when deleting comment:", error);
+            throw error;
+        }
+    }
+
+    async findCommentsWithPagination(taskId: number, page: number, pageSize: number): Promise<[TaskComment[], number]> {
+        try {
+            return await this.CommentRepo.findAndCount({
+                where: { taskId },
+                skip: (page - 1) * pageSize, // Skip the number of comments based on the current page
+                take: pageSize, // Limit the number of comments returned
+                order: { createdAt: 'DESC' } // Order comments by createdAt or any other field
+            });
+        } catch (error) {
+            console.error("Error fetching comments with pagination:", error);
+            throw new Error('Could not fetch comments.'); // You can throw a custom error or rethrow the original error
+        }
+    }
+    
 
     async getFilteredAndSortedTasks(filters: FilterOptions): Promise<Task[]> {
         try {
