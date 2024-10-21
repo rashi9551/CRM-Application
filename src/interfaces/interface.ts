@@ -182,16 +182,18 @@ export interface UserLoginData {
 
 export interface TaskData {
     id?: number;                       // Optional ID for existing tasks
-    title: string;                    // Title of the task
+    title?: string;                    // Title of the task
     description?: string;             // Description should be a string, mark as optional
-    type: Type; 
-    status:TaskStatus;                    // Type of the task
-    assigned_to: number;               // ID of the user assigned to the task
-    created_by: number;                // ID of the user who created the task
+    type?: Type; 
+    status?:TaskStatus;                    // Type of the task
+    assigned_to?: number;               // ID of the user assigned to the task
+    created_by?: number;                // ID of the user who created the task
     brand_id?: number;                 // Optional ID of the brand associated with the task
     inventoryId?: number;                 // Optional ID of the brand associated with the task
     eventId?: number;                 // Optional ID of the brand associated with the task
-    due_date:string;
+    due_date?:string;
+    assignedTo?:User;
+    createdBy?:User
 }
 
 export interface TaskCommentData {

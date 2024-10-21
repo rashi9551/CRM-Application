@@ -226,11 +226,8 @@ export default new class UseCase {
     }
     getHierarchyTo = async (id:number): Promise<PromiseReturn > => {
         try {
-           const getAllTo:User[]=await userRepo.getHierarchyTO(id)
-        //    const userTree=buildTree(getAllTo)
-        console.log(getAllTo);
-        
-           return { status: StatusCode.OK as number, user:getAllTo, message: "all to fetched successfully" };
+           const getAllTo=await userRepo.getHierarchyTO(id)            
+           return getAllTo
         } catch (error) {
             console.error("Error during fetching tree:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
@@ -428,7 +425,8 @@ export default new class UseCase {
             console.error("Error during fetching tree:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when getting brand" };
         }
-    }
+    };
+
     addingBrandContact = async (brandContactData: BrandContactData,loggedUserId:number): Promise<PromiseReturn> => {
         try {
             const existingBrand = await UserRepo.getBrandDetail(brandContactData.brandId);            
@@ -469,6 +467,7 @@ export default new class UseCase {
             };
         }
     };
+
     updateBrandContact = async (brandContactData: BrandContactData,loggedUserId:number): Promise<PromiseReturn> => {
         try {
             const existingBrand = await UserRepo.getBrandDetail(brandContactData.brandId);
@@ -516,6 +515,7 @@ export default new class UseCase {
             };
         }
     };
+
     addBrandOwnership = async (brandOwnershipData: BrandOwnershipData,loggedUserId:number): Promise<PromiseReturn> => {
         try {
             const isExistingBrand=await UserRepo.findBrandByID(brandOwnershipData.brandId)
@@ -541,7 +541,13 @@ export default new class UseCase {
                 
             }
             const allHeirarchyTo=await UserRepo.getHierarchyTO(brandOwnershipData.boUserId)
-            const isLoggedUserWasHisTO = allHeirarchyTo.some(user => user.id === loggedUserId);
+            if(!allHeirarchyTo.user){
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: `user not found`,
+                };
+            }
+            const isLoggedUserWasHisTO = allHeirarchyTo.user.some(user => user.id === loggedUserId);
             console.log(allHeirarchyTo,loggedUserId);
             
             
@@ -586,6 +592,7 @@ export default new class UseCase {
             };
         }
     };
+
     searchUser = async (email: string): Promise<PromiseReturn> => {
         try {
             
@@ -639,6 +646,7 @@ export default new class UseCase {
             };
         }
     };
+
     creatingEvent = async (eventData: EventData): Promise<PromiseReturn> => {
         try {
             // Check if the inventory already exists with the same name (case-sensitive)
@@ -665,6 +673,7 @@ export default new class UseCase {
             };
         }
     };
+
     getAllEvent = async (): Promise<PromiseReturn> => {
         try {
             const events=await userRepo.getAllEvent()
@@ -682,6 +691,7 @@ export default new class UseCase {
             };
         }
     };
+
     getAllInventory = async (): Promise<PromiseReturn> => {
         try {
             const inventory=await userRepo.getAllInventory()

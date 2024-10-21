@@ -1,6 +1,6 @@
 import TaskRepo from '../src/app/repository/TaskRepo'; // Adjust accordingly
 import userRepo from '../src/app/repository/UserRepo'; // Adjust accordingly
-import { GetAllUser, Department, RoleName, UserData, BrandData, BrandContactData, BrandOwnershipData, updatingUserData, EventData, InventoryData, Type, FilterOptions, TaskCommentData } from '../src/interfaces/interface'; // Adjust accordingly
+import { GetAllUser, Department, RoleName, UserData, BrandData, BrandContactData, BrandOwnershipData, updatingUserData, EventData, InventoryData, Type, FilterOptions, TaskCommentData, TaskType, TaskData } from '../src/interfaces/interface'; // Adjust accordingly
 import { StatusCode } from '../src/interfaces/enum';
 import { User } from '../src/entity/User';
 import { Team } from '../src/entity/Team';
@@ -14,7 +14,8 @@ import { Inventory } from '../src/entity/inventory';
 import { Task, TaskStatus } from '../src/entity/Task';
 import { TaskComment } from '../src/entity/TaskComment';
 import { TaskHistory } from '../src/entity/TaskHistory';
-
+import { Notification } from '../src/entity/Notification';
+import { validateOrReject } from 'class-validator';
 
 
 
@@ -84,6 +85,9 @@ jest.mock('../src/app/repository/UserRepo', () => ({
     createInventory: jest.fn(),
     getAllInventory: jest.fn(),
     getAllEvent: jest.fn(),
+    findInventoryById: jest.fn(),
+    findEventById: jest.fn(),
+    getBrandDetail: jest.fn(),
 }));
 
 const taskRepoMock = TaskRepo as jest.Mocked<typeof TaskRepo>;
@@ -97,6 +101,16 @@ jest.mock('../src/app/repository/TaskRepo', () => ({
     findTaskById: jest.fn(),
     createComment: jest.fn(),
     saveTaskHistory: jest.fn(),
+    getExistingNotification: jest.fn(),
+    saveNotification: jest.fn(),
+    getHistory: jest.fn(),
+    getUnreadNotification: jest.fn(),
+    getAllTasks: jest.fn(),
+    getTeamTask: jest.fn(),
+    getYourTask: jest.fn(),
+    getDelegatedToOthersTask: jest.fn(),
+    deleteTask: jest.fn(),
+    saveTask: jest.fn(),
 }));
 
 
@@ -171,7 +185,7 @@ const task :Task={
     eventId: undefined,
     sla: true,
     assignedTo: mockUserCreateResponseData,
-    createdBy: new User,
+    createdBy: mockUserCreateResponseData,
     brand: new Brand,
     inventory: new Inventory,
     event: new Event,
@@ -374,3 +388,847 @@ describe('createComment', () => {
         await expect(taskUseCase.createComment(mockCommentData, loggedUserId, roles)).rejects.toThrow('Database error');
     });
 });
+
+
+
+describe('TaskHistoryLogging', () => {
+
+    const loggedUserId = 4; // Assuming logged-in user's ID is 1
+    const action = 'Task Updated'; // Example action performed
+    const details = 'The Task Evolution on clothing was updated by John Doe'; // Example details
+    const taskHistory={
+        id: 16, // Mock task history ID
+        taskId: task.id,
+        userId: loggedUserId,
+        action,
+        details,
+        task:task,
+        user:mockUserCreateResponseData,
+        createdAt:expect.any(Date), // Mock createdAt value
+    }
+    // Mock repository behavior for saving task history
+    TaskRepo.saveTaskHistory = jest.fn().mockResolvedValue(taskHistory);
+
+    it('should log task history successfully', async () => {
+        // Act
+        const result = await taskUseCase.TaskHistoryLogging(task, action, details, loggedUserId);
+        taskRepoMock.saveTaskHistory.mockResolvedValue(taskHistory)
+        // Assert
+        expect(result).toEqual({
+            id: 16, // Ensure the ID matches
+            taskId: task.id,
+            userId: loggedUserId,
+            action: ' Task Updated', // Ensure the action is correct
+            details: 'The Task Evolution on clothing was updated by undefined', // Ensure the details are correct
+            createdAt: expect.any(Date), // Ensure createdAt is valid and matches
+            task:{},
+            user:{}
+        });
+
+        // Check if the repository save function was called with the correct task history object
+        expect(TaskRepo.saveTaskHistory).toHaveBeenCalledWith(expect.objectContaining({
+            taskId: task.id,
+            userId: loggedUserId,
+            action,
+            details,
+        }));
+    });
+
+    it('should throw an error if saving task history fails', async () => {
+        // Mock an error scenario
+        taskRepoMock.saveTaskHistory.mockRejectedValue(new Error('Failed to save task history'));
+
+        // Act & Assert
+        await expect(taskUseCase.TaskHistoryLogging(task, action, details, loggedUserId))
+            .rejects.toThrow('Failed to save task history');
+
+        // Ensure the saveTaskHistory function was called once
+        expect(TaskRepo.saveTaskHistory).toHaveBeenCalledTimes(3);
+    });
+});
+const newNotification:Notification = {
+    id: 1, // Mock notification ID
+    message:"Task Assigned",
+    isRead: false,
+    recipient: new User,
+    recipientId:2,
+    task,
+    createdAt: expect.any(Date), // Mock creation date
+}
+
+describe('NotificationSending', () => {
+
+    const message = 'Task Assigned'; // Example notification message
+    const recipientId = 4; // Example recipient ID
+    const taskId = 1; // Mock task ID
+    const assignedUser: User = { id: recipientId } as User; // Mock assigned user
+    
+   
+
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('should send a new notification if no existing notification is found', async () => {
+        // Arrange
+        taskRepoMock.getExistingNotification.mockResolvedValue(null); // No existing notification
+        taskRepoMock.saveNotification.mockResolvedValue(newNotification); // Save the new notification
+
+        // Act
+        const result = await taskUseCase.NotificationSending(message, task, assignedUser, recipientId);
+
+        // Assert
+        expect(result).toEqual(newNotification);
+        expect(taskRepoMock.getExistingNotification).toHaveBeenCalledWith(message, task.id, recipientId);
+        expect(taskRepoMock.saveNotification).toHaveBeenCalledWith(expect.objectContaining({
+            message,
+            isRead: false,
+            recipientId: assignedUser.id,  // Adjust based on your actual implementation
+            task: expect.any(Object),
+        }));
+        
+    });
+
+    it('should not create a new notification if an existing notification is found', async () => {
+        // Arrange
+        const existingNotification: Notification = {
+            id: 26,
+            message: "Your task has been updated: Evolution on clothing",
+            isRead: false,
+            createdAt: new Date(),
+            recipientId: 4,
+            recipient: new User(),
+            task: task
+        } ;
+        
+        taskRepoMock.getExistingNotification.mockResolvedValue(existingNotification); // Existing notification found
+
+        // Act
+        const result = await taskUseCase.NotificationSending(message, task, assignedUser, recipientId);
+
+        // Assert
+        expect(result).toBeNull(); // No new notification should be created
+        expect(taskRepoMock.getExistingNotification).toHaveBeenCalledWith(message, task.id, recipientId);
+        expect(taskRepoMock.saveNotification).not.toHaveBeenCalled(); // Ensure saveNotification is not called
+    });
+
+    it('should throw an error if saving notification fails', async () => {
+        // Arrange
+        taskRepoMock.getExistingNotification.mockResolvedValue(null); // No existing notification
+        taskRepoMock.saveNotification.mockRejectedValue(new Error('Failed to save notification')); // Mock error
+
+        // Act & Assert
+        await expect(taskUseCase.NotificationSending(message, task, assignedUser, recipientId))
+            .rejects.toThrow('Failed to save notification');
+
+        // Ensure the saveNotification function was called
+        expect(taskRepoMock.saveNotification).toHaveBeenCalledTimes(1);
+    });
+
+});
+
+
+
+describe('getHistory', () => {
+    const taskId = 1;
+    
+    const mockHistory :Task[]= [
+        task ,
+        task 
+    ]; // Mock task history
+
+    const taskHistory:TaskHistory[]=[{
+        id: 16, // Mock task history ID
+        taskId: task.id,
+        userId: 4,
+        action:"action",
+        details:"details",
+        task:task,
+        user:mockUserCreateResponseData,
+        createdAt:expect.any(Date), // Mock createdAt value
+    }]
+
+    beforeEach(() => {
+        jest.clearAllMocks(); // Clear mock calls between tests
+    });
+
+    it('should return 404 if the task is not found', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(null); // Simulate task not found
+
+        // Act
+        const result = await taskUseCase.getHistory(taskId);
+
+        // Assert
+        expect(result).toEqual({
+            status: 404,
+            message: 'Task not found.'
+        });
+        expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(taskId);
+        expect(taskRepoMock.getHistory).not.toHaveBeenCalled();
+    });
+
+    it('should return 404 if there is no history for the task', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(task); // Simulate task found
+        taskRepoMock.getHistory.mockResolvedValue(null); // Simulate no history found
+    
+        // Act
+        const result = await taskUseCase.getHistory(3); // Call the actual use case method
+    
+        // Assert
+        expect(result).toEqual({
+            status: 404,
+            message: 'There is no history for this task',
+        });
+        expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(3); // Ensure the correct taskId was passed
+        expect(taskRepoMock.getHistory).toHaveBeenCalledWith(3); // Ensure the correct taskId was used for fetching history
+    });
+    
+
+    it('should return task history successfully with status 200', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(task); // Simulate task found
+        taskRepoMock.getHistory.mockResolvedValue(taskHistory); // Simulate history found
+
+        // Act
+        const result = await taskUseCase.getHistory(taskId);
+
+        // Assert
+        expect(result).toEqual({
+            status: 200,
+            message: 'Task Fetched By Id Successfully.',
+            taskHistory: taskHistory
+        });
+        expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(taskId);
+        expect(taskRepoMock.getHistory).toHaveBeenCalledWith(taskId);
+    });
+
+    it('should return 500 if an internal server error occurs', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockRejectedValue(new Error('Unexpected error')); // Simulate error
+    
+        // Act
+        const result = await taskUseCase.getHistory(taskId);
+    
+        // Assert
+        expect(result).toEqual({
+            status: 500,
+            message: 'Internal server error.'
+        });
+        expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(taskId);
+        expect(taskRepoMock.getHistory).not.toHaveBeenCalled();
+    });
+});
+
+
+describe('getNotification', () => {
+    const userId = 1; // Example user ID
+    const unreadNotifications = [ // Mock unread notifications
+        newNotification
+    ];
+
+    beforeEach(() => {
+        jest.clearAllMocks(); // Clear previous mocks before each test
+    });
+
+    it('should return unread notifications successfully', async () => {
+        // Arrange
+        taskRepoMock.getUnreadNotification.mockResolvedValue(unreadNotifications); // Mock the return value
+
+        // Act
+        const result = await taskUseCase.getNotification(userId);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.OK,
+            message: "Task Fetched By Id Successfully.",
+            UnreadNotification: unreadNotifications,
+        });
+        expect(taskRepoMock.getUnreadNotification).toHaveBeenCalledWith(userId); // Ensure the method was called with the correct userId
+    });
+
+    it('should return 500 if an internal server error occurs', async () => {
+        // Arrange
+        taskRepoMock.getUnreadNotification.mockRejectedValue(new Error('Database error')); // Simulate error
+
+        // Act & Assert
+        const result = await taskUseCase.getNotification(userId);
+        expect(result).toEqual({
+            status: StatusCode.InternalServerError,
+            message: "Internal server error.",
+        });
+        expect(taskRepoMock.getUnreadNotification).toHaveBeenCalledWith(userId); // Ensure the method was called with the correct userId
+    });
+});
+
+describe('getTask', () => {
+    const taskId = 1; // Example task ID
+
+    beforeEach(() => {
+        jest.clearAllMocks(); // Clear previous mocks before each test
+    });
+
+    it('should return the task successfully when it exists', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(task); // Mock existing task
+
+        // Act
+        const result = await taskUseCase.getTask(taskId);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.OK,
+            message: "Task Fetched By Id Successfully.",
+            Task: task,
+        });
+        expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(taskId); // Ensure the method was called with the correct taskId
+    });
+
+    it('should return 500 if an internal server error occurs', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockRejectedValue(new Error('Database error')); // Simulate an error
+
+        // Act
+        const result = await taskUseCase.getTask(taskId);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.InternalServerError,
+            message: "Internal server error.",
+        });
+        expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(taskId); // Ensure the method was called with the correct taskId
+    });
+});
+
+
+describe('getTasks', () => {
+    const loggedUserId = 1; // Example logged-in user ID
+    const isCompleted = false; // Example flag for completion
+    const role = ['TO']; // Example role
+    const tasks = [task]; // Example task data
+
+    beforeEach(() => {
+        jest.clearAllMocks(); // Reset all mocks before each test
+    });
+
+    it('should return all tasks when the filter is "AllTasks"', async () => {
+        // Arrange
+        taskRepoMock.getAllTasks.mockResolvedValue(tasks); // Mock tasks data
+
+        // Act
+        const result = await taskUseCase.getTasks(TaskType.AllTasks, loggedUserId, role, isCompleted);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.OK,
+            message: 'Successfully fetched All Tasks',
+            task: tasks,
+        });
+        expect(taskRepoMock.getAllTasks).toHaveBeenCalledWith(isCompleted);
+    });
+
+    it('should return your tasks when the filter is "YourTasks"', async () => {
+        // Arrange
+        taskRepoMock.getYourTask.mockResolvedValue(tasks); // Mock tasks data
+
+        // Act
+        const result = await taskUseCase.getTasks(TaskType.YourTasks, loggedUserId, role, isCompleted);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.OK,
+            message: 'Successfully fetched your Tasks',
+            task: tasks,
+        });
+        expect(taskRepoMock.getYourTask).toHaveBeenCalledWith(loggedUserId, isCompleted);
+    });
+
+    it('should return team tasks when the filter is "TeamTasks" and the user has TO role', async () => {
+        // Arrange
+        taskRepoMock.getTeamTask.mockResolvedValue(tasks); // Mock tasks data
+
+        // Act
+        const result = await taskUseCase.getTasks(TaskType.TeamTasks, loggedUserId, role, isCompleted);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.OK,
+            message: 'Successfully fetched team Tasks',
+            task: tasks,
+        });
+        expect(taskRepoMock.getTeamTask).toHaveBeenCalledWith(loggedUserId, isCompleted);
+    });
+
+    it('should return 401 if the user does not have the TO role when fetching team tasks', async () => {
+        // Arrange
+        const nonTOrole = ['PO']; // User without TO role
+
+        // Act
+        const result = await taskUseCase.getTasks(TaskType.TeamTasks, loggedUserId, nonTOrole, isCompleted);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.Unauthorized,
+            message: 'only TO Can View The TeamTask',
+        });
+        expect(taskRepoMock.getTeamTask).not.toHaveBeenCalled();
+    });
+
+    it('should return delegated to others tasks when the filter is "DelegatedToOthers"', async () => {
+        // Arrange
+        taskRepoMock.getDelegatedToOthersTask.mockResolvedValue(tasks); // Mock tasks data
+
+        // Act
+        const result = await taskUseCase.getTasks(TaskType.DelegatedToOthers, loggedUserId, role, isCompleted);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.OK,
+            message: 'Successfully fetched DelegatedToOthers Tasks',
+            task: tasks,
+        });
+        expect(taskRepoMock.getDelegatedToOthersTask).toHaveBeenCalledWith(loggedUserId, isCompleted);
+    });
+
+    it('should return 400 if no valid filter is provided', async () => {
+        // Act
+        const result = await taskUseCase.getTasks('InvalidFilter' as TaskType, loggedUserId, role, isCompleted);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.BadRequest,
+            message: 'select appropriate filter.',
+        });
+    });
+
+    it('should return 500 if an internal server error occurs', async () => {
+        // Arrange
+        taskRepoMock.getAllTasks.mockRejectedValue(new Error('Unexpected error'));
+
+        // Act
+        const result = await taskUseCase.getTasks(TaskType.AllTasks, loggedUserId, role, isCompleted);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.InternalServerError,
+            message: 'Internal server error.',
+        });
+        expect(taskRepoMock.getAllTasks).toHaveBeenCalledWith(isCompleted);
+    });
+
+    it('should return 403 if an admin tries to access team tasks', async () => {
+        // Arrange
+        const error = new Error("admin can't have the team task");
+        taskRepoMock.getTeamTask.mockRejectedValue(error);
+
+        // Act
+        const result = await taskUseCase.getTasks(TaskType.TeamTasks, loggedUserId, ['Admin'], isCompleted);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.Unauthorized,
+            message: "only TO Can View The TeamTask",
+        });
+    });
+});
+
+
+describe('deleteTask', () => {
+    const taskId = 1;
+    const loggedUserId = 4;
+    const roles = ['ADMIN']; // Example roles
+    const existingTask = { ...task }; // Example task data
+
+    beforeEach(() => {
+        jest.clearAllMocks(); // Reset all mocks before each test
+    });
+
+    it('should delete the task successfully when the user has permission', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(existingTask); // Mock task found
+        taskRepoMock.deleteTask.mockResolvedValue(task); // Mock task deletion
+
+        // Act
+        const result = await taskUseCase.deleteTask(taskId, loggedUserId, roles);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.OK,
+            message: 'Task deleted Successfully.',
+        });
+        expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(taskId);
+        expect(taskRepoMock.deleteTask).toHaveBeenCalledWith(taskId);
+    });
+
+    it('should return 404 if the task is not found', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(null); // Mock task not found
+
+        // Act
+        const result = await taskUseCase.deleteTask(taskId, loggedUserId, roles);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.NotFound,
+            message: 'Task not found.',
+        });
+        expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(taskId);
+        expect(taskRepoMock.deleteTask).not.toHaveBeenCalled();
+    });
+
+    it('should return 401 if the user does not have permission to delete the task', async () => {
+        // Arrange
+        const taskCreatedByAnotherUser = { ...existingTask, created_by: 999 }; // Mock task created by another user
+        taskRepoMock.findTaskById.mockResolvedValue(taskCreatedByAnotherUser); // Mock task found
+
+        // Act
+        const result = await taskUseCase.deleteTask(taskId, loggedUserId, roles);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.Unauthorized,
+            message: `You do not have permission to remove this task: ${taskCreatedByAnotherUser.title}.`,
+        });
+        expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(taskId);
+        expect(taskRepoMock.deleteTask).not.toHaveBeenCalled();
+    });
+
+    it('should return 500 if an internal server error occurs during task deletion', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(existingTask); // Mock task found
+        taskRepoMock.deleteTask.mockRejectedValue(new Error('Unexpected error')); // Simulate error during deletion
+
+        // Act
+        const result = await taskUseCase.deleteTask(taskId, loggedUserId, roles);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.InternalServerError,
+            message: 'Internal server error.',
+        });
+        expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(taskId);
+        expect(taskRepoMock.deleteTask).toHaveBeenCalledWith(taskId);
+    });
+});
+
+describe('validateUserAndBrand', () => {
+    const taskData: TaskData = {
+        assigned_to: 1,
+        created_by: 2,
+        brand_id: 3,
+        inventoryId: 4,
+        eventId: 5,
+        title: '',
+        type: Type.Brand,
+        status: TaskStatus.Completed,
+        due_date: ''
+    };
+
+    beforeEach(() => {
+        jest.clearAllMocks(); // Clear mocks before each test
+    });
+
+    it('should pass validation if all user, brand, inventory, and event exist', async () => {
+        // Arrange
+        userRepoMock.getUserById.mockResolvedValue(mockUserCreateResponseData); // Mock users exist
+        userRepoMock.getBrandDetail.mockResolvedValue(new Brand); // Mock brand exists
+        userRepoMock.findInventoryById.mockResolvedValue(new Inventory); // Mock inventory exists
+        userRepoMock.findEventById.mockResolvedValue(new Event); // Mock event exists
+
+        // Act
+        await expect(taskUseCase.validateUserAndBrand(taskData)).resolves.not.toThrow();
+
+        // Assert
+        expect(userRepoMock.getUserById).toHaveBeenCalledWith(taskData.assigned_to);
+        expect(userRepoMock.getUserById).toHaveBeenCalledWith(taskData.created_by);
+        expect(userRepoMock.getBrandDetail).toHaveBeenCalledWith(taskData.brand_id);
+        expect(userRepoMock.findInventoryById).toHaveBeenCalledWith(taskData.inventoryId);
+        expect(userRepoMock.findEventById).toHaveBeenCalledWith(taskData.eventId);
+    });
+
+    it('should throw 404 if assigned user does not exist', async () => {
+        // Arrange
+        userRepoMock.getUserById.mockResolvedValueOnce(null); // Mock assigned user not found
+
+        // Act & Assert
+        await expect(taskUseCase.validateUserAndBrand(taskData)).rejects.toEqual({
+            status: StatusCode.NotFound,
+            message: 'Assigned user not found.'
+        });
+        expect(userRepoMock.getUserById).toHaveBeenCalledWith(taskData.assigned_to);
+    });
+
+    it('should throw 404 if created user does not exist', async () => {
+        // Arrange
+        userRepoMock.getUserById
+            .mockResolvedValueOnce(mockUserCreateResponseData) // Mock assigned user found
+            .mockResolvedValueOnce(null); // Mock created user not found
+
+        // Act & Assert
+        await expect(taskUseCase.validateUserAndBrand(taskData)).rejects.toEqual({
+            status: StatusCode.NotFound,
+            message: 'Created user not found.'
+        });
+        expect(userRepoMock.getUserById).toHaveBeenCalledWith(taskData.created_by);
+    });
+
+    it('should throw 404 if brand does not exist', async () => {
+        // Arrange
+        userRepoMock.getUserById.mockResolvedValue(mockUserCreateResponseData); // Mock users found
+        userRepoMock.getBrandDetail.mockResolvedValueOnce(null); // Mock brand not found
+
+        // Act & Assert
+        await expect(taskUseCase.validateUserAndBrand(taskData)).rejects.toEqual({
+            status: StatusCode.NotFound,
+            message: 'Brand not found.'
+        });
+        expect(userRepoMock.getBrandDetail).toHaveBeenCalledWith(taskData.brand_id);
+    });
+
+    it('should throw 404 if inventory does not exist', async () => {
+        // Arrange
+        userRepoMock.getUserById.mockResolvedValue(mockUserCreateResponseData); // Mock users found
+        userRepoMock.getBrandDetail.mockResolvedValue(new Brand); // Mock brand found
+        userRepoMock.findInventoryById.mockResolvedValueOnce(null); // Mock inventory not found
+
+        // Act & Assert
+        await expect(taskUseCase.validateUserAndBrand(taskData)).rejects.toEqual({
+            status: StatusCode.NotFound,
+            message: 'Inventory not found.'
+        });
+        expect(userRepoMock.findInventoryById).toHaveBeenCalledWith(taskData.inventoryId);
+    });
+
+    it('should throw 404 if event does not exist', async () => {
+        // Arrange
+        userRepoMock.getUserById.mockResolvedValue(mockUserCreateResponseData); // Mock users found
+        userRepoMock.getBrandDetail.mockResolvedValue(new Brand()); // Mock brand found
+        userRepoMock.findInventoryById.mockResolvedValue(new Inventory()); // Mock inventory found
+        userRepoMock.findEventById.mockResolvedValueOnce(null); // Mock event not found
+    
+        // Act & Assert
+        await expect(taskUseCase.validateUserAndBrand(taskData)).rejects.toEqual({
+            status: StatusCode.NotFound,
+            message: 'Event not found.'
+        });
+    });
+});
+    
+
+const mockTask: Task = {
+    id: 3,
+    title: "Evolution on clothing",
+    description: "Design",
+    type: Type.Brand,
+    status: TaskStatus.Pending,
+    createdAt: new Date(),
+    due_date: new Date(),
+    assigned_to: 4,
+    created_by: 4,
+    brand_id: 1,
+    sla: true,
+    assignedTo: mockUserCreateResponseData,
+    createdBy: mockUserCreateResponseData,
+    brand: new Brand(),
+    inventory: new Inventory(),
+    event: new Event(),
+    comments: [],
+    notifications: [],
+    history: []
+};
+
+
+
+
+
+// describe('updateTask', () => {
+
+//     beforeEach(() => {
+//         jest.clearAllMocks(); // Clear mocks before each test
+//     });
+
+
+
+//     it('should save task history successfully', async () => {
+//         const mockTask = { ...task,id: 3 ,};  // Assuming the task with ID 3 exists
+//         const mockUserId = 3;
+//         const action = 'Task Updated';
+//         const details = 'The Task Updated Title was updated.';
+    
+//         // Mocking the save method
+//         taskRepoMock.findTaskById.mockResolvedValue(mockTask);
+
+    
+//         const result = await taskUseCase.TaskHistoryLogging(mockTask, action, details, mockUserId);
+        
+//         expect(result.taskId).toBe(mockTask.id);
+//         expect(result.userId).toBe(mockUserId);
+//         expect(result.action).toBe(action);
+//         expect(result.details).toBe(details);
+//     });
+
+    
+
+    // it('should return 404 if task not found', async () => {
+    //     // Arrange
+    //     const taskData :TaskData= {
+    //         id: 999, title: 'Updated Title',
+    //         type: Type.Brand,
+    //         status:TaskStatus.Pending,
+    //         assigned_to: 4,
+    //         created_by: 4,
+    //         due_date: ''
+    //     };    
+    //         const loggedUserId = 4;
+
+    //     // Mock non-existent task
+    //     taskRepoMock.findTaskById.mockResolvedValue(null);
+    //     taskRepoMock.saveTask.mockRejectedValue(task);
+
+    //     // Act
+    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+
+    //     // Assert
+    //     expect(result.status).toBe(StatusCode.NotFound);
+    //     expect(result.message).toBe("Task not found.");
+    // });
+
+    // it('should return 403 if user is unauthorized to update', async () => {
+    //     // Arrange
+    //     const taskData :TaskData= {
+    //         id: 999, title: 'Updated Title',
+    //         type: Type.Brand,
+    //         status:TaskStatus.Pending,
+    //         assigned_to: 2,
+    //         created_by: 3,
+    //         due_date: ''
+    //     };        
+    //     const loggedUserId = 200; // User without permission
+
+    //     // Mock existing task with different creator and assignee
+    //     taskRepoMock.findTaskById.mockResolvedValue(task);
+    //     taskRepoMock.saveTask.mockRejectedValue(task);
+
+    //     // Act
+    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+
+    //     // Assert
+    //     expect(result.status).toBe(StatusCode.Unauthorized);
+    //     expect(result.message).toBe("Only the user who created the task, the assignee, or users with admin or management roles have permission to update it.");
+    // });
+
+    // it('should return 400 if trying to update a completed task', async () => {
+    //     // Arrange
+    //     const taskData:TaskData ={
+    //         id: 999, title: 'Updated Title',
+    //         type: Type.Brand,
+    //         status:TaskStatus.Pending,
+    //         assigned_to: 4,
+    //         created_by: 4,
+    //         due_date: ''
+    //     }; 
+    //     const loggedUserId = 4;
+
+    //     // Mock existing task as completed
+    //     taskRepoMock.findTaskById.mockResolvedValue({...task,status:TaskStatus.Completed});
+    //     taskRepoMock.saveTask.mockRejectedValue(task);
+
+    //     // Act
+    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+
+    //     // Assert
+    //     expect(result.status).toBe(StatusCode.BadRequest);
+    //     expect(result.message).toBe("Cannot update a completed task.");
+    // });
+
+    // it('should return 403 if non-assignee tries to change status to completed', async () => {
+    //     // Arrange
+    //     const taskData:TaskData ={
+    //         id: 999, title: 'Updated Title',
+    //         type: Type.Brand,
+    //         status:TaskStatus.Completed,
+    //         assigned_to: 3,
+    //         created_by: 4,
+    //         due_date: ''
+    //     };         
+    //     const loggedUserId = 4; // Not the assignee
+
+    //     // Mock existing task
+    //     taskRepoMock.findTaskById.mockResolvedValue(task);
+    //     taskRepoMock.saveTask.mockRejectedValue(task);
+
+    //     // Act
+    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+    //             console.log(result,"=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+
+    //     // Assert
+    //     expect(result.status).toBe(StatusCode.InternalServerError);
+    //     expect(result.message).toBe("Only the user who created the task, the assignee, or users with admin or management roles have permission to update it.");
+    // });
+
+    // it('should allow the creator to reassign the task', async () => {
+    //     // Arrange
+    //     const mockTask:Task={...task}
+    //     mockTask.status=TaskStatus.Pending
+    //     const taskData:TaskData ={
+    //         id: 999, title: 'Updated Title',
+    //         type: Type.Brand,
+    //         status:TaskStatus.Pending,
+    //         assigned_to: 4,
+    //         created_by: 4,
+    //         due_date: ''
+    //     };  // New assignee
+    //     const loggedUserId = 4; // The creator
+
+    //     // Mock existing task
+    //     taskRepoMock.findTaskById.mockResolvedValue(mockTask);
+
+    //     taskRepoMock.saveTask.mockResolvedValue({
+    //         ...task,
+    //         assigned_to: 4,
+    //     });
+
+    //     // Act
+    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+
+    //     // Assert
+    //     expect(result.status).toBe(StatusCode.Created);
+    //     expect(result.message).toBe("Task updated successfully.");
+    //     expect(result.Task?.assigned_to).toBe(3); // Verify the task was reassigned
+    // });
+
+
+
+    // it('should handle unexpected errors', async () => {
+    //     // Arrange
+    //     const mockTask:Task={...task}
+    //     mockTask.status=TaskStatus.Pending
+    //     const taskData:TaskData ={
+    //         id: 1, title: 'Updated Title',
+    //         type: Type.Brand,
+    //         status:TaskStatus.Pending,
+    //         assigned_to: 4,
+    //         created_by: 4,
+    //         due_date: ''
+    //     };
+    //     const loggedUserId = 4;
+        
+    //     // Mock existing task
+    //     taskRepoMock.findTaskById.mockResolvedValue(mockTask);
+
+    //     // Simulate unexpected error during saving
+    //     taskRepoMock.saveTask.mockRejectedValue(new Error("Unexpected database error"));
+
+    //     // Act
+    //     const result = await taskUseCase.updateTask(taskData, loggedUserId);
+        
+
+    //     // Assert
+    //     expect(result.status).toBe(StatusCode.InternalServerError);
+    //     expect(result.message).toBe("Internal server error.");
+    // });
+// });
+
+

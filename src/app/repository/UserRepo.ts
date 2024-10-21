@@ -3,12 +3,13 @@ import { AppDataSource } from '../../data-source';
 import { User } from '../../entity/User';
 import { Team } from '../../entity/Team';
 import { Brand } from '../../entity/Brand';
-import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData, InventoryData, EventData } from '../../interfaces/interface';
+import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData, InventoryData, EventData, PromiseReturn } from '../../interfaces/interface';
 import { BrandContact } from '../../entity/BrandContact';
 import { BrandOwnership } from '../../entity/BrandOwnership';
 import bcrypt from 'bcryptjs';
 import { Event } from '../../entity/Event';
 import { Inventory } from '../../entity/inventory';
+import { StatusCode } from '../../interfaces/enum';
 
 
 export default new class UserRepo {
@@ -34,12 +35,17 @@ export default new class UserRepo {
 
      // Existing method to find a user by ID
      findUserById = async (userId: number): Promise<User | null> => {
-        const user = await this.UserRepo.findOne({
-            where: { id: userId },
-            relations: ['team'], // Fetch the related 'team' entity
-        });
-    
-        return user;    };
+        try{
+            const user = await this.UserRepo.findOne({
+                where: { id: userId },
+                relations: ['team'], // Fetch the related 'team' entity
+            });
+        
+            return user; 
+        } catch (error) {
+            throw new Error("Failed to find user by id: " + error.message);
+        }  
+     };
     saveUser = async (updatedData: User,isExistingTo?:boolean): Promise<User | null> => {
         try {
             
@@ -443,7 +449,7 @@ export default new class UserRepo {
             throw error;
         }
     }
-    getHierarchyTO = async (userId: number): Promise<any> => {
+    getHierarchyTO = async (userId: number): Promise<PromiseReturn> => {
         try {
             // Fetch all users with their children in a single query
             const fullTree = await this.UserRepo.find({ relations: ['children', 'parent'] });
@@ -471,7 +477,7 @@ export default new class UserRepo {
                 
             }
             
-            return hierarchyTOs
+            return  { status: StatusCode.OK as number, user:hierarchyTOs, message: "all to fetched successfully" };
         } catch (error) {
             console.error("Error during fetching TO hierarchy:", error);
             return { status: 500, message: "Error fetching TO hierarchy" };

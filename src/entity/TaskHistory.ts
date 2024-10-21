@@ -7,9 +7,9 @@ export class TaskHistory {
     @PrimaryGeneratedColumn()
     id: number;
 
-    // Store the task ID
-    @Column({ name: 'taskId', nullable: true }) // Set nullable to false
+    @Column({ name: 'taskId', nullable: false }) // Make sure taskId is not nullable
     taskId: number;
+    
 
     // Use JoinColumn to specify the task relationship with the taskId
     @ManyToOne(() => Task, (task) => task.history, { onDelete: 'CASCADE' })
@@ -32,4 +32,5 @@ export class TaskHistory {
 
     @Column({ type: 'text' })
     details: string; // Additional details about the action
+    static save: jest.Mock<any, any, any>;
 }

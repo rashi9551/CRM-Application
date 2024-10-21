@@ -259,6 +259,7 @@ export default new class TaskRepo {
             const savedTaskHistory = await this.TaskHistoryRepo.save(taskHistory); // Save the task history to the database
             return savedTaskHistory; // Return the saved task history entry
         } catch (error) {
+            console.log(error,"=----=-=-");
             console.error("Error saving task history:", error);
             throw new Error("Failed to save task history");
         }

@@ -9,6 +9,8 @@ import { Notification } from '../../entity/Notification';
 import { TaskHistory } from '../../entity/TaskHistory';
 import { TaskComment } from '../../entity/TaskComment';
 import {AnalyticsFilter} from '../../interfaces/interface'
+import { validateTaskData } from '../../middleware/validateTaskData';
+import { checkTaskPermission, handleError, handleHistoryAndNotifications, handleTaskUpdate } from '../../middleware/updateMiddleware';
 export default new class TaskUseCase {
     
     createTask = async (taskData: TaskData,loggedUserId:number): Promise<PromiseReturn> => {
@@ -17,6 +19,12 @@ export default new class TaskUseCase {
             const { due_date, ...rest } = taskData;
             let flag:boolean=true
             task.due_date = new Date(due_date); // Convert the string to a Date object
+            if (!validateTaskData(taskData)) {
+                return { 
+                    status: StatusCode.BadRequest as number, 
+                    message: "Invalid task data. Please check the provided fields."
+                };
+            }
             Object.assign(task, rest); // Assign other properties to the task entity
             await validateOrReject(task);
 
@@ -51,7 +59,7 @@ export default new class TaskUseCase {
             if (!createdUser) return { status: StatusCode.NotFound as number, message: "CreatedUser Not Found" }; 
             const taskCreating=await TaskRepo.createTask(taskData)
             await this.NotificationSending(`You have been assigned a new task: ${taskCreating.title}`,taskCreating,assignedUser,taskData.assigned_to)
-            await this.TaskHistoryLogging(taskCreating,createdUser,TaskHistoryAction.TASK_CREATED,`The Task ${taskCreating.title} was created by ${createdUser.name} and assigned to ${assignedUser.name}`,loggedUserId)
+            await this.TaskHistoryLogging(taskCreating,TaskHistoryAction.TASK_CREATED,`The Task ${taskCreating.title} was created by ${createdUser.name} and assigned to ${assignedUser.name}`,loggedUserId)
             return { status: StatusCode.Created as number, message: "Task created successfully.",Task:taskCreating };
     
         } catch (error) {
@@ -66,142 +74,62 @@ export default new class TaskUseCase {
             return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
     };
-    updateTask = async (taskData: TaskData, loggedUserId?: number,roles?:string[]): Promise<PromiseReturn> => {
+
+
+    updateTask = async (taskData: TaskData, loggedUserId?: number, roles?: string[]): Promise<PromiseReturn> => {
         try {
-            let flag: boolean = true;
-            let taskHistory: TaskHistory | undefined;
-            let notification: Notification | undefined;
+            // Validate the task data
+            const validationResult = validateTaskData(taskData);
+            if (!validationResult.valid) {
+                return { status: StatusCode.BadRequest as number, message: validationResult.message };
+            }
+    
+            // Fetch the existing task
             const existingTask = await TaskRepo.findTaskById(taskData.id);
-            console.log(loggedUserId,"=-=-=-");
-            
             if (!existingTask) {
                 return { status: StatusCode.NotFound as number, message: "Task not found." };
             }
-            const hasPermission = 
-            existingTask.created_by === loggedUserId ||
-            existingTask.assigned_to === loggedUserId ||
-            roles?.some(role => [RoleName.ADMIN, RoleName.MANAGEMENT].includes(role as RoleName));
-            
+    
+            // Permission check
+            const hasPermission = checkTaskPermission(existingTask, loggedUserId, roles);
             if (!hasPermission) {
                 return {
                     status: StatusCode.Unauthorized as number,
-                    message: "Only the user who created the task, the assignee, or users with admin or management roles have permission to update it.",
+                    message: "You don't have permission to update this task.",
                 };
             }
-
+    
+            // Check if task is completed and cannot be updated
             if (existingTask.status === TaskStatus.Completed) {
-                return {
-                    status: StatusCode.BadRequest as number,
-                    message: "Cannot update a completed task.",
-                };
+                return { status: StatusCode.BadRequest as number, message: "Cannot update a completed task." };
             }
-            if(taskData.status && taskData.status===TaskStatus.Completed  ){
-                if( existingTask.assigned_to!=loggedUserId){
-                    return {
-                    status: StatusCode.Unauthorized as number,
-                    message: "Only the user who assigned_to   has permission to update the status.",
-                    }
-                };
+    
+            try {
+                const assignedTo=existingTask.assignedTo
+                const createdBy=existingTask.createdBy
+                delete existingTask.assignedTo
+                delete existingTask.createdBy
+                // Handle task status update and reassignment logic
+                const { flag, flag2, updatedTask } = await handleTaskUpdate(existingTask, taskData, loggedUserId);
+                console.log(flag, flag2, updatedTask, "this was reassigning time okey");
+                const savedTask = await TaskRepo.saveTask(updatedTask); // <--- Saving the updated task here
+                console.log(savedTask);
                 
-                flag=false
-            }
-            await this.validateUserAndBrand(taskData);
-
-    
-            let flag2:boolean=true
-    
-            if (taskData.assigned_to && existingTask.assigned_to !== taskData.assigned_to) {
-                if(existingTask.created_by!==loggedUserId){
-                    return {
-                        status: StatusCode.Unauthorized as number,
-                        message: `Only the user who created user: ${existingTask.createdBy.name}  has permission to reassign the user.`,
-                    };
-                }
-               
-                flag = false; 
-                flag2=false;
-                existingTask.assigned_to = taskData.assigned_to; // Update assigned user here
-            }
-    
-            Object.assign(existingTask, taskData);
-            await validateOrReject(existingTask);
-            console.log(existingTask,"-=ds;sd;csdknakjlnjksan ithu task existing");
+                // Further logic for saving and processing the updated task
+                const { taskHistory, notification } = await handleHistoryAndNotifications(flag, flag2, savedTask, loggedUserId,assignedTo,createdBy);
+                delete notification?.task
+                return { status: 200, message: "Task updated successfully", taskHistory, Notification:notification,Task:savedTask };
             
-            const assignedTo=existingTask.assignedTo
-            const createdBy=existingTask.createdBy
-            delete existingTask.assignedTo; // Ensure this is necessary
-            delete existingTask.createdBy; // Ensure this is necessary]            
-            const updatedTask = await TaskRepo.saveTask(existingTask);            
-            if (flag) {  
-                console.log("task update nadakunundy");
-              
-                [taskHistory, notification] = await Promise.all([
-                    this.TaskHistoryLogging(
-                        updatedTask,
-                        updatedTask.createdBy,
-                        TaskHistoryAction.TASK_UPDATED,
-                        `The Task ${updatedTask.title} was updated by ${updatedTask?.createdBy?.name}`,
-                        loggedUserId
-                    ),
-                    this.NotificationSending(
-                        `Your task has been updated: ${updatedTask.title}`,
-                        updatedTask,
-                        assignedTo,
-                        createdBy.id
-                    ),
-                ]);
-            } else if(flag2){
-                console.log("task complete nadakunundy");
-
-                taskHistory=await this.TaskHistoryLogging(
-                    updatedTask,
-                    createdBy,
-                    TaskHistoryAction.TASK_COMPLETED,
-                    `The Task ${updatedTask.title} was update the status as comleted by ${assignedTo.name}`,
-                    loggedUserId
-                );
-            } else if(!flag2){
-                console.log("reassigning nadakunundy");
-                [taskHistory, notification] = await Promise.all([
-                    this.TaskHistoryLogging(
-                        existingTask,
-                        createdBy,
-                        TaskHistoryAction.TASK_REASSIGNED,
-                    `The Task ${existingTask.title} was reassigned by ${createdBy.name} and assigned to ${assignedTo.name}` ,// MARKED CHANGE
-                    loggedUserId
-                    ),
-                    this.NotificationSending(
-                        `You have been assigned a new task: ${existingTask.title}`,
-                        existingTask,
-                        assignedTo,
-                        taskData.assigned_to
-                    ),
-                    this.NotificationSending(
-                        `Your have  been removed from the task: ${existingTask.title}`,
-                        existingTask,
-                        assignedTo,
-                        assignedTo.id
-                    )
-                ]);
+            } catch (error) {
+                // Handle the error properly using handleError
+                return handleError(error);
             }
-            delete taskHistory?.task 
-            delete taskHistory?.user 
-            delete notification?.recipient
-            delete notification?.task
-            return { status: StatusCode.Created as number, message: "Task updated successfully.", Task: updatedTask, TaskHistory:taskHistory,Notification :notification};
         } catch (error) {
-            if (Array.isArray(error) && error.length > 0) {
-                const firstError = error[0];
-                const firstConstraintKey = Object.keys(firstError.constraints || [])[0];
-                const firstConstraintMessage = firstError.constraints[firstConstraintKey];
-                const fieldName = firstError.property;
-                return { status: StatusCode.BadRequest as number, message: `${fieldName}: ${firstConstraintMessage}` };
-            }
-            console.error("Error during updating task:", error);
-            return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
+            return handleError(error);
         }
     };
 
+      
 
     async validateUserAndBrand(taskData: TaskData) {
         if (taskData.assigned_to) {
@@ -225,6 +153,8 @@ export default new class TaskUseCase {
             if (!existingEvent) throw { status: StatusCode.NotFound as number, message: "Event not found." };
         }
     }
+
+
     deleteTask = async (taskId:number,loggedUserId:number,roles:string[]): Promise<PromiseReturn> => {
         try {  
             const existingTask = await TaskRepo.findTaskById(taskId);            
@@ -236,15 +166,16 @@ export default new class TaskUseCase {
             if (!hasAccess) {
                 return { 
                     status: StatusCode.Unauthorized as number, 
-                    message: `You do not have permission to remove  this task: ${existingTask.title}.` 
+                    message: `You do not have permission to remove this task: ${existingTask.title}.` 
                 };
             }
            await TaskRepo.deleteTask(taskId);
             return { status: StatusCode.OK as number, message: "Task deleted Successfully."};
-        }catch (error) {
+        }
+        catch (error) {
                 console.error("Error during getting task :", error);
                 return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
-            }
+        }
     };
     
     getTasks = async (filter: TaskType,loggedUserId:number,role?:String[],isCompleted?:boolean): Promise<PromiseReturn> => {
@@ -255,23 +186,24 @@ export default new class TaskUseCase {
             } 
             if(filter===TaskType.YourTasks){
                 const tasks = await TaskRepo.getYourTask(loggedUserId,isCompleted);            
-                if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched  your Tasks",task:tasks};
+                if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched your Tasks",task:tasks};
             } 
             if(filter===TaskType.TeamTasks){
                 const hasAccess = role?.some(r => [RoleName.TO].includes(r as RoleName));
                 if (hasAccess) {
                     const tasks = await TaskRepo.getTeamTask(loggedUserId,isCompleted);            
-                    if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched  team Tasks",task:tasks};
+                    if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched team Tasks",task:tasks};
                 } else {
                     return {status: StatusCode.Unauthorized as number,message: "only TO Can View The TeamTask",};
                 }
             } 
             if(filter===TaskType.DelegatedToOthers){
                 const tasks = await TaskRepo.getDelegatedToOthersTask(loggedUserId,isCompleted);            
-                if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched  DelegatedToOthers Tasks",task:tasks};
+                if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched DelegatedToOthers Tasks",task:tasks};
             } 
             return { status: StatusCode.BadRequest as number, message: "select appropriate filter." };
-        }catch (error) {
+        }
+        catch (error) {
             console.log(error);
             
             if (error.message === "admin can't have the team task") {
@@ -282,8 +214,9 @@ export default new class TaskUseCase {
             }
                 console.error("Error during getting asll task:", error);
                 return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
-            }
-        };
+        }
+    };
+
     getTask = async (taskId:number): Promise<PromiseReturn> => {
         try {  
             const existingTask = await TaskRepo.findTaskById(taskId);
@@ -293,6 +226,8 @@ export default new class TaskUseCase {
                 return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
             }
     };
+
+
     getNotification = async (userId:number): Promise<PromiseReturn> => {
         try {  
             const getUnreadNotification = await TaskRepo.getUnreadNotification(userId);
@@ -302,6 +237,7 @@ export default new class TaskUseCase {
                 return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
             }
     };
+
     getHistory = async (taskId:number): Promise<PromiseReturn> => {
         try {  
             const existingTask = await TaskRepo.findTaskById(taskId);
@@ -318,16 +254,17 @@ export default new class TaskUseCase {
                 return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
             }
     };
+
+
     NotificationSending=async(message:string,task:Task,assignedUser:User,recipientId:number):Promise<Notification | null> => {
         try {
-            console.log("messages okkey",message,"-=-=-=-=-=-=-=-=-=-=-=-=");
             const existingNotification=await TaskRepo.getExistingNotification(message,task.id,recipientId)
             // If no duplicate notification exists, create a new one
             if (!existingNotification) {
                 const notification = new Notification();
                 notification.message = message;
                 notification.isRead = false;
-                notification.recipient = assignedUser; // Set the new user as the recipient
+                notification.recipientId=recipientId
                 notification.task = task; 
                 return await TaskRepo.saveNotification(notification);
             }else{
@@ -342,22 +279,36 @@ export default new class TaskUseCase {
     }
 
 
-    TaskHistoryLogging = async (task: Task, user: User, action: string, details: string,loggedUserId:number):Promise<TaskHistory> => {
+    TaskHistoryLogging = async (task: Task, action: string, details: string, loggedUserId: number): Promise<TaskHistory> => {
         try {
-            console.log("history store avunnund",action,"-=-=-=-=-=-=-=-=-=-=-=-=");
-
+            console.log("Task history log action:", action, "Details:", details);
+            
+            // Check if task exists
+            if (!task || !task.id) {
+                throw new Error("Task not found or invalid task ID");
+            }
+            
+            // Create new task history instance
             const taskHistory = new TaskHistory();
-            taskHistory.taskId = task.id; // Set the task related to the history log
-            taskHistory.userId = loggedUserId; // Set the task related to the history log
-            taskHistory.action = action; // Set the action (e.g., "assigned", "status_changed")
-            taskHistory.details = details; // Add any relevant details about the action            
-            // Save the task history in the database
-            return await TaskRepo.saveTaskHistory(taskHistory);
+            taskHistory.taskId = task.id; // Set the task ID
+            taskHistory.userId = loggedUserId; // Set the user ID
+            taskHistory.action = action; // Action performed
+            taskHistory.details = details; // Details about the action
+    
+            // Log task history before saving
+            console.log("Task history to be saved:", taskHistory);
+    
+            // Save the task history in the database using the correct repository
+            const savedHistory = await TaskRepo.saveTaskHistory(taskHistory); // Make sure you are using the TaskHistoryRepo
+            console.log("Task history saved successfully:", savedHistory);
+    
+            return savedHistory;
         } catch (error) {
             console.error("Error during task history logging:", error);
             throw new Error("Failed to save task history");
         }
     };
+    
 
 
     createComment = async (commentData: TaskCommentData,loggedUserId?:number,roles?:string[]): Promise<PromiseReturn> => {
@@ -387,7 +338,7 @@ export default new class TaskUseCase {
             Object.assign(comment, commentData); 
 
             const savedComment = await TaskRepo.createComment(comment); 
-            await this.TaskHistoryLogging(existingTask,existingUser,TaskHistoryAction.TASK_COMMENT_ADDED,`the task have a  new comment on: ${existingTask.title} by ${existingUser.name}`,loggedUserId)
+            await this.TaskHistoryLogging(existingTask,TaskHistoryAction.TASK_COMMENT_ADDED,`the task have a  new comment on: ${existingTask.title} by ${existingUser.name}`,loggedUserId)
             return { status: StatusCode.Created as number, message: 'Comment added successfully', taskComent: savedComment };
         } catch (error) {
             console.error("Error when creating comment:", error);
@@ -506,7 +457,6 @@ export default new class TaskUseCase {
             },
         };
     }
-
 
     
 }

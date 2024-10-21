@@ -34,7 +34,7 @@ export const scheduleTaskNotifications = () => {
                     const notification = new Notification();
                     notification.message = message;
                     notification.isRead = false;
-                    notification.recipient = assignedUser; // Set the user as the recipient
+                    notification.recipientId = assignedUser.id; // Set the user as the recipient
                     notification.task = task; 
                     notificationsToSave.push(notification); // Add notification to the batch
                 }
