@@ -1799,6 +1799,206 @@ const swaggerOptions = {
       },
     },
 
+    "/getAllAssignedBy": {
+      get: {
+        tags: ["Task"],
+        summary: "Get all users who created tasks",
+        description:
+          "Retrieves a paginated list of users who have created tasks.",
+        parameters: [
+          {
+            name: "page",
+            in: "query",
+            description: "Page number for pagination",
+            required: false,
+            type: "integer",
+            default: 1,
+          },
+          {
+            name: "pageSize",
+            in: "query",
+            description: "Number of records per page",
+            required: false,
+            type: "integer",
+            default: 10,
+          },
+        ],
+        responses: {
+          200: {
+            description: "Assigned users fetched successfully.",
+            schema: {
+              type: "object",
+              properties: {
+                status: {
+                  type: "integer",
+                  example: 200,
+                },
+                message: {
+                  type: "string",
+                  example: "Assigned users fetched successfully.",
+                },
+                user: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: {
+                        type: "integer",
+                        example: 3,
+                      },
+                      name: {
+                        type: "string",
+                        example: "Rahifa",
+                      },
+                      department: {
+                        type: "string",
+                        example: "Development",
+                      },
+                      phoneNumber: {
+                        type: "string",
+                        example: "9544429615",
+                      },
+                      email: {
+                        type: "string",
+                        example: "Rahifa@gmail.com",
+                      },
+                      password: {
+                        type: "string",
+                        example:
+                          "$2a$10$bnuU0xpNL5j0kRsFJ95duueU1T.LV/STmMtH/wRd/qRKD5hMiLyca",
+                      },
+                      createdAt: {
+                        type: "string",
+                        example: "2024-10-21T08:33:35.000Z",
+                      },
+                      roles: {
+                        type: "array",
+                        items: {
+                          type: "string",
+                          example: "BO",
+                        },
+                      },
+                      parentId: {
+                        type: "integer",
+                        example: 2,
+                      },
+                      teamId: {
+                        type: "integer",
+                        example: 1,
+                      },
+                    },
+                  },
+                },
+                totalCount: {
+                  type: "integer",
+                  example: 1,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/getAllAssignedTo": {
+      get: {
+        tags: ["Task"],
+        summary: "Get all users assigned to tasks",
+        description: "Retrieves a paginated list of users assigned to tasks.",
+        parameters: [
+          {
+            name: "page",
+            in: "query",
+            description: "Page number for pagination",
+            required: false,
+            type: "integer",
+            default: 1,
+          },
+          {
+            name: "pageSize",
+            in: "query",
+            description: "Number of records per page",
+            required: false,
+            type: "integer",
+            default: 5,
+          },
+        ],
+        responses: {
+          200: {
+            description: "Assigned users fetched successfully.",
+            schema: {
+              type: "object",
+              properties: {
+                status: {
+                  type: "integer",
+                  example: 200,
+                },
+                message: {
+                  type: "string",
+                  example: "Assigned users fetched successfully.",
+                },
+                user: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: {
+                        type: "integer",
+                        example: 3,
+                      },
+                      name: {
+                        type: "string",
+                        example: "Rahifa",
+                      },
+                      department: {
+                        type: "string",
+                        example: "Development",
+                      },
+                      phoneNumber: {
+                        type: "string",
+                        example: "9544429615",
+                      },
+                      email: {
+                        type: "string",
+                        example: "Rahifa@gmail.com",
+                      },
+                      password: {
+                        type: "string",
+                        example:
+                          "$2a$10$bnuU0xpNL5j0kRsFJ95duueU1T.LV/STmMtH/wRd/qRKD5hMiLyca",
+                      },
+                      createdAt: {
+                        type: "string",
+                        example: "2024-10-21T08:33:35.000Z",
+                      },
+                      roles: {
+                        type: "array",
+                        items: {
+                          type: "string",
+                          example: "BO",
+                        },
+                      },
+                      parentId: {
+                        type: "integer",
+                        example: 2,
+                      },
+                      teamId: {
+                        type: "integer",
+                        example: 1,
+                      },
+                    },
+                  },
+                },
+                totalCount: {
+                  type: "integer",
+                  example: 1,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
     "/addComment": {
       post: {
         tags: ["Comment"],

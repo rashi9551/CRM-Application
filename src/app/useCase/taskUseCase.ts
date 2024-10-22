@@ -181,13 +181,13 @@ export default new class TaskUseCase {
     getTasks = async (filter: TaskType, loggedUserId: number, role?: string[], isCompleted?: boolean, page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {  
             let tasks: Task[];
-            let totalTasks: number;
+            let totalCount: number;
     
             if (filter === TaskType.AllTasks) {
                 const result = await TaskRepo.getAllTasks(isCompleted, page, pageSize);
                 tasks = result.tasks;
-                totalTasks = result.totalCount; // Assuming the method returns both tasks and the total count
-                return { status: StatusCode.OK as number, message: "Successfully fetched All Tasks", task:tasks, totalTasks };
+                totalCount = result.totalCount; // Assuming the method returns both tasks and the total count
+                return { status: StatusCode.OK as number, message: "Successfully fetched All Tasks", task:tasks, totalCount };
             } 
             if(filter===TaskType.YourTasks){
                 const tasks = await TaskRepo.getYourTask(loggedUserId,isCompleted);            
@@ -197,14 +197,14 @@ export default new class TaskUseCase {
                 const hasAccess = role?.some(r => [RoleName.TO].includes(r as RoleName));
                 if (hasAccess) {
                     const {totalCount,tasks} = await TaskRepo.getTeamTask(loggedUserId, isCompleted, page, pageSize);            
-                    if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched team Tasks",task:tasks,totalTasks:totalCount};
+                    if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched team Tasks",task:tasks,totalCount};
                 } else {
                     return {status: StatusCode.Unauthorized as number,message: "only TO Can View The TeamTask",};
                 }
             } 
             if(filter===TaskType.DelegatedToOthers){
                 const {tasks,totalCount} = await TaskRepo.getDelegatedToOthersTask(loggedUserId, isCompleted, page, pageSize);            
-                if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched DelegatedToOthers Tasks",task:tasks,totalTasks:totalCount};
+                if (tasks) return {status: StatusCode.OK as number,message: "Successfully fetched DelegatedToOthers Tasks",task:tasks,totalCount};
             } 
             return { status: StatusCode.BadRequest as number, message: "select appropriate filter." };
         }
@@ -220,6 +220,49 @@ export default new class TaskUseCase {
                 return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
     };
+    async getAllAssignedToUsers(page: number = 1, pageSize: number = 10): Promise<PromiseReturn> {
+        try {
+            // Fetch all unique assignedTo users from tasks
+            const [assignedToUsers, totalCount] = await TaskRepo.findAllAssignedToUsers(page, pageSize);
+    
+            // Check if any users were found
+            if (assignedToUsers.length === 0) {
+                return { status: StatusCode.NotFound as number, message: "No users assigned to tasks found." };
+            }
+    
+            return {
+                status: StatusCode.OK as number,
+                message: 'Assigned users fetched successfully.',
+                user:assignedToUsers,
+                totalCount, // Total count of unique users assigned to tasks
+            };
+        } catch (error) {
+            console.error("Error during fetching all assigned users:", error);
+            return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
+        }
+    }
+    async getAllAssignedByUsers(page: number = 1, pageSize: number = 10): Promise<PromiseReturn> {
+        try {
+            // Fetch all unique assignedBy users from tasks
+            const [assingedByUsers, totalCount] = await TaskRepo.findAllAssignedByUsers(page, pageSize);
+    
+            // Check if any users were found
+            if (assingedByUsers.length === 0) {
+                return { status: StatusCode.NotFound as number, message: "No users assigned to tasks found." };
+            }
+    
+            return {
+                status: StatusCode.OK as number,
+                message: 'Assigned users fetched successfully.',
+                user:assingedByUsers,
+                totalCount, // Total count of unique users assigned to tasks
+            };
+        } catch (error) {
+            console.error("Error during fetching all assigned users:", error);
+            return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
+        }
+    }
+    
 
     getTask = async (taskId:number): Promise<PromiseReturn> => {
         try {  
@@ -422,7 +465,7 @@ export default new class TaskUseCase {
                 status: StatusCode.OK as number, 
                 message: 'Comments fetched successfully', 
                 TaskComment: comments,
-                totalTasks:totalCount // Total count of comments for the task
+                totalCount // Total count of comments for the task
             };
         } catch (error) {
             console.error("Error when fetching comments:", error);

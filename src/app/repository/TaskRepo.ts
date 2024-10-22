@@ -383,6 +383,42 @@ export default new class TaskRepo {
             throw error; // Optionally re-throw the error for further handling
         }
     }
+
+
+    async findAllAssignedToUsers(page: number = 1, pageSize: number = 10): Promise<[User[], number]> {
+        try {
+            // Query to find all distinct users who have been assigned tasks
+            const [assignedUsers, total]: [User[], number] = await this.UserRepo.createQueryBuilder('user')
+                .innerJoin('user.assignedTasks', 'task') // Inner join with tasks that the user is assigned to
+                .distinct(true) // Ensure distinct users
+                .skip((page - 1) * pageSize) // Apply pagination
+                .take(pageSize) // Number of users to take
+                .getManyAndCount(); // Get users and total count for pagination
+    
+            return [assignedUsers, total];
+        } catch (error) {
+            console.error("Error fetching assigned users:", error);
+            throw new Error("Failed to fetch assigned users");
+        }
+    }
+    async findAllAssignedByUsers(page: number = 1, pageSize: number = 10): Promise<[User[], number]> {
+        try {
+            // Query to find all distinct users who have created tasks
+            const [AssignedByUsers, total]: [User[], number] = await this.UserRepo.createQueryBuilder('user')
+                .innerJoin('user.createdTasks', 'task') // Join with tasks that the user has created
+                .distinct(true) // Ensure distinct users
+                .skip((page - 1) * pageSize) // Apply pagination
+                .take(pageSize) // Number of users to take
+                .getManyAndCount(); // Get users and total count for pagination
+    
+            return [AssignedByUsers, total];
+        } catch (error) {
+            console.error("Error fetching users who created tasks:", error);
+            throw new Error("Failed to fetch users who created tasks");
+        }
+    }
+    
+    
     
     async findDueTasks(now: Date, twelveHoursFromNow: Date): Promise<Task[]> {
         try {

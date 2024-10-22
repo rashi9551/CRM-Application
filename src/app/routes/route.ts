@@ -44,6 +44,8 @@ router.get('/getAllEvent',verifyToken,userController.getAllEvent);
 
 
 router.get('/getAllTasks',verifyToken,TaskController.getTasks);
+router.get('/getAllAssignedTo',verifyToken,TaskController.getAllAssignedToUsers);
+router.get('/getAllAssignedBy',verifyToken,TaskController.getAllAssignedByUsers);
 router.get('/getTask/:id',verifyToken,TaskController.getTask);
 router.post('/createTask',verifyToken,isAdminOrManagement,TaskController.createTask);
 router.put('/updateTask',verifyToken,TaskController.updateTask);

@@ -56,6 +56,32 @@ export default new class TaskController{
             return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' });
         }
     };
+    getAllAssignedToUsers = async (req: Request, res: Response) => {
+        try {
+            console.log("User getting all assigned to users...");
+            const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+            const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+            console.log("Page:", page, "PageSize:", pageSize); // Log individual values
+            const getAllAssignedToUsersResponse = await TaskUseCase.getAllAssignedToUsers(page, pageSize);
+            res.status(getAllAssignedToUsersResponse.status).json(getAllAssignedToUsersResponse);
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' });
+        }
+    };
+    getAllAssignedByUsers = async (req: Request, res: Response) => {
+        try {
+            console.log("User getting all assigned by users...");
+            const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+            const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+            console.log("Page:", page, "PageSize:", pageSize); // Log individual values
+            const getAllAssignedByUsersResponse = await TaskUseCase.getAllAssignedByUsers(page, pageSize);
+            res.status(getAllAssignedByUsersResponse.status).json(getAllAssignedByUsersResponse);
+        } catch (error) {
+            console.log(error);
+            return res.status(StatusCode.InternalServerError).json({ message: 'Internal Server Error' });
+        }
+    };
     
     getTask=async(req:Request,res:Response)=>{
         try {

@@ -82,7 +82,7 @@ export interface GetAllUser {
 
 export interface PromiseReturn{
     status: number; 
-    totalTasks?: number; 
+    totalCount?: number; 
     User?:User
     user?:User[] | GetAllUser[]
     message?:string
