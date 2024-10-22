@@ -263,10 +263,8 @@ export default new class TaskRepo {
     async saveNotification(notificationData: Notification): Promise<Notification> {
         try {
             // Log notificationData before creating to ensure data is correct
-            console.log('Notification Data:', notificationData);
-
             const notification = this.NotificationRepo.create(notificationData);
-            const savedNotification = await this.NotificationRepo.save(notification);
+            const savedNotification = await this.NotificationRepo.save(notification);            
             return savedNotification;
         } catch (error) {
             console.error("Error saving notification:", error);
@@ -282,7 +280,6 @@ export default new class TaskRepo {
             const savedTaskHistory = await this.TaskHistoryRepo.save(taskHistory); // Save the task history to the database
             return savedTaskHistory; // Return the saved task history entry
         } catch (error) {
-            console.log(error,"=----=-=-");
             console.error("Error saving task history:", error);
             throw new Error("Failed to save task history");
         }

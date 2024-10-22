@@ -57,6 +57,7 @@ export default new class TaskUseCase {
 
             if (!assignedUser) return { status: StatusCode.NotFound as number, message: "AssignedUser Not Found" };
             if (!createdUser) return { status: StatusCode.NotFound as number, message: "CreatedUser Not Found" }; 
+
             const taskCreating=await TaskRepo.createTask(taskData)
             await this.NotificationSending(`You have been assigned a new task: ${taskCreating.title}`,taskCreating,assignedUser,taskData.assigned_to)
             await this.TaskHistoryLogging(taskCreating,TaskHistoryAction.TASK_CREATED,`The Task ${taskCreating.title} was created by ${createdUser.name} and assigned to ${assignedUser.name}`,loggedUserId)
@@ -70,7 +71,6 @@ export default new class TaskUseCase {
                 const fieldName = firstError.property;
                 return { status: StatusCode.BadRequest as number, message: `${fieldName}: ${firstConstraintMessage}`};
             }
-            console.log(error,"=--=-==--=-=--=-=-=-=-=-=-=-=-=-==-=-=");
             
             console.error("Error during task creation:", error);
             return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
@@ -114,9 +114,7 @@ export default new class TaskUseCase {
                 // Handle task status update and reassignment logic
                 const { isGeneralUpdate, isStatusChanging, updatedTask } = await handleTaskUpdate(existingTask, taskData, loggedUserId);
                 console.log(isGeneralUpdate, isStatusChanging, updatedTask, "this was reassigning time okey");
-                const savedTask = await TaskRepo.saveTask(updatedTask); // <--- Saving the updated task here
-                console.log(savedTask);
-                
+                const savedTask = await TaskRepo.saveTask(updatedTask); // <--- Saving the updated task here                
                 // Further logic for saving and processing the updated task
                 const { taskHistory, notification } = await handleHistoryAndNotifications(isGeneralUpdate, isStatusChanging, savedTask, loggedUserId,assignedTo,createdBy);
                 delete notification?.task
@@ -211,7 +209,6 @@ export default new class TaskUseCase {
             return { status: StatusCode.BadRequest as number, message: "select appropriate filter." };
         }
         catch (error) {
-            console.log(error);
             
             if (error.message === "admin can't have the team task") {
                 return {
@@ -273,7 +270,7 @@ export default new class TaskUseCase {
     
             // Check if a similar notification already exists
             const existingNotification = await TaskRepo.getExistingNotification(message, task.id, recipientId);
-    
+            
             if (!existingNotification) {
                 // Create a new notification
                 const notification = new Notification();
@@ -281,7 +278,8 @@ export default new class TaskUseCase {
                 notification.isRead = false;
                 notification.recipientId = recipientId;  // Set the recipientId directlyclear
 
-                return await TaskRepo.saveNotification(notification);
+                const savedNotification= await TaskRepo.saveNotification(notification);
+                return savedNotification
             } else {
                 console.log("Notification already exists",message);
                 return null;
@@ -289,7 +287,7 @@ export default new class TaskUseCase {
         } catch (error) {
             console.log(error);
             console.error("Error during task creation:", error);
-            throw new Error("Failed to save notification");
+            throw new Error("Failed to save notificationn");
         }
     };
     
@@ -298,7 +296,6 @@ export default new class TaskUseCase {
 
     TaskHistoryLogging = async (task: Task, action: string, details: string, loggedUserId: number): Promise<TaskHistory> => {
         try {
-            console.log("Task history log action:", action, "Details:", details);
             
             // Check if task exists
             if (!task || !task.id) {
@@ -311,10 +308,7 @@ export default new class TaskUseCase {
             taskHistory.userId = loggedUserId; // Set the user ID
             taskHistory.action = action; // Action performed
             taskHistory.details = details; // Details about the action
-    
-            // Log task history before saving
-            console.log("Task history to be saved:", taskHistory);
-    
+        
             // Save the task history in the database using the correct repository
             const savedHistory = await TaskRepo.saveTaskHistory(taskHistory); // Make sure you are using the TaskHistoryRepo
             console.log("Task history saved successfully:", savedHistory);

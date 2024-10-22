@@ -14,6 +14,7 @@ const swaggerOptions = {
   paths: {
     "/login": {
       post: {
+        tags: ["Authentication"],
         summary: "User login",
         description: "Logs in a user and returns a JWT token.",
         consumes: ["application/json"],
@@ -63,6 +64,7 @@ const swaggerOptions = {
     },
     "/createUser": {
       post: {
+        tags: ["User"],
         summary: "Create a new user",
         description: "Creates a new user in the system.",
         consumes: ["application/json"],
@@ -127,6 +129,7 @@ const swaggerOptions = {
     },
     "/updateUser": {
       put: {
+        tags: ["User"],
         summary: "Update user information",
         description: "Updates an existing user's information.",
         consumes: ["application/json"],
@@ -182,6 +185,7 @@ const swaggerOptions = {
     },
     "/getAllUser": {
       get: {
+        tags: ["User"],
         summary: "Get all users",
         description: "Retrieves a list of all users in the system.",
         responses: {
@@ -213,6 +217,7 @@ const swaggerOptions = {
     },
     "/getUser/{id}": {
       get: {
+        tags: ["User"],
         summary: "Get user by ID",
         description: "Retrieves a specific user by their ID.",
         parameters: [
@@ -251,8 +256,90 @@ const swaggerOptions = {
         },
       },
     },
+    "/searchUser": {
+      post: {
+        tags: ["User"],
+        summary: "Search for a user by email",
+        description: "Finds a user based on their email address.",
+        consumes: ["application/json"],
+        produces: ["application/json"],
+        parameters: [
+          {
+            name: "body",
+            in: "body",
+            required: true,
+            schema: {
+              type: "object",
+              properties: {
+                email: {
+                  type: "string",
+                  example: "raashid@gmail.com",
+                },
+              },
+            },
+          },
+        ],
+        responses: {
+          200: {
+            description: "User found successfully",
+            schema: {
+              type: "object",
+              properties: {
+                id: {
+                  type: "integer",
+                },
+                name: {
+                  type: "string",
+                },
+                email: {
+                  type: "string",
+                },
+                // Add other user properties as needed
+              },
+            },
+          },
+          404: {
+            description: "User not found",
+          },
+        },
+      },
+    },
+    "/deleteUser/{id}": {
+      delete: {
+        tags: ["User"],
+        summary: "Delete a user by ID",
+        description:
+          "Deletes a user based on their ID and adjusts child relationships as needed.",
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: {
+              type: "integer",
+            },
+            description: "ID of the user to delete",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "User deleted successfully",
+          },
+          "400": {
+            description: "Cannot remove TO role",
+          },
+          "404": {
+            description: "User not found",
+          },
+          "500": {
+            description: "Error when deleting user",
+          },
+        },
+      },
+    },
     "/getHierarchyTo/{id}": {
       get: {
+        tags: ["User"],
         summary: "Get users under TO hierarchy by ID",
         description:
           "Retrieves a hierarchy of users under a TO role based on their ID.",
@@ -352,6 +439,7 @@ const swaggerOptions = {
     },
     "/getAllTo": {
       get: {
+        tags: ["User"],
         summary: "Get all team owners",
         description: "Retrieves a list of all team owners in the system.",
         responses: {
@@ -380,6 +468,7 @@ const swaggerOptions = {
     },
     "/getAllTeam": {
       get: {
+        tags: ["User"],
         summary: "Get all teams",
         description: "Retrieves a list of all teams in the organization.",
         responses: {
@@ -405,6 +494,7 @@ const swaggerOptions = {
     },
     "/createBrand": {
       post: {
+        tags: ["Brand"],
         summary: "Create a new brand",
         description: "Creates a new brand entry.",
         consumes: ["application/json"],
@@ -445,6 +535,7 @@ const swaggerOptions = {
     },
     "/updateBrand": {
       put: {
+        tags: ["Brand"],
         summary: "Update brand information",
         description: "Updates an existing brand entry.",
         consumes: ["application/json"],
@@ -489,6 +580,7 @@ const swaggerOptions = {
     },
     "/getAllBrand": {
       get: {
+        tags: ["Brand"],
         summary: "Get all brands",
         description: "Retrieves a list of all brands in the system.",
         responses: {
@@ -517,6 +609,7 @@ const swaggerOptions = {
     },
     "/getBrand/{id}": {
       get: {
+        tags: ["Brand"],
         summary: "Get brand by ID",
         description: "Retrieves a specific brand by its ID.",
         parameters: [
@@ -559,6 +652,7 @@ const swaggerOptions = {
     },
     "/addBrandContact": {
       post: {
+        tags: ["Brand"],
         summary: "Add a new brand contact",
         description: "Adds a contact for a specific brand.",
         consumes: ["application/json"],
@@ -603,6 +697,7 @@ const swaggerOptions = {
     },
     "/updateBrandContact": {
       put: {
+        tags: ["Brand"],
         summary: "Update brand contact information",
         description: "Updates an existing brand contact.",
         consumes: ["application/json"],
@@ -647,6 +742,7 @@ const swaggerOptions = {
     },
     "/getBrandDetail/{id}": {
       get: {
+        tags: ["Brand"],
         summary: "Get brand details",
         description: "Retrieves details of a specific brand by its ID.",
         consumes: ["application/json"],
@@ -686,6 +782,7 @@ const swaggerOptions = {
 
     "/addBrandOwnership": {
       post: {
+        tags: ["Brand"],
         summary: "Add brand ownership",
         description: "Associates a BO user with a specific brand.",
         consumes: ["application/json"],
@@ -729,87 +826,9 @@ const swaggerOptions = {
         },
       },
     },
-    "/searchUser": {
-      post: {
-        summary: "Search for a user by email",
-        description: "Finds a user based on their email address.",
-        consumes: ["application/json"],
-        produces: ["application/json"],
-        parameters: [
-          {
-            name: "body",
-            in: "body",
-            required: true,
-            schema: {
-              type: "object",
-              properties: {
-                email: {
-                  type: "string",
-                  example: "raashid@gmail.com",
-                },
-              },
-            },
-          },
-        ],
-        responses: {
-          200: {
-            description: "User found successfully",
-            schema: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "integer",
-                },
-                name: {
-                  type: "string",
-                },
-                email: {
-                  type: "string",
-                },
-                // Add other user properties as needed
-              },
-            },
-          },
-          404: {
-            description: "User not found",
-          },
-        },
-      },
-    },
-    "/deleteUser/{id}": {
-      delete: {
-        summary: "Delete a user by ID",
-        description:
-          "Deletes a user based on their ID and adjusts child relationships as needed.",
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: {
-              type: "integer",
-            },
-            description: "ID of the user to delete",
-          },
-        ],
-        responses: {
-          "200": {
-            description: "User deleted successfully",
-          },
-          "400": {
-            description: "Cannot remove TO role",
-          },
-          "404": {
-            description: "User not found",
-          },
-          "500": {
-            description: "Error when deleting user",
-          },
-        },
-      },
-    },
     "/deleteBrand/{id}": {
       delete: {
+        tags: ["Brand"],
         summary: "Delete a brand by ID",
         description: "Deletes a brand based on its ID.",
         parameters: [
@@ -838,6 +857,7 @@ const swaggerOptions = {
     },
     "/createEvent": {
       post: {
+        tags: ["Event"],
         summary: "Create a new event",
         description:
           "Creates a new event with a name, date, location, and additional details.",
@@ -897,6 +917,7 @@ const swaggerOptions = {
     },
     "/getAllEvent": {
       get: {
+        tags: ["Event"],
         summary: "Retrieve all events",
         description: "Fetches a list of all events stored in the database.",
         produces: ["application/json"],
@@ -949,6 +970,7 @@ const swaggerOptions = {
     },
     "/createInventory": {
       post: {
+        tags: ["Inventory"],
         summary: "Create a new inventory item",
         description:
           "Creates a new inventory item with a name, description, and quantity.",
@@ -1006,6 +1028,7 @@ const swaggerOptions = {
     },
     "/getAllInventory": {
       get: {
+        tags: ["Inventory"],
         summary: "Retrieve all inventory items",
         description:
           "Fetches a list of all inventory items stored in the database.",
@@ -1053,6 +1076,7 @@ const swaggerOptions = {
     },
     "/createTask": {
       post: {
+        tags: ["Task"],
         summary: "Create a new task",
         description:
           "Creates a new task with title, description, type, assignment, and due date.",
@@ -1140,6 +1164,7 @@ const swaggerOptions = {
     },
     "/updateTask": {
       patch: {
+        tags: ["Task"],
         summary: "Update an existing task",
         description: "Updates the details of an existing task based on its ID.",
         consumes: ["application/json"],
@@ -1194,6 +1219,7 @@ const swaggerOptions = {
     },
     "/getAllTasks": {
       get: {
+        tags: ["Task"],
         summary: "Get all tasks",
         description:
           "Retrieves a list of all tasks, with optional filtering based on completion status and pagination.",
@@ -1314,6 +1340,7 @@ const swaggerOptions = {
     },
     "/getTask/{id}": {
       get: {
+        tags: ["Task"],
         summary: "Get a task by ID",
         description: "Retrieves a specific task based on its ID.",
         produces: ["application/json"],
@@ -1393,6 +1420,7 @@ const swaggerOptions = {
     },
     "/getNotification/{id}": {
       get: {
+        tags: ["Task"],
         summary: "Get a notification by ID",
         description: "Retrieves a specific notification based on its ID.",
         produces: ["application/json"],
@@ -1454,6 +1482,7 @@ const swaggerOptions = {
     },
     "/getTaskHistory/{id}": {
       get: {
+        tags: ["Task"],
         summary: "Get task history by task ID",
         description:
           "Retrieves the history of a specific task based on its ID.",
@@ -1518,6 +1547,7 @@ const swaggerOptions = {
     },
     "/filterTask": {
       post: {
+        tags: ["Task"],
         summary: "Filter tasks",
         description:
           "Filters tasks based on specified criteria such as type, assignment, due date, brand name, and status.",
@@ -1663,6 +1693,7 @@ const swaggerOptions = {
     },
     "/getAnalytics": {
       post: {
+        tags: ["Task"],
         summary: "Get analytics data",
         description: "Retrieves analytics data based on the specified filter.",
         consumes: ["application/json"],
@@ -1742,6 +1773,7 @@ const swaggerOptions = {
     },
     "/deleteTask/{id}": {
       delete: {
+        tags: ["Task"],
         summary: "Delete a task by ID",
         description: "Deletes a task based on its ID.",
         parameters: [
@@ -1769,6 +1801,7 @@ const swaggerOptions = {
 
     "/addComment": {
       post: {
+        tags: ["Comment"],
         summary: "Add a comment to a task with image uploads",
         description:
           "Allows a user to add a comment to a task, including uploading two image files. Token verification is required.",
@@ -1867,6 +1900,7 @@ const swaggerOptions = {
     },
     "/getComment/{id}": {
       get: {
+        tags: ["Comment"],
         summary: "Fetch comments for a specific task",
         description:
           "Allows a user to fetch comments for a specified task with pagination support. Token verification is required.",
@@ -1975,6 +2009,7 @@ const swaggerOptions = {
     },
     "/deleteComment/{id}": {
       delete: {
+        tags: ["Comment"],
         summary: "Delete a comment by ID",
         description:
           "Allows a user to delete a specific comment based on its ID. Token verification is required.",
@@ -2030,6 +2065,7 @@ const swaggerOptions = {
     },
     "/updateComment": {
       put: {
+        tags: ["Comment"],
         summary: "Update a comment",
         description:
           "Allows a user to update an existing comment, including uploading multiple files. Token verification is required.",
