@@ -4,7 +4,7 @@ import { StatusCode } from '../src/interfaces/enum';
 import { User } from '../src/entity/User';
 import { Team } from '../src/entity/Team';
 import { Event } from '../src/entity/Event';
-import useCase from '../src/app/useCase/userUseCase'
+import useCase from '../src/app/services/userServices'
 import { Inventory } from '../src/entity/inventory';
 
 

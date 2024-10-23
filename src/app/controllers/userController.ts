@@ -1,6 +1,6 @@
 import {Response,Request} from 'express'
 import { StatusCode } from '../../interfaces/enum'
-import useCase from '../useCase/userUseCase'
+import useCase from '../services/userServices'
 import { UserData, UserLoginData ,BrandData, InventoryData, EventData} from '../../interfaces/interface'
 
 export default new class UserController{

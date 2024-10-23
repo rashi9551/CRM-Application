@@ -7,7 +7,7 @@ import cors from 'cors'
 import swaggerUi from 'swagger-ui-express';
 import swaggerOptions from "./swaggrOptions";
 import 'reflect-metadata';
-import { scheduleTaskNotifications } from './services/cron-job';
+import { scheduleTaskNotifications } from './utils/cron-job';
 
 dotenv.config();
 

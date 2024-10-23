@@ -11,6 +11,7 @@ import { TaskComment } from '../../entity/TaskComment';
 import {AnalyticsFilter} from '../../interfaces/interface'
 import TaskValidator  from '../../middleware/validateTaskData';
 import { checkTaskPermission, handleError, handleHistoryAndNotifications, handleTaskUpdate } from '../../middleware/updateMiddleware';
+import getDateRanges from '../../utils/getDataRange';
 
 const taskValidator=new TaskValidator()
 export default new class TaskUseCase {
@@ -279,9 +280,9 @@ export default new class TaskUseCase {
     };
 
 
-    getNotification = async (userId:number): Promise<PromiseReturn> => {
+    getNotification = async (userId:number,page: number , pageSize: number): Promise<PromiseReturn> => {
         try {  
-            const getUnreadNotification = await TaskRepo.getUnreadNotification(userId);
+            const getUnreadNotification = await TaskRepo.getUnreadNotification(userId,page,pageSize);
             return { status: StatusCode.OK as number, message: "Task Fetched By Id Successfully." ,UnreadNotification:getUnreadNotification};
         }catch (error) {
                 console.error("Error during getting notification:", error);
@@ -289,13 +290,13 @@ export default new class TaskUseCase {
             }
     };
 
-    getHistory = async (taskId:number): Promise<PromiseReturn> => {
+    getHistory = async (taskId:number,page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {  
             const existingTask = await TaskRepo.findTaskById(taskId);
             if (!existingTask) {
                 return { status: StatusCode.NotFound as number, message: "Task not found." };
             }
-            const getHistory = await TaskRepo.getHistory(taskId);
+            const getHistory = await TaskRepo.getHistory(taskId,page,pageSize);
             if(!getHistory){
                 return {status: StatusCode.NotFound as number,message: "There is no history for this task",};
             }
@@ -501,77 +502,27 @@ export default new class TaskUseCase {
         }
     };
 
-    getFilteredAndSortedTasks = async (filterOptions?:FilterOptions): Promise<PromiseReturn | null> => {
-        try { 
-            const filterTask = await TaskRepo.getFilteredAndSortedTasks(filterOptions); 
+    getFilteredAndSortedTasks = async (filterOptions?: FilterOptions, page: number = 1, pageSize: number = 10): Promise<PromiseReturn | null> => {
+        try {
             if (!filterOptions) {
                 return { status: StatusCode.NotFound as number, message: "Filter options not provided." };
             }
+    
+            const filterTask = await TaskRepo.getFilteredAndSortedTasks(filterOptions, page, pageSize);
+    
             if (filterTask.length === 0) {
                 return { status: StatusCode.NotFound as number, message: "No tasks found matching the filters." };
             }
     
             return { status: StatusCode.Created as number, message: 'Filtered task successfully retrieved.', task: filterTask };
         } catch (error) {
-            console.error("Error when creating comment:", error);
+            console.error("Error when fetching tasks:", error);
             throw error;
         }
     };
-
     async getAnalytics(filter: string): Promise<PromiseReturn> {
         const now = new Date();
-        let startDate: Date;
-        let endDate: Date;
-        let previousStartDate: Date;
-        let previousEndDate: Date;
-    
-        // Set date ranges based on the filter
-        switch (filter) {
-            case AnalyticsFilter.Today:
-                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
-                previousStartDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000); // Yesterday
-                previousEndDate = startDate; // Today
-                break;
-            case AnalyticsFilter.Last3Days:
-                startDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-                endDate = now;
-                previousStartDate = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000); // Previous 3 days
-                previousEndDate = startDate; // Last 3 days
-                break;
-            case AnalyticsFilter.Last7Days:
-                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                endDate = now;
-                previousStartDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000); // Previous week
-                previousEndDate = startDate; // Last week
-                break;
-            case AnalyticsFilter.Last15Days:
-                startDate = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
-                endDate = now;
-                previousStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Previous 15 days
-                previousEndDate = startDate; // Last 15 days
-                break;
-            case AnalyticsFilter.LastMonth:
-                startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                endDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                previousStartDate = new Date(now.getFullYear(), now.getMonth() - 2, 1); // Previous month
-                previousEndDate = new Date(now.getFullYear(), now.getMonth() - 1, 1); // Last month
-                break;
-            case AnalyticsFilter.ThisMonth:
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000); // Rough estimate of a month
-                previousStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1); // Previous month
-                previousEndDate = new Date(now.getFullYear(), now.getMonth(), 1); // Last month
-                break;
-            case AnalyticsFilter.AllTime:
-                startDate = new Date(0); // Earliest date
-                endDate = now;
-                previousStartDate = new Date(0); // Earliest date
-                previousEndDate = startDate; // All time
-                break;
-            default:
-                throw new Error('Invalid filter');
-        }
+        const { startDate, endDate, previousStartDate, previousEndDate } = getDateRanges(filter, now);
     
         // Fetching the data for the current period
         const totalTasksCreated = await TaskRepo.countTasksCreated(startDate, endDate);
@@ -592,8 +543,8 @@ export default new class TaskUseCase {
         const overdueTasksComparison = overdueTasks - overdueTasksPrevious;
     
         return {
-            message:"analytics fetched successfully",
-            status:200,
+            message: "Analytics fetched successfully",
+            status: 200,
             analytics: {
                 [filter]: {
                     totalTasksCreated,
@@ -610,6 +561,7 @@ export default new class TaskUseCase {
             },
         };
     }
-
+    
+   
     
 }

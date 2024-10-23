@@ -1,6 +1,6 @@
 import {Response,Request} from 'express'
 import { StatusCode } from '../../interfaces/enum'
-import TaskUseCase from '../useCase/taskUseCase'
+import TaskUseCase from '../services/taskServices'
 import { UserData, UserLoginData ,BrandData, TaskData, TaskType, TaskCommentData, FilterOptions} from '../../interfaces/interface'
 
 export default new class TaskController{
@@ -98,7 +98,10 @@ export default new class TaskController{
         try {
             console.log("user getting  notification...");
             const userId=req.params.id
-            const getNotificationResponse=await TaskUseCase.getNotification(+userId)
+            const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+            const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+            console.log("Page:", page, "PageSize:", pageSize); // Log individual values
+            const getNotificationResponse=await TaskUseCase.getNotification(+userId,page,pageSize)
             res.status(getNotificationResponse.status).json(getNotificationResponse)
         } catch (error) {
             console.log(error);
@@ -109,7 +112,10 @@ export default new class TaskController{
         try {
             console.log("user getting  History...");
             const taskId=req.params.id
-            const getHistoryResponse=await TaskUseCase.getHistory(+taskId)
+            const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+            const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+            console.log("Page:", page, "PageSize:", pageSize); // Log individual values
+            const getHistoryResponse=await TaskUseCase.getHistory(+taskId,page,pageSize)
             res.status(getHistoryResponse.status).json(getHistoryResponse)
         } catch (error) {
             console.log(error);
@@ -211,6 +217,9 @@ export default new class TaskController{
             status, 
             sortOrder,
         }:FilterOptions = req.body;
+        const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+        const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+        console.log("Page:", page, "PageSize:", pageSize); // Log individual values
 
         try {
             const taskFilteringReponse = await TaskUseCase.getFilteredAndSortedTasks({
@@ -225,7 +234,7 @@ export default new class TaskController{
                 status, 
                 sortBy,
                 sortOrder,
-            });
+            },page,pageSize);
 
             return res.status(taskFilteringReponse.status).json(taskFilteringReponse);
         } catch (error) {

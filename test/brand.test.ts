@@ -6,7 +6,7 @@ import { Team } from '../src/entity/Team';
 
 import { Brand } from '../src/entity/Brand';
 import { BrandContact } from '../src/entity/BrandContact';
-import useCase from '../src/app/useCase/userUseCase'
+import useCase from '../src/app/services/userServices'
 
 const team:Team=
     {

@@ -1,7 +1,7 @@
 import { validateOrReject } from "class-validator";
 import { Task, TaskStatus } from "../entity/Task";
 import { RoleName, TaskData, TaskHistoryAction } from "../interfaces/interface";
-import taskUseCase from "../app/useCase/taskUseCase";
+import taskUseCase from "../app/services/taskServices";
 import { StatusCode } from "../interfaces/enum";
 import { User } from "../entity/User";
 export const checkTaskPermission = (existingTask: Task, loggedUserId?: number, roles?: string[]): boolean => {

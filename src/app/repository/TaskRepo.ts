@@ -194,7 +194,7 @@ export default new class TaskRepo {
             throw new Error("Failed to fetch team tasks");
         }
     }
-    async getUnreadNotification(userId: number): Promise<Notification[] | null> {
+    async getUnreadNotification(userId: number, page: number = 1, pageSize: number = 10): Promise<Notification[] | null> {
         try {
             const unreadNotifications = await this.NotificationRepo.find({
                 where: {
@@ -204,8 +204,11 @@ export default new class TaskRepo {
                 relations: ['recipient', 'task'], // Optionally load related entities like User and Task
                 order: {
                     createdAt: 'DESC' // Sort by creation date if needed
-                }
+                },
+                skip: (page - 1) * pageSize, // Skip the records of previous pages
+                take: pageSize // Limit the number of records fetched
             });
+    
             if (unreadNotifications.length > 0) {
                 const notificationIds = unreadNotifications.map(notification => notification.id); // Get the IDs of unread notifications
                 
@@ -216,25 +219,28 @@ export default new class TaskRepo {
                     .where("id IN (:...ids)", { ids: notificationIds }) // Use the collected IDs
                     .execute();
             }
-            return unreadNotifications;
+            return unreadNotifications.length > 0 ? unreadNotifications : null;
         } catch (error) {
             console.error("Error fetching unread notifications:", error);
             throw new Error("Failed to fetch unread notifications");
         }
     }
-    async getHistory(taskId: number): Promise<TaskHistory[] | null> {
+    
+    async getHistory(taskId: number, page: number = 1, pageSize: number = 10): Promise<TaskHistory[] | null> {
         try {
-            // Fetch all task history records related to the specified task ID
+            // Fetch task history records related to the specified task ID with pagination
             const taskHistoryRecords = await this.TaskHistoryRepo.find({
                 where: {
                     taskId: taskId, // Filter by task ID
                 },
-                relations: ['user','task'], // Optionally load related User entity
+                relations: ['user', 'task'], // Optionally load related User entity
                 order: {
                     createdAt: 'DESC', // Sort by creation date if needed
                 },
+                skip: (page - 1) * pageSize, // Skip the records of previous pages
+                take: pageSize // Limit the number of records fetched
             });
-            
+    
             // Return the fetched task history records
             return taskHistoryRecords.length > 0 ? taskHistoryRecords : null;
         } catch (error) {
@@ -242,6 +248,7 @@ export default new class TaskRepo {
             throw new Error("Failed to fetch task history");
         }
     }
+    
     async getExistingNotification(message:string,taskId:number,recipientId:number): Promise<Notification | null> {
         try {
             const existingNotification = await this.NotificationRepo.findOne({
@@ -333,7 +340,7 @@ export default new class TaskRepo {
     }
     
 
-    async getFilteredAndSortedTasks(filters: FilterOptions): Promise<Task[]> {
+    async getFilteredAndSortedTasks(filters: FilterOptions, page: number = 1, pageSize: number = 10): Promise<Task[]> {
         try {
             const query = this.TaskRepo.createQueryBuilder("task")
                 .leftJoinAndSelect("task.assignedTo", "assignedTo")
@@ -376,6 +383,10 @@ export default new class TaskRepo {
                 const order = filters.sortOrder === 'DESC' ? 'DESC' : 'ASC';
                 query.orderBy(`task.${filters.sortBy}`, order);
             }
+    
+            // Apply pagination
+            query.skip((page - 1) * pageSize) // Skip the records of previous pages
+                 .take(pageSize); // Limit the number of records fetched
     
             return await query.getMany();
         } catch (error) {

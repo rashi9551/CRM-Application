@@ -5,7 +5,7 @@ import { StatusCode } from '../src/interfaces/enum';
 import { User } from '../src/entity/User';
 import { Event } from '../src/entity/Event';
 import { Brand } from '../src/entity/Brand';
-import taskUseCase from '../src/app/useCase/taskUseCase'
+import taskUseCase from '../src/app/services/taskServices'
 import { Inventory } from '../src/entity/inventory';
 import { Task, TaskStatus } from '../src/entity/Task';
 import { TaskComment } from '../src/entity/TaskComment';
