@@ -1,27 +1,20 @@
 import TaskRepo from '../src/app/repository/TaskRepo'; // Adjust accordingly
 import userRepo from '../src/app/repository/UserRepo'; // Adjust accordingly
-import { GetAllUser, Department, RoleName, UserData, BrandData, BrandContactData, BrandOwnershipData, updatingUserData, EventData, InventoryData, Type, FilterOptions, TaskCommentData, TaskType, TaskData } from '../src/interfaces/interface'; // Adjust accordingly
+import {  Department, RoleName, UserData, Type, FilterOptions, TaskCommentData, TaskType, TaskData } from '../src/interfaces/interface'; // Adjust accordingly
 import { StatusCode } from '../src/interfaces/enum';
 import { User } from '../src/entity/User';
-import { Team } from '../src/entity/Team';
 import { Event } from '../src/entity/Event';
-import bcrypt from 'bcryptjs';
 import { Brand } from '../src/entity/Brand';
-import { BrandContact } from '../src/entity/BrandContact';
-import useCase from '../src/app/useCase/userUseCase'
 import taskUseCase from '../src/app/useCase/taskUseCase'
 import { Inventory } from '../src/entity/inventory';
 import { Task, TaskStatus } from '../src/entity/Task';
 import { TaskComment } from '../src/entity/TaskComment';
 import { TaskHistory } from '../src/entity/TaskHistory';
 import { Notification } from '../src/entity/Notification';
-import { validateOrReject } from 'class-validator';
-import { BrandCreateReponseData } from './brand.test';
-import UserRepo from '../src/app/repository/UserRepo';
-import { types } from 'util';
-import { checkTaskPermission } from '../src/middleware/updateMiddleware';
-import { validateTaskData } from '../src/middleware/validateTaskData';
+import * as middleware from '../src/middleware/updateMiddleware';
+import TaskValidator from '../src/middleware/validateTaskData';
 
+const taskValidator = new TaskValidator(); // Create an instance
 
 
 const mockUserCreateResponseData:User={
@@ -736,7 +729,7 @@ describe('getTasks', () => {
             status: StatusCode.OK,
             message: 'Successfully fetched All Tasks',
             task: tasks,
-            totalTasks:5
+            totalCount:5
         });
         expect(taskRepoMock.getAllTasks).toHaveBeenCalledWith(isCompleted,1,10);
     });
@@ -769,7 +762,7 @@ describe('getTasks', () => {
             status: StatusCode.OK,
             message: 'Successfully fetched team Tasks',
             task: tasks,
-            totalTasks:5
+            totalCount:5
         });
         expect(taskRepoMock.getTeamTask).toHaveBeenCalledWith(loggedUserId, isCompleted,1,10);
     });
@@ -801,7 +794,7 @@ describe('getTasks', () => {
             status: StatusCode.OK,
             message: 'Successfully fetched DelegatedToOthers Tasks',
             task: tasks,
-            totalTasks:5
+            totalCount:5
         });
         expect(taskRepoMock.getDelegatedToOthersTask).toHaveBeenCalledWith(loggedUserId, isCompleted,1,10);
     });
@@ -1203,6 +1196,62 @@ describe('updateTask', () => {
         expect(result.status).toBe(StatusCode.OK);
         expect(result.message).toBe('Task updated successfully');
         expect(taskRepoMock.saveTask).toHaveBeenCalledWith(expect.objectContaining(taskData)); // Ensure task data is updated
+    });
+
+    it('should return BadRequest when task data is invalid', async () => {
+        const taskData={id:1,titel:''}
+        // Mock validation failure
+        jest.spyOn(taskValidator, 'validateTaskData').mockReturnValueOnce({ valid: false, message: 'Invalid data' });
+
+        const result = await taskUseCase.updateTask(taskData, loggedUserId);
+
+        expect(result.status).toBe(400);
+        expect(result.message).toBe('Invalid fields: titel.');
+        expect(taskRepoMock.saveTask).not.toHaveBeenCalled();
+    });
+
+    // 3. Test case for task not found
+    it('should return NotFound when task is not found', async () => {
+        const taskData = { id: 99, title: 'Non-existent task' };
+
+        // Mock task not found
+        taskRepoMock.findTaskById.mockResolvedValueOnce(null);
+
+        const result = await taskUseCase.updateTask(taskData, loggedUserId);
+
+        expect(result.status).toBe(404);
+        expect(result.message).toBe('Task not found.');
+        expect(taskRepoMock.saveTask).not.toHaveBeenCalled();
+    });
+
+    // 4. Test case for permission denied
+    it('should return Unauthorized if user has no permission to update the task', async () => {
+        const taskData = { id: 1, title: 'New Task Title' };
+        const existingTask = { id: 1, title: 'Old Task Title', status: 'Pending', assignedTo: 2, createdBy: 1 };
+
+        // Mock permission failure
+        jest.spyOn(middleware, 'checkTaskPermission').mockReturnValueOnce(false);
+
+        taskRepoMock.findTaskById.mockResolvedValueOnce(task);
+
+        const result = await taskUseCase.updateTask(taskData, loggedUserId);
+
+        expect(result.status).toBe(401);
+        expect(result.message).toBe("You don't have permission to update this task.");
+        expect(taskRepoMock.saveTask).not.toHaveBeenCalled();
+    });
+
+    // 5. Test case for task already completed
+    it('should return BadRequest if the task is already completed', async () => {
+        const taskDatas={...task}
+        taskDatas.status=TaskStatus.Completed
+        taskRepoMock.findTaskById.mockResolvedValueOnce(taskDatas); // Task is completed
+
+        const result = await taskUseCase.updateTask(taskData, loggedUserId);
+
+        expect(result.status).toBe(400);
+        expect(result.message).toBe('Cannot update a completed task.');
+        expect(taskRepoMock.saveTask).not.toHaveBeenCalled();
     });
 
 

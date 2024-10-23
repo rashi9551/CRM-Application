@@ -1,9 +1,9 @@
 import userRepo from '../src/app/repository/UserRepo'; // Adjust accordingly
-import { GetAllUser, Department, RoleName, UserData, BrandData, BrandContactData, BrandOwnershipData, updatingUserData } from '../src/interfaces/interface'; // Adjust accordingly
+import {  Department, RoleName, UserData, BrandData, BrandContactData } from '../src/interfaces/interface'; // Adjust accordingly
 import { StatusCode } from '../src/interfaces/enum';
 import { User } from '../src/entity/User';
 import { Team } from '../src/entity/Team';
-import bcrypt from 'bcryptjs';
+
 import { Brand } from '../src/entity/Brand';
 import { BrandContact } from '../src/entity/BrandContact';
 import useCase from '../src/app/useCase/userUseCase'
@@ -186,6 +186,8 @@ jest.mock('../src/app/repository/UserRepo', () => ({
     addBrandOwnership: jest.fn(),
     getHierarchyTO: jest.fn(),
 }));
+
+
 const hierarchyTo=[{
     name: "Rashid",
     department: "Development",
@@ -200,12 +202,16 @@ const hierarchyTo=[{
     id: 2,
     createdAt: "2024-10-09T05:50:12.000Z"
 }]
+
+
 const BrandOwnershipCreateReponse={
     brand: BrandCreateReponseData,
     boUser:mockUserCreateResponseData,
     id: 3,
     createdAt: new Date
-}
+};
+
+
 const userRepoMock = userRepo as jest.Mocked<typeof userRepo>;
 
 
@@ -531,117 +537,3 @@ describe('User API - updateBrandContact', () => {
 });
 
 
-
-
-// describe('addBrandOwnership', () => {
-//     const brandOwnershipData: BrandOwnershipData = {
-//         brandId: 2,
-//         boUserId: 2
-//     };
-    
-//     const loggedUserId = 2; // assuming logged user has ID 1
-//     const userRepoMock = userRepo as jest.Mocked<typeof userRepo>; // Mock the user repository
-
-//     beforeEach(() => {
-//         jest.clearAllMocks(); // Clear mocks after each test
-//     });
-
-//     it('should return NotFound if the brand does not exist', async () => {
-//         userRepoMock.findBrandByID.mockResolvedValue(null); // Simulate brand not found
-
-//         const result = await useCase.addBrandOwnership(brandOwnershipData, loggedUserId);
-
-//         expect(result).toEqual({
-//             status: StatusCode.NotFound,
-//             message: `There is no BO user with this user id: ${brandOwnershipData.boUserId}`,
-//         });
-//         expect(userRepoMock.findBrandByID).toHaveBeenCalledWith(brandOwnershipData.brandId);
-//     });
-
-//     it('should return NotFound if the user does not exist', async () => {
-//         userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Brand exists
-//         userRepoMock.findUserById.mockResolvedValue(null); // User does not exist
-
-//         const result = await useCase.addBrandOwnership(brandOwnershipData, loggedUserId);
-
-//         expect(result).toEqual({
-//             status: StatusCode.NotFound,
-//             message: 'user not found',
-//         });
-//         expect(userRepoMock.findUserById).toHaveBeenCalledWith(brandOwnershipData.boUserId);
-//     });
-
-//     it('should return NotFound if the user does not have BO role', async () => {
-//         userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Brand exists
-//         userRepoMock.findUserById.mockResolvedValue(mockUserCreateResponseData); // User exists but no BO role
-
-//         const result = await useCase.addBrandOwnership(brandOwnershipData, loggedUserId);
-
-//         expect(result).toEqual({
-//             status: StatusCode.NotFound,
-//             message: `There is no BO user with this user id: ${brandOwnershipData.brandId}`,
-//         });
-//         expect(userRepoMock.findUserById).toHaveBeenCalledWith(brandOwnershipData.boUserId);
-//     });
-
-//     it('should return NotFound if logged user is not the TO of the BO user', async () => {
-//         userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Brand exists
-//         userRepoMock.findUserById.mockResolvedValue(mockUserCreateResponseData); // User exists with BO role
-//         userRepoMock.getHierarchyTO.mockResolvedValue(hierarchyTo); // Logged user is not TO of the BO user
-
-//         const result = await useCase.addBrandOwnership(brandOwnershipData, 2);
-
-//         expect(result).toEqual({
-//             status: StatusCode.NotFound,
-//             message: 'you have no permission to add this BO to brand because your not teamOwner of the this BO user',
-//         });
-//         expect(userRepoMock.getHierarchyTO).toHaveBeenCalledWith(brandOwnershipData.boUserId);
-//     });
-
-//     it('should return BadRequest if the brand ownership already exists', async () => {
-//         userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Brand exists
-//         userRepoMock.findUserById.mockResolvedValue(mockUserCreateResponseData); // User exists with BO role
-//         userRepoMock.getHierarchyTO.mockResolvedValue(hierarchyTo); // Logged user is the TO
-//         userRepoMock.getBrandOwnerShip.mockResolvedValue(BrandOwnershipCreateReponse); // Brand ownership already exists\\\
-
-        
-//         const result = await useCase.addBrandOwnership(brandOwnershipData, loggedUserId);
-
-//         expect(result).toEqual({
-//             status: StatusCode.BadRequest,
-//             message: 'Brand ownership already exist',
-//         });
-//         expect(userRepoMock.getBrandOwnerShip).toHaveBeenCalledWith(brandOwnershipData);
-//     });
-
-//     it('should return OK if brand ownership is added successfully', async () => {
-//         const mockUserData={...mockUserCreateResponseData}
-//         mockUserData.roles=[RoleName.BO]
-//         userRepoMock.findBrandByID.mockResolvedValue(BrandCreateReponseData); // Brand exists
-//         userRepoMock.findUserById.mockResolvedValue(mockUserData); // User exists with BO role
-//         userRepoMock.getHierarchyTO.mockResolvedValue(hierarchyTo); // Logged user is the TO
-//         userRepoMock.getBrandOwnerShip.mockResolvedValue(null); // No existing ownership
-//         userRepoMock.addBrandOwnership.mockResolvedValue(BrandOwnershipCreateReponse); // Successfully added ownership
-
-//         const result = await useCase.addBrandOwnership(brandOwnershipData, 2);
-
-//         expect(result).toEqual({
-//             status: StatusCode.OK,
-//             BrandOwnership: mockUserData,
-//             message: 'Brand ownership added successfully',
-//         });
-//         expect(userRepoMock.addBrandOwnership).toHaveBeenCalledWith(brandOwnershipData);
-//     });
-
-//     it('should return InternalServerError on unexpected error', async () => {
-//         userRepoMock.findBrandByID.mockRejectedValue(new Error('Unexpected Error')); // Simulate error
-
-//         const result = await useCase.addBrandOwnership(brandOwnershipData, loggedUserId);
-
-//         expect(result).toEqual({
-//             status: StatusCode.InternalServerError,
-//             message: 'Error when adding brand ownership',
-//         });
-//         expect(userRepoMock.findBrandByID).toHaveBeenCalledWith(brandOwnershipData.brandId);
-//     });
-// });

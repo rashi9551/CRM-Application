@@ -1,12 +1,9 @@
 import userRepo from '../src/app/repository/UserRepo'; // Adjust accordingly
-import { GetAllUser, Department, RoleName, UserData, BrandData, BrandContactData, BrandOwnershipData, updatingUserData, EventData, InventoryData } from '../src/interfaces/interface'; // Adjust accordingly
+import { Department, RoleName, UserData,updatingUserData, EventData, InventoryData } from '../src/interfaces/interface'; // Adjust accordingly
 import { StatusCode } from '../src/interfaces/enum';
 import { User } from '../src/entity/User';
 import { Team } from '../src/entity/Team';
 import { Event } from '../src/entity/Event';
-import bcrypt from 'bcryptjs';
-import { Brand } from '../src/entity/Brand';
-import { BrandContact } from '../src/entity/BrandContact';
 import useCase from '../src/app/useCase/userUseCase'
 import { Inventory } from '../src/entity/inventory';
 

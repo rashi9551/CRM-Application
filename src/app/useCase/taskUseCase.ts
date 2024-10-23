@@ -9,8 +9,10 @@ import { Notification } from '../../entity/Notification';
 import { TaskHistory } from '../../entity/TaskHistory';
 import { TaskComment } from '../../entity/TaskComment';
 import {AnalyticsFilter} from '../../interfaces/interface'
-import { validateTaskData } from '../../middleware/validateTaskData';
+import TaskValidator  from '../../middleware/validateTaskData';
 import { checkTaskPermission, handleError, handleHistoryAndNotifications, handleTaskUpdate } from '../../middleware/updateMiddleware';
+
+const taskValidator=new TaskValidator()
 export default new class TaskUseCase {
     
     createTask = async (taskData: TaskData,loggedUserId:number): Promise<PromiseReturn> => {
@@ -19,7 +21,7 @@ export default new class TaskUseCase {
             const { due_date, ...rest } = taskData;
             let flag:boolean=true
             task.due_date = new Date(due_date); // Convert the string to a Date object
-            if (!validateTaskData(taskData)) {
+            if (!taskValidator.validateTaskData(taskData)) {
                 return { 
                     status: StatusCode.BadRequest as number, 
                     message: "Invalid task data. Please check the provided fields."
@@ -81,7 +83,9 @@ export default new class TaskUseCase {
     updateTask = async (taskData: TaskData, loggedUserId?: number, roles?: string[]): Promise<PromiseReturn> => {
         try {
             // Validate the task data
-            const validationResult = validateTaskData(taskData);
+            console.log(taskData,'=-=-=-=-=-=-------------');
+            
+            const validationResult = taskValidator.validateTaskData(taskData);
             if (!validationResult.valid) {
                 return { status: StatusCode.BadRequest as number, message: validationResult.message };
             }
