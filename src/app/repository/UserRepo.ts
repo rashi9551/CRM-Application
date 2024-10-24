@@ -163,27 +163,31 @@ export default new class UserRepo {
         }
     };
     
-    getAllTeam = async (): Promise<Team[] | null> => {
+    getAllTeam = async (page: number, pageSize: number): Promise<{ teams: Team[], totalTeamOwners: number }> => {
         try {
-            const teams = await this.TeamRepo
+            const [teams, totalTeamOwners] = await this.TeamRepo
                 .createQueryBuilder('team')
                 .leftJoinAndSelect('team.users', 'user') // Join with users to get team members
                 .leftJoinAndSelect('team.teamOwner', 'owner') // Join with team owner
-                .getMany(); // Fetch all teams with their details
-
-            return teams;
+                .skip((page - 1) * pageSize) // Skip the number of items for pagination
+                .take(pageSize) // Limit the number of items to pageSize
+                .getManyAndCount(); // Fetch the teams and count
+    
+            return { teams, totalTeamOwners }; // Return teams and total count
         } catch (error) {
             console.error("Error fetching teams:", error);
             throw new Error("Failed to retrieve teams");
         }
     };
-    async getUsersWithRoleTO(roleName:RoleName): Promise<User[]> {
+    async getUsersWithRoleTO(roleName: RoleName, page: number = 1, pageSize: number = 10): Promise<User[]> {
         try {
             const usersWithToRole = await this.UserRepo
-            .createQueryBuilder('user')
+                .createQueryBuilder('user')
                 .where('user.roles LIKE :role', { role: '%TO%' }) // Using LIKE for simple array
+                .skip((page - 1) * pageSize) // Skip records from previous pages
+                .take(pageSize) // Limit the number of records fetched
                 .getMany();
-
+    
             return usersWithToRole;
         } catch (error) {
             console.error(`Error fetching users with role ${roleName}:`, error);
@@ -297,14 +301,17 @@ export default new class UserRepo {
             throw new Error("Failed to find brand");
         }
     };
-    getAllBrand = async (): Promise<Brand[] | null> => {
+    getAllBrand = async (page: number, pageSize: number): Promise<{ brands: Brand[], totalBrand: number }> => {
         try {
-            // Retrieve all brands along with their related BrandContact and BrandOwnership
-            const brands = await this.BrandRepo.find({
-                relations: ['contacts', 'brandOwnerships'],
-            });
-
-            return brands; // Return the list of brands
+            const [brands, totalBrand] = await this.BrandRepo
+                .createQueryBuilder('brand')
+                .leftJoinAndSelect('brand.contacts', 'contact') // Join with BrandContact
+                .leftJoinAndSelect('brand.brandOwnerships', 'ownership') // Join with BrandOwnership
+                .skip((page - 1) * pageSize) // Skip the number of items for pagination
+                .take(pageSize) // Limit the number of items to pageSize
+                .getManyAndCount(); // Fetch brands and count
+    
+            return { brands, totalBrand }; // Return brands and total count
         } catch (error) {
             console.error("Error fetching all brands:", error);
             throw new Error("Failed to fetch all brands");
@@ -427,8 +434,10 @@ export default new class UserRepo {
     
     
     
-    async getUserTree(rootUserId?: number): Promise<User[]> {
+    async getUserTree(page: number = 1, pageSize: number = 10, rootUserId?: number): Promise<User[]> {
         try {
+            let users: User[];
+    
             if (rootUserId) {
                 // Fetch a specific user by ID and their children
                 const user = await this.UserRepo.findOne({
@@ -438,12 +447,15 @@ export default new class UserRepo {
                 return user ? [user] : []; // Return an array with the user or an empty array if not found
             }
     
-            // Fetch all root users (those without a parent)
-            const rootUsers = await this.UserRepo.find({
+            // Fetch all root users (those without a parent) with pagination
+            users = await this.UserRepo.find({
                 where: { parentId: null },
                 relations: ['children'],
+                skip: (page - 1) * pageSize, // Skip records from previous pages
+                take: pageSize, // Limit the number of records fetched
             });
-            return rootUsers;
+    
+            return users;
         } catch (error) {
             console.error("Error fetching the user tree:", error);
             throw error;
@@ -549,22 +561,32 @@ export default new class UserRepo {
             throw new Error('Unable to check user estence.'); // Throw a more user-friendly error
         }
     }
-    async getAllInventory(): Promise<Inventory[] |null> {
+    async getAllInventory(page: number, pageSize: number): Promise<{ inventory: Inventory[], totalInventory: number }> {
         try {
-            const Inventory = await this.InventoryRepo.find();
-            return Inventory; // Return true if the user exists, false otherwise
+            const [inventory, totalInventory] = await this.InventoryRepo
+                .createQueryBuilder('inventory')
+                .skip((page - 1) * pageSize) // Skip for pagination
+                .take(pageSize) // Limit results
+                .getManyAndCount(); // Get both inventory items and total count
+    
+            return { inventory, totalInventory }; // Return inventory and total count
         } catch (error) {
-            console.error('Error getting Event:', error);
-            throw new Error('Unable to check user estence.'); // Throw a more user-friendly error
+            console.error('Error getting inventory:', error);
+            throw new Error('Unable to fetch inventory.'); // More user-friendly error
         }
     }
-    async getAllEvent(): Promise<Event[] |null> {
+    async getAllEvent(page: number, pageSize: number): Promise<{ events: Event[], totalEvents: number }> {
         try {
-            const Event = await this.EventRepo.find();
-            return Event; // Return true if the user exists, false otherwise
+            const [events, totalEvents] = await this.EventRepo
+                .createQueryBuilder('event')
+                .skip((page - 1) * pageSize) // Skip for pagination
+                .take(pageSize) // Limit results
+                .getManyAndCount(); // Get both events and total count
+    
+            return { events, totalEvents }; // Return events and total count
         } catch (error) {
-            console.error('Error getting Event:', error);
-            throw new Error('Unable to check user estence.'); // Throw a more user-friendly error
+            console.error('Error getting events:', error);
+            throw new Error('Unable to fetch events.'); // More user-friendly error
         }
     }
 };

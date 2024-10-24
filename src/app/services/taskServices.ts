@@ -502,19 +502,84 @@ export default new class TaskUseCase {
         }
     };
 
-    getFilteredAndSortedTasks = async (filterOptions?: FilterOptions, page: number = 1, pageSize: number = 10): Promise<PromiseReturn | null> => {
+    getFilteredAndSortedTasks = async (
+        filterOptions?: FilterOptions,
+        page: number = 1,
+        pageSize: number = 10
+    ): Promise<PromiseReturn | null> => {
         try {
             if (!filterOptions) {
                 return { status: StatusCode.NotFound as number, message: "Filter options not provided." };
             }
     
+            // Fetch filtered tasks with pagination
             const filterTask = await TaskRepo.getFilteredAndSortedTasks(filterOptions, page, pageSize);
     
             if (filterTask.length === 0) {
                 return { status: StatusCode.NotFound as number, message: "No tasks found matching the filters." };
             }
     
-            return { status: StatusCode.Created as number, message: 'Filtered task successfully retrieved.', task: filterTask };
+            // Fetch all assigned users (To and By), team owners, and related entities (brands, inventory, event)
+            const [assignedToUsers, totalAssignedToUsers] = await TaskRepo.findAllAssignedToUsers(page, pageSize);
+            const [assignedByUsers, totalAssignedByUsers] = await TaskRepo.findAllAssignedByUsers(page, pageSize);
+            const { teams, totalTeamOwners } = await UserRepo.getAllTeam(page, pageSize);
+            const { brands, totalBrand } = await UserRepo.getAllBrand(page, pageSize);
+            const {events, totalEvents} = await UserRepo.getAllEvent(page, pageSize);
+            const {inventory, totalInventory} = await UserRepo.getAllInventory(page, pageSize);
+    
+            // Marking users, team owners, brands, inventory, and events as viewable based on the filtered tasks
+            const markedAssignedToUsers = assignedToUsers.map(user => ({
+                ...user,
+                viewable: filterTask.some(task => task.assigned_to === user.id)
+            }));
+    
+            const markedAssignedByUsers = assignedByUsers.map(user => ({
+                ...user,
+                viewable: filterTask.some(task => task.created_by === user.id)
+            }));
+    
+            const markedTeamOwners = teams.map(owner => ({
+                ...owner,
+                viewable: filterTask.some(task => task?.assignedTo?.team?.toUserId === owner.id)
+            }));
+    
+            const markedBrands = brands.map(brand => ({
+                ...brand,
+                viewable: filterTask.some(task => task.brand_id === brand.id)
+            }));
+    
+            const markedInventory = inventory.map(item => ({
+                ...item,
+                viewable: filterTask.some(task => task.inventoryId === item.id)
+            }));
+    
+            const markedEvents = events.map(event => ({
+                ...event,
+                viewable: filterTask.some(task => task.eventId === event.id)
+            }));
+    
+            // Returning the final object with all the relevant data and viewable flags
+            return {
+                status: StatusCode.Created as number,
+                message: 'Filtered tasks successfully retrieved.',
+                task: filterTask,
+                assignedToUsers: markedAssignedToUsers,
+                assignedByUsers: markedAssignedByUsers,
+                teamOwners: markedTeamOwners,
+                brand: markedBrands,
+                Inventory: markedInventory,
+                Event: markedEvents,
+                pagination: {
+                    page,
+                    pageSize,
+                    totalAssignedToUsers,
+                    totalAssignedByUsers,
+                    totalTeamOwners,
+                    totalBrand,
+                    totalInventory,
+                    totalEvents
+                }
+            };
         } catch (error) {
             console.error("Error when fetching tasks:", error);
             throw error;

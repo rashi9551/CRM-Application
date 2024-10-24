@@ -31,7 +31,10 @@ export default new class UserController{
     getAllUser=async(req:Request,res:Response)=>{
         try {
             console.log("geeting getAllUser...");
-            const getUserResponse=await useCase.getAllUser()
+            const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+            const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+            console.log("Page:", page, "PageSize:", pageSize); // Log individual values
+            const getUserResponse=await useCase.getAllUser(page,pageSize)
            res.status(getUserResponse.status).json(getUserResponse)
         } catch (error) {
             console.log(error);
@@ -52,7 +55,10 @@ export default new class UserController{
     getAllTo=async(req:Request,res:Response)=>{
         try {
             console.log("geeting a all TO role user...");
-            const getAllToResponse = await useCase.getAllTo();
+            const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+            const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+            console.log("Page:", page, "PageSize:", pageSize); // Log individual values
+            const getAllToResponse = await useCase.getAllTo(page,pageSize);
            res.status(getAllToResponse.status).json(getAllToResponse)
         } catch (error) {
             console.log(error);
@@ -72,7 +78,10 @@ export default new class UserController{
     getAllTeam=async(req:Request,res:Response)=>{
         try {
             console.log("geeting a all team  ...");
-            const getAllTeamResponse = await useCase.getAllTeam();
+            const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+            const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+            console.log("Page:", page, "PageSize:", pageSize); // Log individual values
+            const getAllTeamResponse = await useCase.getAllTeam(page,pageSize);
            res.status(getAllTeamResponse.status).json(getAllTeamResponse)
         } catch (error) {
             console.log(error);
@@ -146,7 +155,10 @@ export default new class UserController{
     getAllBrand=async(req:Request,res:Response)=>{
         try {
             console.log("admin or bo  getting  all brand...");
-            const getAllBrandResponse=await useCase.getAllBrand()
+            const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+            const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+            console.log("Page:", page, "PageSize:", pageSize); // Log individual values
+            const getAllBrandResponse=await useCase.getAllBrand(page,pageSize)
             res.status(getAllBrandResponse.status).json(getAllBrandResponse)
         } catch (error) {
             console.log(error);
@@ -235,7 +247,10 @@ export default new class UserController{
     getAllInventory=async(req:Request,res:Response)=>{
         try {
             console.log("admin getting all  Inventory...");
-            const createInventoryResponse=await useCase.getAllInventory()
+            const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+            const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+            console.log("Page:", page, "PageSize:", pageSize); // Log individual values
+            const createInventoryResponse=await useCase.getAllInventory(page,pageSize)
             res.status(createInventoryResponse.status).json(createInventoryResponse)
         } catch (error) {
             console.log(error);
@@ -256,7 +271,10 @@ export default new class UserController{
     getAllEvent=async(req:Request,res:Response)=>{
         try {
             console.log("getting all event...");
-            const eventDataResponse=await useCase.getAllEvent()
+            const pageSize: number = parseInt(req.query.pageSize as string) || 10; // Default to 10 items per page
+            const page: number = parseInt(req.query.page as string) || 1; // Default to page 1
+            console.log("Page:", page, "PageSize:", pageSize); // Log individual values
+            const eventDataResponse=await useCase.getAllEvent(page,pageSize)
             res.status(eventDataResponse.status).json(eventDataResponse)
         } catch (error) {
             console.log(error);

@@ -88,6 +88,7 @@ export interface PromiseReturn{
     message?:string
     token?:string
     team?:Team[]
+    teamOwners?:Team[]
     brand?:Brand[]
     Brand?:Brand
     Task?:Task
@@ -104,7 +105,20 @@ export interface PromiseReturn{
     analytics?:Analytics
     UnreadNotification?:Notification[]
     BrandContact?:BrandContact
-    BrandOwnership?:BrandOwnership
+    BrandOwnership?:BrandOwnership,
+    assignedToUsers?:User[],
+    assignedByUsers?:User[],
+    pagination?: Pagination;       // Optional: Pagination data using the updated Pagination interface
+}
+interface Pagination {
+    page?: number;                // Optional: The current page number
+    pageSize?: number;            // Optional: The number of items per page
+    totalAssignedToUsers?: number; // Optional: Total count of assigned to users
+    totalAssignedByUsers?: number; // Optional: Total count of assigned by users
+    totalTeamOwners?: number;     // Optional: Total count of team owners
+    totalBrand?: number;         // Optional: Total count of brands
+    totalInventory?: number;      // Optional: Total count of inventory items
+    totalEvents?: number;         // Optional: Total count of events
 }
 
 

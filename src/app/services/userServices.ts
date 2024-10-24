@@ -205,17 +205,23 @@ export default new class UseCase {
     
 
 
-    getAllUser = async (): Promise<PromiseReturn > => {
+    getAllUser = async (page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {
-           const getAllUser:User[]=await userRepo.getUserTree()
-            const User :User[]=buildTree(getAllUser)
-           return { status: StatusCode.OK as number, user:User, message: "All users fetched successfully" };
+            const allUsers: User[] = await userRepo.getUserTree(page, pageSize);
+            
+            const userTree: User[] = buildTree(allUsers);
+            
+            return { 
+                status: StatusCode.OK as number, 
+                user: userTree, 
+                message: "All users fetched successfully" 
+            };
         } catch (error) {
             console.error("Error during fetching tree:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when fetching users" };
         }
-    }
-    getAllTo = async (): Promise<PromiseReturn > => {
+    };
+    getAllTo = async (page: number = 1, pageSize: number = 10): Promise<PromiseReturn > => {
         try {
            const getAllTo:User[]=await userRepo.getUsersWithRoleTO(RoleName.TO)
            return { status: StatusCode.OK as number, user:getAllTo, message: "all to fetched successfully" };
@@ -233,12 +239,18 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
         }
     }
-    getAllTeam = async (): Promise<PromiseReturn > => {
+    getAllTeam = async (page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {
-           const getAllTeam:Team[]=await userRepo.getAllTeam()
-           return { status: StatusCode.OK as number, team:getAllTeam, message: "All teams fetched successfully" };
+            const { teams, totalTeamOwners } = await userRepo.getAllTeam(page, pageSize); // Pass page and pageSize
+    
+            return {
+                status: StatusCode.OK as number,
+                team: teams,
+                totalCount:totalTeamOwners,
+                message: "All teams fetched successfully",
+            };
         } catch (error) {
-            console.error("Error during fetching tree:", error);
+            console.error("Error during fetching teams:", error);
             return { status: StatusCode.InternalServerError as number, message: "Error when fetching teams" };
         }
     }
@@ -353,13 +365,19 @@ export default new class UseCase {
             };
         }
     };
-    getAllBrand = async (): Promise<PromiseReturn > => {
+    getAllBrand = async (page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {
-            const getAllBrand:Brand[]=await userRepo.getAllBrand()
-            return { status: StatusCode.OK as number, brand:getAllBrand, message: "all Brand fetched success fully" };
+            const { brands, totalBrand } = await userRepo.getAllBrand(page, pageSize); // Pass page and pageSize
+    
+            return {
+                status: StatusCode.OK as number,
+                brand: brands,
+                totalCount:totalBrand,
+                message: "All brands fetched successfully",
+            };
         } catch (error) {
-            console.error("Error during fetching tree:", error);
-            return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
+            console.error("Error during fetching brands:", error);
+            return { status: StatusCode.InternalServerError as number, message: "Error when fetching brands" };
         }
     }
     deleteBrand = async (id: number): Promise<PromiseReturn> => {
@@ -674,41 +692,43 @@ export default new class UseCase {
         }
     };
 
-    getAllEvent = async (): Promise<PromiseReturn> => {
+    getAllEvent = async (page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {
-            const events=await userRepo.getAllEvent()
-
-            return { 
-                status: StatusCode.OK as number, 
-                message: "Event fetched successfully" ,
-                Event:events
+            const { events, totalEvents } = await userRepo.getAllEvent(page, pageSize); // Pass page and pageSize
+    
+            return {
+                status: StatusCode.OK as number,
+                message: "Events fetched successfully",
+                Event:events, // Return events
+                totalCount:totalEvents, // Include total count
             };
         } catch (error) {
-            console.error("Error during getting event:", error);
-            return { 
-                status: StatusCode.InternalServerError as number, 
-                message: "Error when creating event" 
+            console.error("Error during getting events:", error);
+            return {
+                status: StatusCode.InternalServerError as number,
+                message: "Error when fetching events",
             };
         }
-    };
+    }
 
-    getAllInventory = async (): Promise<PromiseReturn> => {
+    getAllInventory = async (page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {
-            const inventory=await userRepo.getAllInventory()
-
-            return { 
-                status: StatusCode.OK as number, 
-                message: "Inventory fetched successfully" ,
-                Inventory:inventory
+            const { inventory, totalInventory } = await userRepo.getAllInventory(page, pageSize); // Pass page and pageSize
+    
+            return {
+                status: StatusCode.OK as number,
+                message: "Inventory fetched successfully",
+                Inventory:inventory, // Return inventory
+                totalCount:totalInventory, // Include total count
             };
         } catch (error) {
-            console.error("Error during getting  inventory:", error);
-            return { 
-                status: StatusCode.InternalServerError as number, 
-                message: "Error when fetching inventory"
+            console.error("Error during getting inventory:", error);
+            return {
+                status: StatusCode.InternalServerError as number,
+                message: "Error when fetching inventory",
             };
         }
-    };
+    }
     
 
 };

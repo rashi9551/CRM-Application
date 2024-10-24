@@ -642,7 +642,7 @@ describe('getNotification', () => {
         taskRepoMock.getUnreadNotification.mockResolvedValue(unreadNotifications); // Mock the return value
 
         // Act
-        const result = await taskUseCase.getNotification(userId);
+        const result = await taskUseCase.getNotification(userId,1,10);
 
         // Assert
         expect(result).toEqual({
@@ -658,7 +658,7 @@ describe('getNotification', () => {
         taskRepoMock.getUnreadNotification.mockRejectedValue(new Error('Database error')); // Simulate error
 
         // Act & Assert
-        const result = await taskUseCase.getNotification(userId);
+        const result = await taskUseCase.getNotification(userId,1,10);
         expect(result).toEqual({
             status: StatusCode.InternalServerError,
             message: "Internal server error.",
