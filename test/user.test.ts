@@ -819,7 +819,7 @@ describe('Event API - getAllEvent', () => {
         // Arrange: Mock events array
         const mockEvents = [mockCreatedEvent]; // Assuming mockCreatedEvent is defined
 
-        userRepoMock.getAllEvent.mockResolvedValue(mockEvents); // Mock successful retrieval
+        userRepoMock.getAllEvent.mockResolvedValue({events:mockEvents,totalEvents:3}); // Mock successful retrieval
 
         // Act: Call the getAllEvent method
         const response = await useCase.getAllEvent();
@@ -827,8 +827,9 @@ describe('Event API - getAllEvent', () => {
         // Assert: Check the response
         expect(response).toEqual({
             status: StatusCode.OK,
-            message: "Event fetched successfully",
+            message: "Events fetched successfully",
             Event: mockEvents, // Expecting an array here
+            totalCount:3
         });
     });
 
@@ -844,7 +845,7 @@ describe('Event API - getAllEvent', () => {
         // Assert: Check the response
         expect(response).toEqual({
             status: StatusCode.InternalServerError,
-            message: "Error when creating event", // This message is fine as is, for events
+            message: "Error when fetching events", // This message is fine as is, for events
         });
     });
 });
@@ -860,7 +861,7 @@ describe('Inventory API - getAllInventory', () => {
         // Arrange: Mock inventory array
         const mockInventories = [mockCreatedInventory]; // Assuming mockCreatedInventory is defined
 
-        userRepoMock.getAllInventory.mockResolvedValue(mockInventories); // Mock successful retrieval
+        userRepoMock.getAllInventory.mockResolvedValue({inventory:mockInventories,totalInventory:2}); // Mock successful retrieval
 
         // Act: Call the getAllInventory method
         const response = await useCase.getAllInventory();
@@ -870,6 +871,7 @@ describe('Inventory API - getAllInventory', () => {
             status: StatusCode.OK,
             message: "Inventory fetched successfully",
             Inventory: mockInventories, // Expecting an array here
+            totalCount:2
         });
     });
 

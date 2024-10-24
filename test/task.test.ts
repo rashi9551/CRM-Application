@@ -16,7 +16,7 @@ import TaskValidator from '../src/middleware/validateTaskData';
 
 const taskValidator = new TaskValidator(); // Create an instance
 
-
+  
 const mockUserCreateResponseData:User={
     name: "Rashid",
     department: Department.DEVELOPMENT,
@@ -91,6 +91,8 @@ jest.mock('../src/app/repository/UserRepo', () => ({
     findBrandByID: jest.fn(),
     createBrand: jest.fn(),
     saveBrand: jest.fn(),
+    getAllTeam: jest.fn(),
+    getAllBrand: jest.fn(),
 }));
 
 const taskRepoMock = TaskRepo as jest.Mocked<typeof TaskRepo>;
@@ -115,6 +117,8 @@ jest.mock('../src/app/repository/TaskRepo', () => ({
     deleteTask: jest.fn(),
     saveTask: jest.fn(),
     createTask: jest.fn(),
+    findAllAssignedByUsers: jest.fn(),
+    findAllAssignedToUsers: jest.fn(),
 
 }));
 
@@ -134,7 +138,7 @@ describe('getAnalytics', () => {
 
         // Assert
         expect(response).toEqual({
-            message: "analytics fetched successfully",
+            message: "Analytics fetched successfully",
             status: StatusCode.OK, // Use StatusCode for consistency
             analytics: {
                 [filter]: {
@@ -171,9 +175,56 @@ const mockFilterOptions:FilterOptions = {
     sortBy: "createdAt",               // Sort by task creation date
     status: "Completed",               // Filter by task status
     sortOrder: "ASC"                   // Sort order (ascending)
-}
+};
 
-;
+const mockFilteredTasks :Task[]= [
+    {
+        id: 3,
+        title: "Evolution on clothing",
+        description: "Design",
+        type: Type.Brand,
+        status: TaskStatus.Pending,
+        createdAt: new Date,
+        due_date:new Date,
+        assignedTo: new User ,
+        assigned_to: 4,
+        created_by: 4,
+        brand_id: 1,
+        inventoryId: undefined,
+        eventId: undefined,
+        sla: true,
+        createdBy: new User,
+        brand: new Brand,
+        inventory: new Inventory,
+        event: new Event,
+        comments: [],
+        notifications: [],
+        history: []
+    },
+    
+];
+const expectedResponse = {
+    status: 201,
+    message: "Filtered tasks successfully retrieved.",
+    task: mockFilteredTasks,
+    pagination: {
+      page: 1,
+      pageSize: 10,
+      totalAssignedByUsers: 0,
+      totalAssignedToUsers: 0,
+      totalBrand: 0,
+      totalEvents: 0,
+      totalInventory: 0,
+      totalTeamOwners: 0
+    },
+    assignedByUsers: [],
+    assignedToUsers: [],
+    brand: [],
+    Event: [],
+    Inventory: [],
+    teamOwners: []
+  };
+  
 
 const task :Task={
     id: 3,
@@ -200,47 +251,28 @@ const task :Task={
 }
 
 
-const mockFilteredTasks :Task[]= [
-    {
-        id: 3,
-        title: "Evolution on clothing",
-        description: "Design",
-        type: Type.Brand,
-        status: TaskStatus.Pending,
-        createdAt: new Date,
-        due_date: new Date,
-        assigned_to: 4,
-        created_by: 4,
-        brand_id: 1,
-        inventoryId: undefined,
-        eventId: undefined,
-        sla: true,
-        assignedTo: new User,
-        createdBy: new User,
-        brand: new Brand,
-        inventory: new Inventory,
-        event: new Event,
-        comments: [],
-        notifications: [],
-        history: []
-    },
-    
-];
 
 describe('getFilteredAndSortedTasks', () => {
-    it('should fetch filtered and sorted tasks successfully', async () => {
-
+    beforeEach(() => {
+        // Ensure each mock is properly set up for each test
         taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue(mockFilteredTasks);
+        taskRepoMock.findAllAssignedToUsers.mockResolvedValue([[], 0]);  // Empty array by default
+        taskRepoMock.findAllAssignedByUsers.mockResolvedValue([[], 0]);  // Empty array by default
+        userRepoMock.getAllTeam.mockResolvedValue({ teams: [], totalTeamOwners: 0 });  // No teams
+        userRepoMock.getAllBrand.mockResolvedValue({ brands: [], totalBrand: 0 });  // No brands
+        userRepoMock.getAllEvent.mockResolvedValue({ events: [], totalEvents: 0 });  // No events
+        userRepoMock.getAllInventory.mockResolvedValue({ inventory: [], totalInventory: 0 });  // No inventory
+    });
 
+    it('should fetch filtered and sorted tasks successfully with pagination', async () => {
+        // Arrange
+        taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue(mockFilteredTasks);
+        
         // Act
-        const response = await taskUseCase.getFilteredAndSortedTasks(mockFilterOptions);
+        const response = await taskUseCase.getFilteredAndSortedTasks(mockFilterOptions, 1, 10);
 
         // Assert
-        expect(response).toEqual({
-            status: StatusCode.Created,
-            message: 'Filtered task successfully retrieved.',
-            task: mockFilteredTasks,
-        });
+        expect(response).toEqual(expectedResponse);
     });
 
     it('should return NotFound status when filter options are not provided', async () => {
@@ -256,12 +288,11 @@ describe('getFilteredAndSortedTasks', () => {
 
     it('should return NotFound status when no tasks match the filter options', async () => {
         // Arrange
-        const mockFilterOptions = { /* your filter options here */ };
         taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue([]);
-
+        
         // Act
         const response = await taskUseCase.getFilteredAndSortedTasks(mockFilterOptions);
-
+        
         // Assert
         expect(response).toEqual({
             status: StatusCode.NotFound,
@@ -270,15 +301,34 @@ describe('getFilteredAndSortedTasks', () => {
     });
 
     it('should throw an error if TaskRepo throws an error', async () => {
-        // Arrange
-        const mockFilterOptions = { /* your filter options here */ };
         taskRepoMock.getFilteredAndSortedTasks.mockRejectedValue(new Error('Database error'));
 
         // Act & Assert
         await expect(taskUseCase.getFilteredAndSortedTasks(mockFilterOptions)).rejects.toThrow('Database error');
     });
-});
 
+    it('should return empty arrays if no entities are found for assigned users, brands, etc.', async () => {
+        // Arrange
+        taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue(mockFilteredTasks);
+        taskRepoMock.findAllAssignedToUsers.mockResolvedValue([[], 0]);  // No assigned users
+        taskRepoMock.findAllAssignedByUsers.mockResolvedValue([[], 0]);  // No assigned by users
+        userRepoMock.getAllTeam.mockResolvedValue({ teams: [], totalTeamOwners: 0 });  // No teams
+        userRepoMock.getAllBrand.mockResolvedValue({ brands: [], totalBrand: 0 });  // No brands
+        userRepoMock.getAllEvent.mockResolvedValue({ events: [], totalEvents: 0 });  // No events
+        userRepoMock.getAllInventory.mockResolvedValue({ inventory: [], totalInventory: 0 });  // No inventory
+
+        // Act
+        const response = await taskUseCase.getFilteredAndSortedTasks(mockFilterOptions);
+        
+        // Assert
+        expect(response.assignedToUsers).toEqual([]);
+        expect(response.assignedByUsers).toEqual([]);
+        expect(response.teamOwners).toEqual([]);
+        expect(response.brand).toEqual([]);
+        expect(response.Inventory).toEqual([]);
+        expect(response.Event).toEqual([]);
+    });
+});
 
 
 describe('createComment', () => {
@@ -587,7 +637,7 @@ describe('getHistory', () => {
             message: 'There is no history for this task',
         });
         expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(3); // Ensure the correct taskId was passed
-        expect(taskRepoMock.getHistory).toHaveBeenCalledWith(3); // Ensure the correct taskId was used for fetching history
+        expect(taskRepoMock.getHistory).toHaveBeenCalledWith(3,1,10); // Ensure the correct taskId was used for fetching history
     });
     
 
@@ -606,7 +656,7 @@ describe('getHistory', () => {
             taskHistory: taskHistory
         });
         expect(taskRepoMock.findTaskById).toHaveBeenCalledWith(taskId);
-        expect(taskRepoMock.getHistory).toHaveBeenCalledWith(taskId);
+        expect(taskRepoMock.getHistory).toHaveBeenCalledWith(taskId,1,10);
     });
 
     it('should return 500 if an internal server error occurs', async () => {
@@ -650,7 +700,7 @@ describe('getNotification', () => {
             message: "Task Fetched By Id Successfully.",
             UnreadNotification: unreadNotifications,
         });
-        expect(taskRepoMock.getUnreadNotification).toHaveBeenCalledWith(userId); // Ensure the method was called with the correct userId
+        expect(taskRepoMock.getUnreadNotification).toHaveBeenCalledWith(userId,1,10); // Ensure the method was called with the correct userId
     });
 
     it('should return 500 if an internal server error occurs', async () => {
@@ -663,7 +713,7 @@ describe('getNotification', () => {
             status: StatusCode.InternalServerError,
             message: "Internal server error.",
         });
-        expect(taskRepoMock.getUnreadNotification).toHaveBeenCalledWith(userId); // Ensure the method was called with the correct userId
+        expect(taskRepoMock.getUnreadNotification).toHaveBeenCalledWith(userId,1,10); // Ensure the method was called with the correct userId
     });
 });
 

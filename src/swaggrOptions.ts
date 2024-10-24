@@ -1545,15 +1545,29 @@ const swaggerOptions = {
         },
       },
     },
-    "/filterTask": {
+    "/api/filterTask": {
       post: {
         tags: ["Task"],
         summary: "Filter tasks",
         description:
-          "Filters tasks based on specified criteria such as type, assignment, due date, brand name, and status.",
-        consumes: ["application/json"],
-        produces: ["application/json"],
+          "Filters tasks based on specified criteria such as type, assignment, due date, brand name, and status. Supports pagination using page and pageSize.",
         parameters: [
+          {
+            name: "page",
+            in: "query",
+            required: false,
+            type: "integer",
+            description: "Page number for pagination",
+            example: 1,
+          },
+          {
+            name: "pageSize",
+            in: "query",
+            required: false,
+            type: "integer",
+            description: "Number of items per page for pagination",
+            example: 1,
+          },
           {
             name: "body",
             in: "body",
@@ -1630,63 +1644,135 @@ const swaggerOptions = {
           },
         ],
         responses: {
-          200: {
+          "200": {
             description: "Successfully retrieved filtered tasks",
             schema: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  id: {
-                    type: "integer",
-                    example: 1,
-                    description: "ID of the task",
+              type: "object",
+              properties: {
+                status: {
+                  type: "integer",
+                  example: 201,
+                  description: "Response status code",
+                },
+                message: {
+                  type: "string",
+                  example: "Filtered tasks successfully retrieved.",
+                },
+                task: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: {
+                        type: "integer",
+                        example: 1,
+                        description: "ID of the task",
+                      },
+                      title: {
+                        type: "string",
+                        example: "getting addidas on top",
+                        description: "Title of the task",
+                      },
+                      description: {
+                        type: "string",
+                        example: "Design",
+                        description: "Description of the task",
+                      },
+                      type: {
+                        type: "string",
+                        example: "Brand",
+                        description: "Type of the task",
+                      },
+                      status: {
+                        type: "string",
+                        example: "Pending",
+                        description: "Status of the task",
+                      },
+                      createdAt: {
+                        type: "string",
+                        format: "date-time",
+                        example: "2024-10-24T05:42:55.818Z",
+                        description: "Creation date of the task",
+                      },
+                      due_date: {
+                        type: "string",
+                        format: "date-time",
+                        example: "2024-10-17T06:53:09.000Z",
+                        description: "Due date of the task",
+                      },
+                      assigned_to: {
+                        type: "integer",
+                        example: 5,
+                        description: "User assigned to the task",
+                      },
+                      created_by: {
+                        type: "integer",
+                        example: 4,
+                        description: "User who created the task",
+                      },
+                      brand_id: {
+                        type: "integer",
+                        example: 1,
+                        description: "ID of the associated brand",
+                      },
+                      inventoryId: {
+                        type: "integer",
+                        example: null,
+                        description:
+                          "ID of the associated inventory (optional)",
+                      },
+                      eventId: {
+                        type: "integer",
+                        example: null,
+                        description: "ID of the associated event (optional)",
+                      },
+                      sla: {
+                        type: "boolean",
+                        example: true,
+                        description: "Service level agreement met or not",
+                      },
+                    },
                   },
-                  title: {
-                    type: "string",
-                    example: "Evolution on clothing",
-                    description: "Title of the task",
-                  },
-                  description: {
-                    type: "string",
-                    example: "Design",
-                    description: "Description of the task",
-                  },
-                  type: {
-                    type: "string",
-                    example: "Brand",
-                    description: "Type of the task",
-                  },
-                  assigned_to: {
-                    type: "integer",
-                    example: 4,
-                    description: "User assigned to the task",
-                  },
-                  created_by: {
-                    type: "integer",
-                    example: 4,
-                    description: "User who created the task",
-                  },
-                  due_date: {
-                    type: "string",
-                    format: "date-time",
-                    example: "2024-10-17T06:53:08.910776Z",
-                    description: "Due date of the task",
-                  },
-                  status: {
-                    type: "string",
-                    example: "Completed",
-                    description: "Status of the task",
+                },
+                pagination: {
+                  type: "object",
+                  properties: {
+                    page: {
+                      type: "integer",
+                      example: 1,
+                    },
+                    pageSize: {
+                      type: "integer",
+                      example: 1,
+                    },
+                    totalAssignedToUsers: {
+                      type: "integer",
+                      example: 3,
+                    },
+                    totalAssignedByUsers: {
+                      type: "integer",
+                      example: 2,
+                    },
+                    totalTeamOwners: {
+                      type: "integer",
+                      example: 2,
+                    },
+                    totalBrand: {
+                      type: "integer",
+                      example: 2,
+                    },
+                    totalInventory: {
+                      type: "integer",
+                      example: 3,
+                    },
+                    totalEvents: {
+                      type: "integer",
+                      example: 3,
+                    },
                   },
                 },
               },
             },
-          },
-          400: {
-            description: "Invalid filter parameters",
-          },
-          500: {
-            description: "Error during task filtering",
           },
         },
       },

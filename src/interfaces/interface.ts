@@ -79,6 +79,11 @@ export interface GetAllUser {
     teamId: number | null; // Team ID can be null
     children: GetAllUser[]; // Array of children, assuming they are also GetAllUser types
 }
+interface teamOwner{
+    teamOwner:User,
+    viewable:boolean
+
+}
 
 export interface PromiseReturn{
     status: number; 
@@ -88,7 +93,7 @@ export interface PromiseReturn{
     message?:string
     token?:string
     team?:Team[]
-    teamOwners?:Team[]
+    teamOwners?:teamOwner[]
     brand?:Brand[]
     Brand?:Brand
     Task?:Task

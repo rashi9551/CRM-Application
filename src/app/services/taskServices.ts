@@ -8,12 +8,12 @@ import TaskRepo from '../repository/TaskRepo';
 import { Notification } from '../../entity/Notification';
 import { TaskHistory } from '../../entity/TaskHistory';
 import { TaskComment } from '../../entity/TaskComment';
-import {AnalyticsFilter} from '../../interfaces/interface'
 import TaskValidator  from '../../middleware/validateTaskData';
 import { checkTaskPermission, handleError, handleHistoryAndNotifications, handleTaskUpdate } from '../../middleware/updateMiddleware';
 import getDateRanges from '../../utils/getDataRange';
 
 const taskValidator=new TaskValidator()
+
 export default new class TaskUseCase {
     
     createTask = async (taskData: TaskData,loggedUserId:number): Promise<PromiseReturn> => {
@@ -134,9 +134,8 @@ export default new class TaskUseCase {
         }
     };
 
-      
 
-    async validateUserAndBrand(taskData: TaskData) {
+    validateUserAndBrand=async(taskData: TaskData) =>{
         if (taskData.assigned_to) {
             const assignedUser = await UserRepo.getUserById(taskData.assigned_to);
             if (!assignedUser) throw { status: StatusCode.NotFound as number, message: "Assigned user not found." };
@@ -182,6 +181,7 @@ export default new class TaskUseCase {
                 return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
     };
+
     
     getTasks = async (filter: TaskType, loggedUserId: number, role?: string[], isCompleted?: boolean, page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {  
@@ -225,7 +225,9 @@ export default new class TaskUseCase {
                 return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
     };
-    async getAllAssignedToUsers(page: number = 1, pageSize: number = 10): Promise<PromiseReturn> {
+
+
+    getAllAssignedToUsers = async(page: number = 1, pageSize: number = 10):Promise<PromiseReturn>=> {
         try {
             // Fetch all unique assignedTo users from tasks
             const [assignedToUsers, totalCount] = await TaskRepo.findAllAssignedToUsers(page, pageSize);
@@ -245,8 +247,10 @@ export default new class TaskUseCase {
             console.error("Error during fetching all assigned users:", error);
             return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
-    }
-    async getAllAssignedByUsers(page: number = 1, pageSize: number = 10): Promise<PromiseReturn> {
+    };
+
+
+    getAllAssignedByUsers=async(page: number = 1, pageSize: number = 10): Promise<PromiseReturn> =>{
         try {
             // Fetch all unique assignedBy users from tasks
             const [assingedByUsers, totalCount] = await TaskRepo.findAllAssignedByUsers(page, pageSize);
@@ -266,7 +270,8 @@ export default new class TaskUseCase {
             console.error("Error during fetching all assigned users:", error);
             return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
-    }
+    };
+
     
 
     getTask = async (taskId:number): Promise<PromiseReturn> => {
@@ -289,6 +294,7 @@ export default new class TaskUseCase {
                 return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
             }
     };
+
 
     getHistory = async (taskId:number,page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {  
@@ -338,8 +344,6 @@ export default new class TaskUseCase {
             throw new Error("Failed to save notificationn");
         }
     };
-    
-    
 
 
     TaskHistoryLogging = async (task: Task, action: string, details: string, loggedUserId: number): Promise<TaskHistory> => {
@@ -367,6 +371,7 @@ export default new class TaskUseCase {
             throw new Error("Failed to save task history");
         }
     };
+
 
     createComment = async (commentData: TaskCommentData,loggedUserId?:number,roles?:string[]): Promise<PromiseReturn> => {
         try {
@@ -403,6 +408,7 @@ export default new class TaskUseCase {
         }
     };
 
+
     updateComment = async (commentData: TaskCommentData, loggedUserId?: number, roles?: string[]): Promise<PromiseReturn> => {
         try {
             // Fetch comment with task in a single query
@@ -436,6 +442,7 @@ export default new class TaskUseCase {
             throw error;
         }
     };
+
     
     async getComment(
         taskId: number,
@@ -506,7 +513,7 @@ export default new class TaskUseCase {
         filterOptions?: FilterOptions,
         page: number = 1,
         pageSize: number = 10
-    ): Promise<PromiseReturn | null> => {
+    ): Promise<PromiseReturn > => {
         try {
             if (!filterOptions) {
                 return { status: StatusCode.NotFound as number, message: "Filter options not provided." };
@@ -526,7 +533,8 @@ export default new class TaskUseCase {
             const { brands, totalBrand } = await UserRepo.getAllBrand(page, pageSize);
             const {events, totalEvents} = await UserRepo.getAllEvent(page, pageSize);
             const {inventory, totalInventory} = await UserRepo.getAllInventory(page, pageSize);
-    
+            
+            
             // Marking users, team owners, brands, inventory, and events as viewable based on the filtered tasks
             const markedAssignedToUsers = assignedToUsers.map(user => ({
                 ...user,
@@ -539,8 +547,8 @@ export default new class TaskUseCase {
             }));
     
             const markedTeamOwners = teams.map(owner => ({
-                ...owner,
-                viewable: filterTask.some(task => task?.assignedTo?.team?.toUserId === owner.id)
+                teamOwner:owner.teamOwner,
+                viewable: filterTask.some(task => task?.assignedTo?.teamId === owner.id)
             }));
     
             const markedBrands = brands.map(brand => ({
@@ -585,7 +593,8 @@ export default new class TaskUseCase {
             throw error;
         }
     };
-    async getAnalytics(filter: string): Promise<PromiseReturn> {
+
+    getAnalytics=async(filter: string): Promise<PromiseReturn> =>{
         const now = new Date();
         const { startDate, endDate, previousStartDate, previousEndDate } = getDateRanges(filter, now);
     
@@ -625,7 +634,7 @@ export default new class TaskUseCase {
                 },
             },
         };
-    }
+    };
     
    
     
