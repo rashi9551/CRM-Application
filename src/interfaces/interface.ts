@@ -87,6 +87,7 @@ interface teamOwner{
 
 export interface PromiseReturn{
     status: number; 
+    totalFilterTask?: number; 
     totalCount?: number; 
     User?:User
     user?:User[] | GetAllUser[]

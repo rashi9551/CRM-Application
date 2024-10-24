@@ -520,7 +520,7 @@ export default new class TaskUseCase {
             }
     
             // Fetch filtered tasks with pagination
-            const filterTask = await TaskRepo.getFilteredAndSortedTasks(filterOptions, page, pageSize);
+            const {filterTask,totalFilterTask} = await TaskRepo.getFilteredAndSortedTasks(filterOptions, page, pageSize);
     
             if (filterTask.length === 0) {
                 return { status: StatusCode.NotFound as number, message: "No tasks found matching the filters." };
@@ -536,41 +536,66 @@ export default new class TaskUseCase {
             
             
             // Marking users, team owners, brands, inventory, and events as viewable based on the filtered tasks
-            const markedAssignedToUsers = assignedToUsers.map(user => ({
-                ...user,
-                viewable: filterTask.some(task => task.assigned_to === user.id)
-            }));
-    
-            const markedAssignedByUsers = assignedByUsers.map(user => ({
-                ...user,
-                viewable: filterTask.some(task => task.created_by === user.id)
-            }));
-    
-            const markedTeamOwners = teams.map(owner => ({
-                teamOwner:owner.teamOwner,
-                viewable: filterTask.some(task => task?.assignedTo?.teamId === owner.id)
-            }));
-    
-            const markedBrands = brands.map(brand => ({
-                ...brand,
-                viewable: filterTask.some(task => task.brand_id === brand.id)
-            }));
-    
-            const markedInventory = inventory.map(item => ({
-                ...item,
-                viewable: filterTask.some(task => task.inventoryId === item.id)
-            }));
-    
-            const markedEvents = events.map(event => ({
-                ...event,
-                viewable: filterTask.some(task => task.eventId === event.id)
-            }));
-    
+            const markedAssignedToUsers = assignedToUsers.map(user => {
+                const count = filterTask.filter(task => task.assigned_to === user.id).length;
+                return {
+                    ...user,
+                    viewable: count > 0, // true if matched
+                    count: count // Number of matches
+                };
+            });
+            
+            const markedAssignedByUsers = assignedByUsers.map(user => {
+                const count = filterTask.filter(task => task.created_by === user.id).length;
+                return {
+                    ...user,
+                    viewable: count > 0, // true if matched
+                    count: count // Number of matches
+                };
+            });
+            
+            const markedTeamOwners = teams.map(owner => {
+                const count = filterTask.filter(task => task?.assignedTo?.teamId === owner.id).length;
+                return {
+                    teamOwner: owner.teamOwner,
+                    viewable: count > 0, // true if matched
+                    count: count // Number of matches
+                };
+            });
+            
+            const markedBrands = brands.map(brand => {
+                const count = filterTask.filter(task => task.brand_id === brand.id).length;
+                return {
+                    ...brand,
+                    viewable: count > 0, // true if matched
+                    count: count // Number of matches
+                };
+            });
+            
+            const markedInventory = inventory.map(item => {
+                const count = filterTask.filter(task => task.inventoryId === item.id).length;
+                return {
+                    ...item,
+                    viewable: count > 0, // true if matched
+                    count: count // Number of matches
+                };
+            });
+            
+            const markedEvents = events.map(event => {
+                const count = filterTask.filter(task => task.eventId === event.id).length;
+                return {
+                    ...event,
+                    viewable: count > 0, // true if matched
+                    count: count // Number of matches
+                };
+            });
+            
             // Returning the final object with all the relevant data and viewable flags
             return {
                 status: StatusCode.Created as number,
                 message: 'Filtered tasks successfully retrieved.',
                 task: filterTask,
+                totalFilterTask,
                 assignedToUsers: markedAssignedToUsers,
                 assignedByUsers: markedAssignedByUsers,
                 teamOwners: markedTeamOwners,

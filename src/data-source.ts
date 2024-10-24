@@ -20,7 +20,7 @@ const isProduction = process.env.NODE_ENV === 'pro';
 export const AppDataSource = new DataSource({
     type: 'mysql',
     url: isProduction ? process.env.MYSQL_PUBLIC_URL : `mysql://${process.env.USERNAME}:${process.env.PASSWORD}@${process.env.HOST}:${process.env.DB_PORT}/${process.env.DATABASE}`,
-    synchronize: true ,
+    synchronize: false,
     logging: false,
     entities: [
         User,
@@ -37,7 +37,7 @@ export const AppDataSource = new DataSource({
 
         
     ],
-    migrations: ["./src/migration/*.ts"],
+    migrations: ["./migration/*.ts"],
     subscribers: [],
     extra: {
         connectionLimit: 10,  // Maximum number of connections in the pool

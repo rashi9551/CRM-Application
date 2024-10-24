@@ -340,8 +340,13 @@ export default new class TaskRepo {
     }
     
 
-    async getFilteredAndSortedTasks(filters: FilterOptions, page: number = 1, pageSize: number = 10): Promise<Task[]> {
+    async getFilteredAndSortedTasks(
+        filters: FilterOptions,
+        page: number = 1,
+        pageSize: number = 10
+    ): Promise<{ filterTask: Task[]; totalFilterTask: number }> {
         try {
+            // Create the base query
             const query = this.TaskRepo.createQueryBuilder("task")
                 .leftJoinAndSelect("task.assignedTo", "assignedTo")
                 .leftJoinAndSelect("task.createdBy", "createdBy")
@@ -378,6 +383,9 @@ export default new class TaskRepo {
                 query.andWhere("task.status = :status", { status: filters.status });
             }
     
+            // Get the total count of matching tasks
+            const totalFilterTask = await query.getCount();
+    
             // Apply sorting
             if (filters.sortBy) {
                 const order = filters.sortOrder === 'DESC' ? 'DESC' : 'ASC';
@@ -388,13 +396,16 @@ export default new class TaskRepo {
             query.skip((page - 1) * pageSize) // Skip the records of previous pages
                  .take(pageSize); // Limit the number of records fetched
     
-            return await query.getMany();
+            // Get the paginated tasks
+            const filterTask = await query.getMany();
+    
+            // Return tasks and total count
+            return { filterTask, totalFilterTask };
         } catch (error) {
             console.error('Error getting filtered and sorted tasks:', error);
             throw error; // Optionally re-throw the error for further handling
         }
     }
-
 
     async findAllAssignedToUsers(page: number = 1, pageSize: number = 10): Promise<[User[], number]> {
         try {
