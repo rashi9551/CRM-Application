@@ -46,21 +46,32 @@ export class SocketService {
             });
 
             socket.on('sendComment', (comment: string) => {
+                // Parse the incoming comment data if it's a string
                 const parsedComment = typeof comment === 'string' ? JSON.parse(comment) : comment;
-                const { taskId, userId, content } = parsedComment;
-
-                if (taskId && userId && content) {
+            
+                // Extract the properties
+                const { taskId, userId, comment: content, filePaths, id, createdAt } = parsedComment;
+            
+                // Check if taskId, userId, content, and id are present
+                if (taskId && userId && content && id && createdAt) {
                     // Emit to other users in the same task room
                     this.io?.to(taskId).emit('receiveComment', {
                         userId,
                         content,
-                        timestamp: new Date(),
+                        filePaths, // Send filePaths along with the comment
+                        taskId,
+                        id,        // Include the id
+                        createdAt  // Include createdAt
                     });
+            
                     console.log(`Comment from user ${userId} in task ${taskId}: ${content}`);
+                    console.log(`File paths: ${filePaths}`); // Log file paths for debugging
                 } else {
                     console.error('Invalid comment format:', parsedComment);
                 }
             });
+            
+            
 
             socket.on('disconnect', () => {
                 console.log('User disconnected:', socket.id);
