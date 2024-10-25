@@ -207,6 +207,7 @@ const expectedResponse = {
     status: 201,
     message: "Filtered tasks successfully retrieved.",
     task: mockFilteredTasks,
+    "totalFilterTask": 3,
     pagination: {
       page: 1,
       pageSize: 10,
@@ -255,7 +256,7 @@ const task :Task={
 describe('getFilteredAndSortedTasks', () => {
     beforeEach(() => {
         // Ensure each mock is properly set up for each test
-        taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue(mockFilteredTasks);
+        taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue({filterTask:mockFilteredTasks,totalFilterTask:3});
         taskRepoMock.findAllAssignedToUsers.mockResolvedValue([[], 0]);  // Empty array by default
         taskRepoMock.findAllAssignedByUsers.mockResolvedValue([[], 0]);  // Empty array by default
         userRepoMock.getAllTeam.mockResolvedValue({ teams: [], totalTeamOwners: 0 });  // No teams
@@ -266,7 +267,7 @@ describe('getFilteredAndSortedTasks', () => {
 
     it('should fetch filtered and sorted tasks successfully with pagination', async () => {
         // Arrange
-        taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue(mockFilteredTasks);
+        taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue({filterTask:mockFilteredTasks,totalFilterTask:3});
         
         // Act
         const response = await taskUseCase.getFilteredAndSortedTasks(mockFilterOptions, 1, 10);
@@ -288,7 +289,7 @@ describe('getFilteredAndSortedTasks', () => {
 
     it('should return NotFound status when no tasks match the filter options', async () => {
         // Arrange
-        taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue([]);
+        taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue({filterTask:[]});
         
         // Act
         const response = await taskUseCase.getFilteredAndSortedTasks(mockFilterOptions);
@@ -309,7 +310,7 @@ describe('getFilteredAndSortedTasks', () => {
 
     it('should return empty arrays if no entities are found for assigned users, brands, etc.', async () => {
         // Arrange
-        taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue(mockFilteredTasks);
+        taskRepoMock.getFilteredAndSortedTasks.mockResolvedValue({filterTask:mockFilteredTasks,totalFilterTask:3});
         taskRepoMock.findAllAssignedToUsers.mockResolvedValue([[], 0]);  // No assigned users
         taskRepoMock.findAllAssignedByUsers.mockResolvedValue([[], 0]);  // No assigned by users
         userRepoMock.getAllTeam.mockResolvedValue({ teams: [], totalTeamOwners: 0 });  // No teams

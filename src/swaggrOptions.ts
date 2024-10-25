@@ -6,13 +6,13 @@ const swaggerOptions = {
     description:
       "API documentation for managing users, brands, and teams in the sales-oriented organization.",
   },
-  host: "type-orm-production.up.railway.app",
-  // host: "localhost:3001",
+  // host: "type-orm-production.up.railway.app",
+  host: "localhost:3001",
   basePath: "/api",
-  schemes: ["https"],
-  // schemes: ["http"],
+  // schemes: ["https"],
+  schemes: ["http"],
   paths: {
-    "/login": {
+    "/users/login": {
       post: {
         tags: ["Authentication"],
         summary: "User login",
@@ -62,7 +62,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/createUser": {
+    "/users/createUser": {
       post: {
         tags: ["User"],
         summary: "Create a new user",
@@ -127,7 +127,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/updateUser": {
+    "/users/updateUser": {
       put: {
         tags: ["User"],
         summary: "Update user information",
@@ -183,7 +183,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getAllUser": {
+    "/users/getAllUser": {
       get: {
         tags: ["User"],
         summary: "Get all users",
@@ -215,7 +215,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getUser/{id}": {
+    "/users/getUser/{id}": {
       get: {
         tags: ["User"],
         summary: "Get user by ID",
@@ -256,7 +256,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/searchUser": {
+    "/users/searchUser": {
       post: {
         tags: ["User"],
         summary: "Search for a user by email",
@@ -304,7 +304,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/deleteUser/{id}": {
+    "/users/deleteUser/{id}": {
       delete: {
         tags: ["User"],
         summary: "Delete a user by ID",
@@ -337,7 +337,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getHierarchyTo/{id}": {
+    "/users/getHierarchyTo/{id}": {
       get: {
         tags: ["User"],
         summary: "Get users under TO hierarchy by ID",
@@ -437,7 +437,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getAllTo": {
+    "/users/getAllTo": {
       get: {
         tags: ["User"],
         summary: "Get all team owners",
@@ -466,7 +466,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getAllTeam": {
+    "/users/getAllTeam": {
       get: {
         tags: ["User"],
         summary: "Get all teams",
@@ -492,7 +492,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/createBrand": {
+    "/brands/createBrand": {
       post: {
         tags: ["Brand"],
         summary: "Create a new brand",
@@ -533,7 +533,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/updateBrand": {
+    "/brands/updateBrand": {
       put: {
         tags: ["Brand"],
         summary: "Update brand information",
@@ -578,7 +578,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getAllBrand": {
+    "/brands/getAllBrand": {
       get: {
         tags: ["Brand"],
         summary: "Get all brands",
@@ -607,7 +607,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getBrand/{id}": {
+    "/brands/getBrand/{id}": {
       get: {
         tags: ["Brand"],
         summary: "Get brand by ID",
@@ -650,7 +650,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/addBrandContact": {
+    "/brands/addBrandContact": {
       post: {
         tags: ["Brand"],
         summary: "Add a new brand contact",
@@ -695,7 +695,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/updateBrandContact": {
+    "/brands/updateBrandContact": {
       put: {
         tags: ["Brand"],
         summary: "Update brand contact information",
@@ -740,7 +740,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getBrandDetail/{id}": {
+    "/brands/getBrandDetail/{id}": {
       get: {
         tags: ["Brand"],
         summary: "Get brand details",
@@ -780,7 +780,7 @@ const swaggerOptions = {
       },
     },
 
-    "/addBrandOwnership": {
+    "/brands/addBrandOwnership": {
       post: {
         tags: ["Brand"],
         summary: "Add brand ownership",
@@ -826,7 +826,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/deleteBrand/{id}": {
+    "/brands/deleteBrand/{id}": {
       delete: {
         tags: ["Brand"],
         summary: "Delete a brand by ID",
@@ -855,7 +855,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/createEvent": {
+    "/users/createEvent": {
       post: {
         tags: ["Event"],
         summary: "Create a new event",
@@ -915,7 +915,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getAllEvent": {
+    "/users/getAllEvent": {
       get: {
         tags: ["Event"],
         summary: "Retrieve all events",
@@ -968,7 +968,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/createInventory": {
+    "/users/createInventory": {
       post: {
         tags: ["Inventory"],
         summary: "Create a new inventory item",
@@ -1026,7 +1026,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getAllInventory": {
+    "/users/getAllInventory": {
       get: {
         tags: ["Inventory"],
         summary: "Retrieve all inventory items",
@@ -1074,7 +1074,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/createTask": {
+    "/tasks/createTask": {
       post: {
         tags: ["Task"],
         summary: "Create a new task",
@@ -1162,7 +1162,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/updateTask": {
+    "/tasks/updateTask": {
       patch: {
         tags: ["Task"],
         summary: "Update an existing task",
@@ -1217,7 +1217,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getAllTasks": {
+    "/tasks/getAllTasks": {
       get: {
         tags: ["Task"],
         summary: "Get all tasks",
@@ -1338,7 +1338,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getTask/{id}": {
+    "/tasks/getTask/{id}": {
       get: {
         tags: ["Task"],
         summary: "Get a task by ID",
@@ -1418,7 +1418,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getNotification/{id}": {
+    "/tasks/getNotification/{id}": {
       get: {
         tags: ["Task"],
         summary: "Get a notification by ID",
@@ -1480,7 +1480,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getTaskHistory/{id}": {
+    "/tasks/getTaskHistory/{id}": {
       get: {
         tags: ["Task"],
         summary: "Get task history by task ID",
@@ -1545,7 +1545,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/api/filterTask": {
+    "/tasks/api/filterTask": {
       post: {
         tags: ["Task"],
         summary: "Filter tasks",
@@ -1777,7 +1777,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getAnalytics": {
+    "/tasks/getAnalytics": {
       post: {
         tags: ["Task"],
         summary: "Get analytics data",
@@ -1857,7 +1857,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/deleteTask/{id}": {
+    "/tasks/deleteTask/{id}": {
       delete: {
         tags: ["Task"],
         summary: "Delete a task by ID",
@@ -1885,7 +1885,7 @@ const swaggerOptions = {
       },
     },
 
-    "/getAllAssignedBy": {
+    "/tasks/getAllAssignedBy": {
       get: {
         tags: ["Task"],
         summary: "Get all users who created tasks",
@@ -1985,7 +1985,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getAllAssignedTo": {
+    "/tasks/getAllAssignedTo": {
       get: {
         tags: ["Task"],
         summary: "Get all users assigned to tasks",
@@ -2085,7 +2085,7 @@ const swaggerOptions = {
       },
     },
 
-    "/addComment": {
+    "/tasks/addComment": {
       post: {
         tags: ["Comment"],
         summary: "Add a comment to a task with image uploads",
@@ -2184,7 +2184,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/getComment/{id}": {
+    "/tasks/getComment/{id}": {
       get: {
         tags: ["Comment"],
         summary: "Fetch comments for a specific task",
@@ -2293,7 +2293,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/deleteComment/{id}": {
+    "/tasks/deleteComment/{id}": {
       delete: {
         tags: ["Comment"],
         summary: "Delete a comment by ID",
@@ -2349,7 +2349,7 @@ const swaggerOptions = {
         },
       },
     },
-    "/updateComment": {
+    "/tasks/updateComment": {
       put: {
         tags: ["Comment"],
         summary: "Update a comment",

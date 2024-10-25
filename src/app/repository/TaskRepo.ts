@@ -344,7 +344,7 @@ export default new class TaskRepo {
         filters: FilterOptions,
         page: number = 1,
         pageSize: number = 10
-    ): Promise<{ filterTask: Task[]; totalFilterTask: number }> {
+    ): Promise<{ filterTask?: Task[]; totalFilterTask?: number }> {
         try {
             // Create the base query
             const query = this.TaskRepo.createQueryBuilder("task")
