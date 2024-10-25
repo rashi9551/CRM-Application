@@ -9,7 +9,7 @@ import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import swaggerOptions from "./swaggrOptions";
 import { Server as HttpServer } from 'http';
-// import socketService from './app/services/socketServices';
+import socketService from './app/services/socketServices';
 import { scheduleTaskNotifications } from './utils/cron-job';
 
 dotenv.config();
@@ -40,7 +40,7 @@ AppDataSource.initialize()
     .catch(error => console.log("Database connection failed:", error));
 
 // Initialize the socket service with the HTTP server
-// socketService.initialize(httpServer);
+socketService.initialize(httpServer);
 
 // Schedule any recurring tasks like notifications
 scheduleTaskNotifications();
