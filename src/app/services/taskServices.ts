@@ -39,7 +39,8 @@ export default new class TaskUseCase {
             }
              if(taskData.brand_id){
                 flag=false
-                 const existingBrand = await UserRepo.getBrandDetail(taskData.brand_id);            
+                 const existingBrand = await UserRepo.getBrandDetail(taskData.brand_id);     
+                        
                  if (!existingBrand) return {status: StatusCode.NotFound as number,message: "Brand not found",};
              }
              if(taskData.inventoryId){
@@ -96,6 +97,8 @@ export default new class TaskUseCase {
             if (!existingTask) {
                 return { status: StatusCode.NotFound as number, message: "Task not found." };
             }
+            
+            await this.validateUserAndBrand(taskData)
     
             // Permission check
             const hasPermission = checkTaskPermission(existingTask, loggedUserId, roles);
