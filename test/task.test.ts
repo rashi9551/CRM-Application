@@ -13,6 +13,11 @@ import { TaskHistory } from '../src/entity/TaskHistory';
 import { Notification } from '../src/entity/Notification';
 import * as middleware from '../src/middleware/updateMiddleware';
 import TaskValidator from '../src/middleware/validateTaskData';
+import { Server as SocketIOServer } from 'socket.io';
+import { Server as HttpServer } from 'http';
+import socketService from '../src/app/services/socketServices';
+import SocketClient from 'socket.io-client';
+import jwt from 'jsonwebtoken';
 
 const taskValidator = new TaskValidator(); // Create an instance
 
@@ -1309,4 +1314,88 @@ describe('updateTask', () => {
     
 
     
+});
+
+
+
+const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxIiwicm9sZXMiOlsiQURNSU4iXSwiaWF0IjoxNzMwMDkyMzU3LCJleHAiOjE3MzAxNzg3NTd9.Qj8j03TEyYzN6rN5xaKZHWzxl2LJeNUIH-wvNW1crUM';
+
+describe('SocketService', () => {
+    let httpServer: HttpServer;
+    let ioServer: SocketIOServer;
+    let clientSocket: any;
+
+    beforeAll((done) => {
+        httpServer = new HttpServer();
+        socketService.initialize(httpServer);
+
+        httpServer.listen(() => {
+            const port = (httpServer.address() as any).port;
+            clientSocket = SocketClient(`http://localhost:${port}`, {
+                query: { token: validToken },
+            });
+            clientSocket.on('connect', done);
+        });
+    }, 20000);
+
+    afterAll(() => {
+        ioServer.close();
+        clientSocket.close();
+    });
+
+    test('should authenticate and connect with a valid token', (done) => {
+        (jwt.verify as jest.Mock).mockImplementation((token, secret, callback) => {
+            if (token === validToken) {
+                callback(null, { userId: '123' });
+            } else {
+                callback(new Error('Invalid token'));
+            }
+        });
+
+        clientSocket.on('connect', () => {
+            expect(clientSocket.connected).toBe(true);
+            done();
+        });
+    }, 10000);
+
+    test('should join a task room successfully', (done) => {
+        const taskId = '2';
+        clientSocket.emit('joinTaskRoom', taskId);
+    
+        // Directly assert after emitting
+        clientSocket.on('joinTaskRoomSuccess', () => { // Mock or listen for success event
+            expect(ioServer.sockets.adapter.rooms.has(taskId)).toBe(true);
+            done();
+        });
+    });
+
+    test('should emit receiveComment event with the correct data', (done) => {
+        const commentData = {
+            taskId: '2',
+            userId: '123',
+            content: 'Test comment',
+            filePaths: ['uploads/test.jpg'],
+            id: 3,
+            createdAt: new Date().toISOString(),
+        };
+
+        clientSocket.emit('sendComment', JSON.stringify(commentData));
+
+        clientSocket.on('receiveComment', (data: any) => {
+            expect(data).toEqual(commentData);
+            done();
+        });
+    }, 10000);
+
+    test('should handle missing token error', (done) => {
+        const unauthSocket = SocketClient(`http://localhost:${(httpServer.address() as any).port}`, {
+            query: { token: '' },
+        });
+
+        unauthSocket.on('connect_error', (error: any) => {
+            expect(error.message).toBe('Token missing');
+            unauthSocket.close();
+            done();
+        });
+    }, 10000);
 });

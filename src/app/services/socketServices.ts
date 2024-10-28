@@ -45,27 +45,25 @@ export class SocketService {
                 console.log(`User ${socket.id} joined task room: ${taskId}`);
             });
 
-            socket.on('sendComment', (comment: string) => {
-                // Parse the incoming comment data if it's a string
+            socket.on('sendComment', (comment: any) => {
+                // Only parse if `comment` is a string
                 const parsedComment = typeof comment === 'string' ? JSON.parse(comment) : comment;
-            
-                // Extract the properties
-                const { taskId, userId, comment: content, filePaths, id, createdAt } = parsedComment;
-            
-                // Check if taskId, userId, content, and id are present
-                if (taskId && userId && content && id && createdAt) {
+                
+                // Extract properties with updated structure
+                const { taskId, userId, content, filePaths, id, createdAt } = parsedComment;
+                
+                if (taskId && userId && content) {
+                    console.log(taskId,userId,content,"=-=-=-=-");
                     // Emit to other users in the same task room
                     this.io?.to(taskId).emit('receiveComment', {
                         userId,
                         content,
-                        filePaths, // Send filePaths along with the comment
+                        filePaths,
                         taskId,
-                        id,        // Include the id
-                        createdAt  // Include createdAt
+                        id,
+                        createdAt,
                     });
-            
                     console.log(`Comment from user ${userId} in task ${taskId}: ${content}`);
-                    console.log(`File paths: ${filePaths}`); // Log file paths for debugging
                 } else {
                     console.error('Invalid comment format:', parsedComment);
                 }
