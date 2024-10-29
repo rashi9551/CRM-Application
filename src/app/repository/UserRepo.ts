@@ -589,4 +589,19 @@ export default new class UserRepo {
             throw new Error('Unable to fetch events.'); // More user-friendly error
         }
     }
+
+
+    async findUsersByIds(userIds: number[]): Promise<User[]> {
+        try {
+            return await this.UserRepo.find({
+                where: {
+                    id: In(userIds)
+                }
+            });
+        } catch (error) {
+            console.error("Error in findUsersByIds:", error);
+            throw new Error("Failed to retrieve users by IDs.");
+        }
+    }
+    
 };

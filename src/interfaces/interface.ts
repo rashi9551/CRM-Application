@@ -84,6 +84,11 @@ interface teamOwner{
     viewable:boolean
 
 }
+export interface RemoveContributes{
+    userId:number,
+    taskId:number
+
+}
 
 export interface PromiseReturn{
     status: number; 
@@ -215,7 +220,8 @@ export interface TaskData {
     eventId?: number;                 // Optional ID of the brand associated with the task
     due_date?:string;
     assignedTo?:User;
-    createdBy?:User
+    createdBy?:User;
+    contributes?:number[]
 }
 
 export interface TaskCommentData {

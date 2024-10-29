@@ -31,5 +31,7 @@ router.put('/updateComment', verifyToken, uploadMiddleware, TaskController.updat
 router.get('/filterTask',verifyToken,TaskController.getFilteredAndSortedTasks);
 router.get('/getAnalytics',verifyToken,isAdminOrManagement,TaskController.getAnalytics);
 
+router.delete('/removeContributes',verifyToken,isAdminOrManagement,TaskController.removeContributes);
+
 
 export default router

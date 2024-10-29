@@ -246,7 +246,18 @@ export default new class TaskController{
         console.log("user getting analytics  task...");
         try {
             const analyticsReponse=await TaskUseCase.getAnalytics(req.body.filter)
-            return res.status(200).json(analyticsReponse);
+            return res.status(analyticsReponse.status).json(analyticsReponse);
+        } catch (error) {
+            console.error("Error fetching analytics of organisation:", error);
+            return res.status(500).json({ message: "Failed to fetch tasks" });
+        }
+    }
+    removeContributes=async(req: Request, res: Response): Promise<Response> =>{
+        console.log("removing contributes from   task...");
+        const removeContibutesData=req.body
+        try {
+            const removeContributes=await TaskUseCase.removeContributes(removeContibutesData,req.id)
+            return res.status(removeContributes.status).json(removeContributes);
         } catch (error) {
             console.error("Error fetching analytics of organisation:", error);
             return res.status(500).json({ message: "Failed to fetch tasks" });

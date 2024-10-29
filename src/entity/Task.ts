@@ -7,6 +7,7 @@ import { Notification } from './Notification';
 import { TaskHistory } from './TaskHistory';
 import { Inventory } from './inventory';
 import { Event } from './Event';
+import { Contributes } from './Contributes';
 
 
 export enum TaskStatus {
@@ -114,4 +115,7 @@ export class Task {
     @IsBoolean() // Validate that it is a boolean
     @Column({ name: 'sla', default: false }) // Default to false
     sla: boolean; // Service Level Agreement field
+
+    @OneToMany(() => Contributes, contributes => contributes.task, { cascade: true })
+    contributions: Contributes[];
 }

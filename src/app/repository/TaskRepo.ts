@@ -3,7 +3,7 @@ import { AppDataSource } from '../../data-source';
 import { User } from '../../entity/User';
 import { Team } from '../../entity/Team';
 import { Brand } from '../../entity/Brand';
-import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData, TaskData, TaskCommentData, FilterOptions } from '../../interfaces/interface';
+import { GetAllUser, BrandContactData, BrandData, BrandOwnershipData, RoleName, UserData, TaskData, TaskCommentData, FilterOptions, PromiseReturn } from '../../interfaces/interface';
 import { BrandContact } from '../../entity/BrandContact';
 import { BrandOwnership } from '../../entity/BrandOwnership';
 import bcrypt from 'bcryptjs';
@@ -14,29 +14,24 @@ import { Notification } from '../../entity/Notification';
 import { TaskHistory } from '../../entity/TaskHistory';
 import { TaskComment } from '../../entity/TaskComment';
 import { log } from 'console';
+import { Contributes } from '../../entity/Contributes';
 
 export default new class TaskRepo {
 
     private UserRepo: Repository<User>;
-    private TeamRepo: Repository<Team>;
-    private BrandRepo: Repository<Brand>;
-    private BrandContactRepo: Repository<BrandContact>;
-    private BrandOwnershipRepo: Repository<BrandOwnership>;
     private TaskRepo: Repository<Task>;
     private NotificationRepo: Repository<Notification>;
     private TaskHistoryRepo: Repository<TaskHistory>;
     private CommentRepo: Repository<TaskComment>;
+    private ContributesRepo: Repository<Contributes>;
 
     constructor() {
         this.UserRepo = AppDataSource.getRepository(User);
-        this.TeamRepo = AppDataSource.getRepository(Team);
-        this.BrandRepo = AppDataSource.getRepository(Brand);
-        this.BrandContactRepo = AppDataSource.getRepository(BrandContact);
-        this.BrandOwnershipRepo = AppDataSource.getRepository(BrandOwnership);
         this.TaskRepo = AppDataSource.getRepository(Task);
         this.NotificationRepo = AppDataSource.getRepository(Notification);
         this.TaskHistoryRepo = AppDataSource.getRepository(TaskHistory);
         this.CommentRepo = AppDataSource.getRepository(TaskComment);
+        this.ContributesRepo = AppDataSource.getRepository(Contributes);
     }
 
      // Existing method to find a user by ID
@@ -79,7 +74,8 @@ export default new class TaskRepo {
             skip: (page - 1) * pageSize, // Skip the number of tasks based on the current page
             take: pageSize, // Limit the number of tasks returned
             relations: [
-                // Your existing relations
+                'contributions', // Add this line to include the contributes relation
+                'contributions.user'
             ]
         });
         return { tasks, totalCount };
@@ -95,6 +91,8 @@ export default new class TaskRepo {
                 .leftJoinAndSelect("task.brand", "brand")           // Join with brand
                 .leftJoinAndSelect("task.inventory", "inventory")   // Join with inventory
                 .leftJoinAndSelect("task.event", "event")           // Join with event
+                .leftJoinAndSelect("task.contributes", "contributions") // Join with contributions
+                .leftJoinAndSelect("contributions.user", "user") // Join with user in contributions
                 .where("task.assigned_to = :userId", { userId })    // Match the assigned user
                 .andWhere("task.status = :status", { status: statusToCheck }) // Match the task status based on isComplete
                 .getMany(); // Fetch all matching tasks with relations
@@ -103,6 +101,7 @@ export default new class TaskRepo {
             throw new Error("Failed to fetch tasks");
         }
     }
+    
     
     async getDelegatedToOthersTask(
         created_by: number,
@@ -119,6 +118,8 @@ export default new class TaskRepo {
                 .leftJoinAndSelect("task.brand", "brand") // Join with brand
                 .leftJoinAndSelect("task.inventory", "inventory") // Join with inventory
                 .leftJoinAndSelect("task.event", "event") // Join with event
+                .leftJoinAndSelect("task.contributes", "contributions") // Join with contributions
+                .leftJoinAndSelect("contributions.user", "user") // Join with user in contributions
                 .where("task.created_by = :created_by", { created_by })
                 .andWhere("task.status = :status", { status: statusCondition }) // Check completion status
                 .skip((page - 1) * pageSize) // Pagination
@@ -131,6 +132,7 @@ export default new class TaskRepo {
             throw new Error("Failed to fetch tasks");
         }
     }
+    
     
 
 
@@ -156,6 +158,8 @@ export default new class TaskRepo {
                 .leftJoinAndSelect("task.brand", "brand")
                 .leftJoinAndSelect("task.inventory", "inventory")
                 .leftJoinAndSelect("task.event", "event")
+                .leftJoinAndSelect("task.contributes", "contributions") // Join with contributions
+                .leftJoinAndSelect("contributions.user", "user") // Join with user in contributions
                 .where("assignedTo.team_id = :teamId", { teamId }) // Replace with the correct foreign key name
                 .andWhere("task.status = :status", { status: statusCondition }) // Check completion status
                 .skip((page - 1) * pageSize) // Pagination
@@ -172,6 +176,7 @@ export default new class TaskRepo {
         }
     }
     
+    
     async findTaskById(taskId: number): Promise<Task| null> {
         try {
             // Fetch the team ID of the user
@@ -185,7 +190,9 @@ export default new class TaskRepo {
                     'event', // Load the event related to the task, if any
                     'comments', // Load all comments on the task
                     'notifications', // Load all notifications related to the task
-                    'history' // Load the task history records
+                    'history', // Load the task history records
+                    'contributions', // Add this line to include the contributes relation
+                    'contributions.user'
                 ]
             });
             return taskById
@@ -547,5 +554,63 @@ export default new class TaskRepo {
             throw error; // Optionally re-throw the error for further handling
         }
     }
+
+
+
+    
+
+    // Method to save contributes data in bulk with error handling
+    async saveContributeData(contributeData: { userId: number; taskId: number }[]): Promise<void> {
+        try {
+            // Map the input data to Contribute entities
+            const contributeEntities = contributeData.map(data => {
+                const contribute = new Contributes();
+                contribute.userId = data.userId;
+                contribute.taskId = data.taskId;
+                return contribute;
+            });
+    
+            // Use ContributesRepo to bulk save all contributions
+            await this.ContributesRepo.save(contributeEntities);
+        } catch (error) {
+            console.error("Error in saveContributeData:", error);
+            throw new Error("Failed to save contribution data.");
+        }
+    }
+
+
+    async removeContribution(userId: number, taskId: number): Promise<PromiseReturn> {
+        try {
+            // Check if the contribution exists
+            const contribution = await this.ContributesRepo.findOne({
+                where: {
+                    userId: userId,
+                    taskId: taskId,
+                },
+            });
+
+            if (!contribution) {
+                return {
+                    status: StatusCode.NotFound as number,
+                    message: "Contribution not found.",
+                };
+            }
+
+            // Remove the contribution
+            await this.ContributesRepo.remove(contribution);
+
+            return {
+                status:StatusCode.OK as number,
+                message: "Contribution removed successfully.",
+            };
+        } catch (error) {
+            console.error("Error removing contribution:", error);
+            return {
+                status: 500,
+                message: "Failed to remove contribution.",
+            };
+        }
+    }
+    
     
 }

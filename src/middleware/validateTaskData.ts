@@ -1,11 +1,11 @@
 import { TaskStatus } from "../entity/Task";
 import { TaskData } from "../interfaces/interface";
 
-export default  class TaskValidator {
+export default class TaskValidator {
     private validKeys: (keyof TaskData)[] = [
         'id', 'title', 'description', 'type', 'status', 'assigned_to', 
         'created_by', 'brand_id', 'inventoryId', 'eventId', 'due_date', 
-        'assignedTo', 'createdBy'
+        'assignedTo', 'createdBy', 'contributes' // Added contributes here
     ];
 
     validateTaskData(taskData: TaskData): { valid: boolean, message?: string } {
@@ -23,6 +23,14 @@ export default  class TaskValidator {
             return {
                 valid: false,
                 message: `Invalid status value: ${taskData.status}. It must be one of ${Object.values(TaskStatus).join(', ')}.`
+            };
+        }
+
+        // Validate contributes as an array of numbers
+        if (taskData.contributes && !Array.isArray(taskData.contributes)) {
+            return {
+                valid: false,
+                message: `Invalid contributes value. It must be an array of user IDs.`
             };
         }
 

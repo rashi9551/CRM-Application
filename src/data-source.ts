@@ -12,6 +12,7 @@ import { TaskComment } from "./entity/TaskComment";
 import { TaskHistory } from "./entity/TaskHistory";
 import { Notification } from "./entity/Notification";
 import { Inventory } from "./entity/inventory";
+import { Contributes } from "./entity/Contributes";
 
 dotenv.config();
 
@@ -20,7 +21,7 @@ const isProduction = process.env.NODE_ENV === 'pro';
 export const AppDataSource = new DataSource({
     type: 'mysql',
     url: isProduction ? process.env.MYSQL_PUBLIC_URL : `mysql://${process.env.USERNAME}:${process.env.PASSWORD}@${process.env.HOST}:${process.env.DB_PORT}/${process.env.DATABASE}`,
-    synchronize: false,
+    synchronize: true,
     logging: false,
     entities: [
         User,
@@ -33,7 +34,8 @@ export const AppDataSource = new DataSource({
         TaskHistory,
         Notification,
         Inventory,
-        Event
+        Event,
+        Contributes
 
         
     ],

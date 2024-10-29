@@ -76,6 +76,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Internal server error." };
         }
     };
+
     updateUser = async (userData: updatingUserData): Promise<PromiseReturn> => {
         try {
             const existingUser = await userRepo.findUserById(userData.id);
@@ -203,8 +204,6 @@ export default new class UseCase {
         }
     };
     
-
-
     getAllUser = async (page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {
             const allUsers: User[] = await userRepo.getUserTree(page, pageSize);
@@ -221,6 +220,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when fetching users" };
         }
     };
+
     getAllTo = async (page: number = 1, pageSize: number = 10): Promise<PromiseReturn > => {
         try {
            const getAllTo:User[]=await userRepo.getUsersWithRoleTO(RoleName.TO)
@@ -230,6 +230,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
         }
     }
+
     getHierarchyTo = async (id:number): Promise<PromiseReturn > => {
         try {
            const getAllTo=await userRepo.getHierarchyTO(id)            
@@ -239,6 +240,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when creating node" };
         }
     }
+
     getAllTeam = async (page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {
             const { teams, totalTeamOwners } = await userRepo.getAllTeam(page, pageSize); // Pass page and pageSize
@@ -254,6 +256,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when fetching teams" };
         }
     }
+
     getUser = async (id:number): Promise<PromiseReturn > => {
         try {
            const getUser:User=await userRepo.getUserById(id)
@@ -268,6 +271,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when fetching user" };
         }
     }
+
     deleteUser = async (id: number): Promise<PromiseReturn> => {
         try {
             // Fetch the user to be deleted
@@ -300,6 +304,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when deleting user" };
         }
     };
+
     createBrand = async (brandData: BrandData): Promise<PromiseReturn> => {
         try {
             // Check if the brand already exists with the same name (case-sensitive)
@@ -328,6 +333,7 @@ export default new class UseCase {
             };
         }
     };
+
     updateBrand = async (brandData: BrandData): Promise<PromiseReturn> => {
         try {    
             // Check if another brand already exists with the same name (case-insensitive)
@@ -365,6 +371,7 @@ export default new class UseCase {
             };
         }
     };
+
     getAllBrand = async (page: number = 1, pageSize: number = 10): Promise<PromiseReturn> => {
         try {
             const { brands, totalBrand } = await userRepo.getAllBrand(page, pageSize); // Pass page and pageSize
@@ -380,6 +387,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when fetching brands" };
         }
     }
+
     deleteBrand = async (id: number): Promise<PromiseReturn> => {
         try {
             const isBrandExist=await UserRepo.findBrandByID(id)
@@ -402,6 +410,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: error.message || 'Error during brand deletion' };
         }
     }
+
     getBrandDetail = async (id:number,loggedUserId:number,roles?:string[]): Promise<PromiseReturn > => {
         try {
             const existingBrand = await UserRepo.getBrandDetail(id);            
@@ -435,6 +444,7 @@ export default new class UseCase {
             return { status: StatusCode.InternalServerError as number, message: "Error when getting brand" };
         }
     }
+    
     getBrand = async (id:number): Promise<PromiseReturn > => {
         try {
             const getBrandDetail:Brand=await userRepo.getBrand(id)

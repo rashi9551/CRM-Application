@@ -17,6 +17,7 @@ import { Task } from './Task';
 import { TaskComment } from './TaskComment';
 import { Notification } from './Notification';
 import { TaskHistory } from './TaskHistory';
+import { Contributes } from './Contributes';
 
 @Entity()
 export class User {
@@ -84,4 +85,7 @@ export class User {
 
     @OneToMany(() => TaskHistory, (taskHistory) => taskHistory.user)
     taskHistories: TaskHistory[]; // User's task history records
+
+    @OneToMany(() => Contributes, contributes => contributes.user, { cascade: true })
+    contributions: Contributes[];
 }

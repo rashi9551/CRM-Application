@@ -1,7 +1,7 @@
 import { validateOrReject } from 'class-validator';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
-import { FilterOptions, PromiseReturn,  RoleName,  TaskCommentData,  TaskData, TaskHistoryAction, TaskType, Type } from '../../interfaces/interface';
+import { FilterOptions, PromiseReturn,  RemoveContributes,  RoleName,  TaskCommentData,  TaskData, TaskHistoryAction, TaskType, Type } from '../../interfaces/interface';
 import { Task, TaskStatus} from '../../entity/Task';
 import UserRepo from '../repository/UserRepo';
 import TaskRepo from '../repository/TaskRepo';
@@ -62,7 +62,12 @@ export default new class TaskUseCase {
             if (!assignedUser) return { status: StatusCode.NotFound as number, message: "AssignedUser Not Found" };
             if (!createdUser) return { status: StatusCode.NotFound as number, message: "CreatedUser Not Found" }; 
 
+            
             const taskCreating=await TaskRepo.createTask(taskData)
+            const contributionResult = await this.handleContributions(taskData.contributes, taskCreating.id);
+                if (contributionResult.status !== StatusCode.Created) {
+                    return contributionResult; // Return early if there was an error
+            }
             await this.NotificationSending(`You have been assigned a new task: ${taskCreating.title}`,taskCreating,assignedUser,taskData.assigned_to)
             await this.TaskHistoryLogging(taskCreating,TaskHistoryAction.TASK_CREATED,`The Task ${taskCreating.title} was created by ${createdUser.name} and assigned to ${assignedUser.name}`,loggedUserId)
             return { status: StatusCode.Created as number, message: "Task created successfully.",Task:taskCreating };
@@ -122,7 +127,13 @@ export default new class TaskUseCase {
                 // Handle task status update and reassignment logic
                 const { isGeneralUpdate, isStatusChanging, updatedTask } = await handleTaskUpdate(existingTask, taskData, loggedUserId);
                 console.log(isGeneralUpdate, isStatusChanging, updatedTask, "this was reassigning time okey");
-                const savedTask = await TaskRepo.saveTask(updatedTask); // <--- Saving the updated task here                
+                const savedTask = await TaskRepo.saveTask(updatedTask); // <--- Saving the updated task here  
+
+
+                const contributionResult = await this.handleContributions(taskData.contributes, savedTask.id);
+                if (contributionResult.status !== StatusCode.Created) {
+                    return contributionResult; // Return early if there was an error
+                }
                 // Further logic for saving and processing the updated task
                 const { taskHistory, notification } = await handleHistoryAndNotifications(isGeneralUpdate, isStatusChanging, savedTask, loggedUserId,assignedTo,createdBy);
                 delete notification?.task
@@ -136,6 +147,43 @@ export default new class TaskUseCase {
             return handleError(error);
         }
     };
+
+
+    async handleContributions(contributeIds: number[], taskId: number): Promise<PromiseReturn> {
+        try {
+            // Check if there are contributions to process
+            if (contributeIds && contributeIds.length > 0) {
+                // Fetch all users in one query
+                const contributedUsers = await UserRepo.findUsersByIds(contributeIds);
+                const invalidUserIds = contributeIds.filter(id => !contributedUsers.some(user => user.id === id));
+    
+                // Check for invalid user IDs
+                if (invalidUserIds.length > 0) {
+                    return {
+                        status: StatusCode.BadRequest as number,
+                        message: `Contributed users not found for IDs: ${invalidUserIds.join(', ')}.`
+                    };
+                }
+    
+                // Prepare contribute task data for bulk save
+                const contributeData = contributedUsers.map(user => ({
+                    userId: user.id,
+                    taskId: taskId // Assuming TaskRepo can handle associations
+                }));
+    
+                // Bulk save contributions
+                await TaskRepo.saveContributeData(contributeData); // Save contributions
+            }
+            return { status: StatusCode.Created as number, message: "Contributions processed successfully." };
+        } catch (error) {
+            console.error("Error handling contributions:", error);
+            return {
+                status: StatusCode.InternalServerError as number,
+                message: "An error occurred while processing contributions."
+            };
+        }
+    }
+    
 
 
     validateUserAndBrand=async(taskData: TaskData) =>{
@@ -663,6 +711,40 @@ export default new class TaskUseCase {
             },
         };
     };
+
+    async removeContributes(removeContributesData: RemoveContributes, loggedUserId: number): Promise<PromiseReturn> {
+        try {
+            // Check if the task exists
+            const existingTask = await TaskRepo.findTaskById(removeContributesData.taskId);
+            if (!existingTask) {
+                return { status: StatusCode.NotFound as number, message: "Task not found." }; // Not Found status
+            }
+    
+            // Permission check
+            const hasPermission = existingTask.created_by === loggedUserId;
+            if (!hasPermission) {
+                return {
+                    status: StatusCode.Unauthorized as number, // Unauthorized status
+                    message: "You don't have permission to update this task.",
+                };
+            }
+    
+            const { userId, taskId } = removeContributesData;
+    
+            // Attempt to remove contribution
+            const result = await TaskRepo.removeContribution(userId, taskId);
+            return result
+    
+        } catch (error) {
+            console.error("Error removing contribution:", error);
+            return {
+                status: StatusCode.InternalServerError as number, // Internal Server Error status
+                message: "An error occurred while removing the contribution.",
+            };
+        }
+    }
+    
+    
     
    
     
