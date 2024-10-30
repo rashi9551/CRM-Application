@@ -49,14 +49,17 @@ export const handleTaskUpdate = async (existingTask: Task, taskData: TaskData, l
 export const handleHistoryAndNotifications = async (isGeneralUpdate: boolean, isStatusChanging: boolean, savedTask: Task, loggedUserId: number,assignedTo:User,createdBy:User) => {
     let taskHistory;
     let notification;
+    let contributesIds:number[]
 
+    if(savedTask.contributions.length>0){
+        contributesIds = savedTask.contributions.map(contribution => contribution.userId);
+    }
     if (isGeneralUpdate) {
        console.log(" the task has been updated");
        console.log(savedTask,assignedTo);
-       
         [taskHistory, notification] = await Promise.all([
             taskUseCase.TaskHistoryLogging(savedTask, TaskHistoryAction.TASK_UPDATED, `The Task ${savedTask.title} was updated.`, loggedUserId),
-            taskUseCase.NotificationSending(`Your task has been updated: ${savedTask.title}`, savedTask, assignedTo, assignedTo.id),
+            taskUseCase.NotificationSending(`Your task has been updated: ${savedTask.title}`, savedTask, assignedTo, assignedTo.id,contributesIds,`Your task has been updated: ${savedTask.title}`),
         ]);
     } else if (isStatusChanging) {
         console.log("the task was completed adn the history is logging");
@@ -64,10 +67,9 @@ export const handleHistoryAndNotifications = async (isGeneralUpdate: boolean, is
         taskHistory = await taskUseCase.TaskHistoryLogging(savedTask, TaskHistoryAction.TASK_COMPLETED, `The Task ${savedTask.title} was completed.`, loggedUserId);
     } else {
         console.log(savedTask.assigned_to,"it reassiging and notification going",savedTask);
-        
         [taskHistory, notification] = await Promise.all([
             taskUseCase.TaskHistoryLogging(savedTask, TaskHistoryAction.TASK_REASSIGNED, `The Task ${savedTask.title} was reassigned.`, loggedUserId),
-            taskUseCase.NotificationSending(`You have been assigned a new task: ${savedTask.title}`, savedTask, assignedTo, savedTask.assigned_to),
+            taskUseCase.NotificationSending(`You have been assigned a new task: ${savedTask.title}`, savedTask, assignedTo, savedTask.assigned_to,contributesIds,`You task have been reAssigned a new user: ${savedTask.title}`),
         ]);
     }
 

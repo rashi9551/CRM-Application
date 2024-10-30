@@ -37,23 +37,23 @@ export default new class TaskUseCase {
                     message: `Invalid task type. Valid types are: ${Object.values(Type).join(', ')}`
                 };
             }
-             if(taskData.brand_id){
-                flag=false
-                 const existingBrand = await UserRepo.getBrandDetail(taskData.brand_id);     
-                        
-                 if (!existingBrand) return {status: StatusCode.NotFound as number,message: "Brand not found",};
-             }
-             if(taskData.inventoryId){
-                flag=false
-                 const existingInventory= await UserRepo.findInventoryById(taskData.inventoryId);            
-                 if (!existingInventory) return {status: StatusCode.NotFound as number,message: "Inventory not found",};
-             }
-             if(taskData.eventId){
-                flag=false
-                 const existingEvent= await UserRepo.findEventById(taskData.eventId);            
-                 if (!existingEvent) return {status: StatusCode.NotFound as number,message: "Event not found",};
-             }
-             if(flag)task.type===Type.General
+            if(taskData.brand_id){
+            flag=false
+                const existingBrand = await UserRepo.getBrandDetail(taskData.brand_id);     
+                    
+                if (!existingBrand) return {status: StatusCode.NotFound as number,message: "Brand not found",};
+            }
+            if(taskData.inventoryId){
+            flag=false
+                const existingInventory= await UserRepo.findInventoryById(taskData.inventoryId);            
+                if (!existingInventory) return {status: StatusCode.NotFound as number,message: "Inventory not found",};
+            }
+            if(taskData.eventId){
+            flag=false
+                const existingEvent= await UserRepo.findEventById(taskData.eventId);            
+                if (!existingEvent) return {status: StatusCode.NotFound as number,message: "Event not found",};
+            }
+            if(flag)task.type===Type.General
 
              // Check if the assignedUser exists
             const assignedUser: User = await UserRepo.getUserById(taskData.assigned_to);
@@ -68,7 +68,7 @@ export default new class TaskUseCase {
                 if (contributionResult.status !== StatusCode.Created) {
                     return contributionResult; // Return early if there was an error
             }
-            await this.NotificationSending(`You have been assigned a new task: ${taskCreating.title}`,taskCreating,assignedUser,taskData.assigned_to)
+            await this.NotificationSending(`You have been assigned a new task: ${taskCreating.title}`,taskCreating,assignedUser,taskData.assigned_to,taskData.contributes,`You have been contributed a new task: ${taskCreating.title}`)
             await this.TaskHistoryLogging(taskCreating,TaskHistoryAction.TASK_CREATED,`The Task ${taskCreating.title} was created by ${createdUser.name} and assigned to ${assignedUser.name}`,loggedUserId)
             return { status: StatusCode.Created as number, message: "Task created successfully.",Task:taskCreating };
     
@@ -165,8 +165,22 @@ export default new class TaskUseCase {
                     };
                 }
     
+                // Check existing contributions for the task
+                const existingContributions = await TaskRepo.findContributionsByTaskId(taskId);
+                const existingUserIds = existingContributions.map(contribution => contribution.userId);
+                
+                // Filter out users that already contributed
+                const newContributions = contributedUsers.filter(user => !existingUserIds.includes(user.id));
+    
+                if (newContributions.length === 0) {
+                    return {
+                        status: StatusCode.Conflict as number,
+                        message: "All contributed users already exist for this task."
+                    };
+                }
+    
                 // Prepare contribute task data for bulk save
-                const contributeData = contributedUsers.map(user => ({
+                const contributeData = newContributions.map(user => ({
                     userId: user.id,
                     taskId: taskId // Assuming TaskRepo can handle associations
                 }));
@@ -174,6 +188,7 @@ export default new class TaskUseCase {
                 // Bulk save contributions
                 await TaskRepo.saveContributeData(contributeData); // Save contributions
             }
+    
             return { status: StatusCode.Created as number, message: "Contributions processed successfully." };
         } catch (error) {
             console.error("Error handling contributions:", error);
@@ -369,32 +384,62 @@ export default new class TaskUseCase {
         message: string,
         task: Task,
         assignedUser: User,
-        recipientId: number
-    ): Promise<Notification | null> => {
+        recipientId: number,
+        contributes?: number[],
+        contributorsMessage?:string
+    ): Promise<Notification[] | null> => {
         try {
+            // Collect notifications to be saved in bulk
+            const notificationsToSave: Notification[] = [];
     
-            // Check if a similar notification already exists
+            // Add notification for the primary recipient if it doesn't exist
             const existingNotification = await TaskRepo.getExistingNotification(message, task.id, recipientId);
-            
             if (!existingNotification) {
-                // Create a new notification
-                const notification = new Notification();
-                notification.message = message;
-                notification.isRead = false;
-                notification.recipientId = recipientId;  // Set the recipientId directlyclear
-
-                const savedNotification= await TaskRepo.saveNotification(notification);
-                return savedNotification
+                const primaryNotification = new Notification();
+                primaryNotification.message = message;
+                primaryNotification.isRead = false;
+                primaryNotification.recipientId = recipientId;
+                notificationsToSave.push(primaryNotification);
             } else {
-                console.log("Notification already exists",message);
+                console.log("Notification already exists for primary recipient:", message);
+            }
+    
+            // Process contributor notifications if any
+            if (contributes && contributes.length > 0) {
+                // Fetch all existing notifications for contributors in a single query
+                const existingContributorNotifications = await TaskRepo.getNotificationsForContributors(message, task.id, contributes);
+    
+                // Get the contributor IDs who already have notifications
+                const notifiedContributorIds = new Set(existingContributorNotifications.map(notif => notif.recipientId));
+    
+                // Filter contributors to only those without notifications
+                const contributorsWithoutNotification = contributes.filter(id => !notifiedContributorIds.has(id));
+    
+                // Create notifications for contributors without existing notifications
+                for (const contributorId of contributorsWithoutNotification) {
+                    const contributorNotification = new Notification();
+                    contributorNotification.message = message;
+                    contributorNotification.isRead = false;
+                    contributorNotification.recipientId = contributorId;
+                    notificationsToSave.push(contributorNotification);
+                }
+            }
+    
+            // Save all notifications in bulk if there are any new notifications
+            if (notificationsToSave.length > 0) {
+                const savedNotifications = await TaskRepo.saveBatchNotification(notificationsToSave);
+                return savedNotifications;
+            } else {
+                console.log("No new notifications to save.");
                 return null;
             }
         } catch (error) {
-            console.log(error);
-            console.error("Error during task creation:", error);
-            throw new Error("Failed to save notificationn");
+            console.error("Error during notification sending:", error);
+            throw new Error("Failed to save notifications");
         }
     };
+    
+    
 
 
     TaskHistoryLogging = async (task: Task, action: string, details: string, loggedUserId: number): Promise<TaskHistory> => {
@@ -719,7 +764,8 @@ export default new class TaskUseCase {
             if (!existingTask) {
                 return { status: StatusCode.NotFound as number, message: "Task not found." }; // Not Found status
             }
-    
+            console.log(existingTask,loggedUserId);
+            
             // Permission check
             const hasPermission = existingTask.created_by === loggedUserId;
             if (!hasPermission) {

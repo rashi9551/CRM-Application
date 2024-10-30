@@ -36,7 +36,8 @@ const team:Team=
                 createdTasks: [],
                 comments: [],
                 notifications: [],
-                taskHistories: []
+                taskHistories: [],
+                contributions: []
             },
             {
                 id: 2,
@@ -60,7 +61,8 @@ const team:Team=
                 createdTasks: [],
                 comments: [],
                 notifications: [],
-                taskHistories: []
+                taskHistories: [],
+                contributions: []
             }
         ],
         teamOwner: {
@@ -85,7 +87,8 @@ const team:Team=
             createdTasks: [],
             comments: [],
             notifications: [],
-            taskHistories: []
+            taskHistories: [],
+            contributions: []
         }
     }
 
@@ -112,7 +115,8 @@ const mockUserCreateResponseData:User={
     createdTasks: [],
     comments: [],
     notifications: [],
-    taskHistories: []
+    taskHistories: [],
+    contributions: []
 }
 
 const BrandCreateData:BrandData={

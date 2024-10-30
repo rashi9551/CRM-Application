@@ -289,6 +289,19 @@ export default new class TaskRepo {
     async saveBatchNotification(notifications: Notification[]): Promise<Notification[]> {
         return await this.NotificationRepo.save(notifications);
     }
+    async getNotificationsForContributors(
+        message: string,
+        taskId: number,
+        contributorIds: number[]
+    ): Promise<Notification[]> {
+        return await this.NotificationRepo.find({
+            where: {
+                message: message,
+                task: { id: taskId },
+                recipientId: In(contributorIds)
+            }
+        });
+    }
     async saveTaskHistory(taskHistory: TaskHistory): Promise<TaskHistory> {
         try {
             const savedTaskHistory = await this.TaskHistoryRepo.save(taskHistory); // Save the task history to the database
@@ -576,6 +589,12 @@ export default new class TaskRepo {
             console.error("Error in saveContributeData:", error);
             throw new Error("Failed to save contribution data.");
         }
+    }
+
+    async findContributionsByTaskId(taskId: number): Promise<Contributes[]> {
+        return await this.ContributesRepo.find({
+            where: { taskId: taskId },
+        });
     }
 
 

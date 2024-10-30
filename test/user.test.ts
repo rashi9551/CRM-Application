@@ -32,7 +32,8 @@ const mockUserCreateResponseData:User={
     createdTasks: [],
     comments: [],
     notifications: [],
-    taskHistories: []
+    taskHistories: [],
+    contributions: []
 }
 
 const mockCreateUserData:UserData={
