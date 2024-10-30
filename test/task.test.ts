@@ -72,6 +72,7 @@ const userRepoMock = userRepo as jest.Mocked<typeof userRepo>;
 
 jest.mock('../src/app/repository/UserRepo', () => ({
     findUserByEmail: jest.fn(),
+    findUsersByIds: jest.fn(),
     userExist: jest.fn(),
     createUser: jest.fn(),
     findTeamById: jest.fn(),
@@ -127,6 +128,9 @@ jest.mock('../src/app/repository/TaskRepo', () => ({
     findAllAssignedToUsers: jest.fn(),
     saveBatchNotification: jest.fn(),
     getNotificationsForContributors: jest.fn(),
+    removeContribution: jest.fn(),
+    saveContributeData: jest.fn(),
+    findContributionsByTaskId: jest.fn(),
 
 }));
 
@@ -1292,84 +1296,182 @@ describe('updateTask', () => {
 
 
 
-const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxIiwicm9sZXMiOlsiQURNSU4iXSwiaWF0IjoxNzMwMDkyMzU3LCJleHAiOjE3MzAxNzg3NTd9.Qj8j03TEyYzN6rN5xaKZHWzxl2LJeNUIH-wvNW1crUM';
 
-// describe('SocketService', () => {
-//     let httpServer: HttpServer;
-//     let ioServer: SocketIOServer;
-//     let clientSocket: any;
 
-//     beforeAll((done) => {
-//         httpServer = new HttpServer();
-//         socketService.initialize(httpServer);
+describe('removeContributes', () => {
+    const taskId = 1; // Mock task ID
+    const loggedUserId = 4; // Mock logged-in user ID
+    const userIdToRemove = 3; // ID of user to remove contribution for
+    const removeContributesData = { userId: userIdToRemove, taskId };
 
-//         httpServer.listen(() => {
-//             const port = (httpServer.address() as any).port;
-//             clientSocket = SocketClient(`http://localhost:${port}`, {
-//                 query: { token: validToken },
-//             });
-//             clientSocket.on('connect', done);
-//         });
-//     }, 20000);
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
 
-//     afterAll(() => {
-//         ioServer.close();
-//         clientSocket.close();
-//     });
+    it('should return NotFound if the task does not exist', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(null);
 
-//     test('should authenticate and connect with a valid token', (done) => {
-//         (jwt.verify as jest.Mock).mockImplementation((token, secret, callback) => {
-//             if (token === validToken) {
-//                 callback(null, { userId: '123' });
-//             } else {
-//                 callback(new Error('Invalid token'));
-//             }
-//         });
+        // Act
+        const result = await taskUseCase.removeContributes(removeContributesData, loggedUserId);
 
-//         clientSocket.on('connect', () => {
-//             expect(clientSocket.connected).toBe(true);
-//             done();
-//         });
-//     }, 10000);
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.NotFound,
+            message: "Task not found."
+        });
+        expect(TaskRepo.findTaskById).toHaveBeenCalledWith(taskId);
+    });
 
-//     test('should join a task room successfully', (done) => {
-//         const taskId = '2';
-//         clientSocket.emit('joinTaskRoom', taskId);
+    it('should return Unauthorized if the logged-in user does not have permission to update the task', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(task); // Task created by a different user
+
+        // Act
+        const result = await taskUseCase.removeContributes(removeContributesData, 5);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.Unauthorized,
+            message: "You don't have permission to update this task."
+        });
+        expect(TaskRepo.findTaskById).toHaveBeenCalledWith(taskId);
+    });
+
+    it('should call TaskRepo.removeContribution if user has permission and task exists', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(task);
+        taskRepoMock.removeContribution.mockResolvedValue({
+            status: StatusCode.OK as number,
+            message: "Contribution removed successfully."
+        });
+
+        // Act
+        const result = await taskUseCase.removeContributes(removeContributesData, loggedUserId);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.OK,
+            message: "Contribution removed successfully."
+        });
+        expect(taskRepoMock.removeContribution).toHaveBeenCalledWith(userIdToRemove, taskId);
+    });
+
+    it('should return InternalServerError if an error occurs during contribution removal', async () => {
+        // Arrange
+        taskRepoMock.findTaskById.mockResolvedValue(task);
+        taskRepoMock.removeContribution.mockRejectedValue(new Error("Database error"));
+
+        // Act
+        const result = await taskUseCase.removeContributes(removeContributesData, loggedUserId);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.InternalServerError,
+            message: "An error occurred while removing the contribution."
+        });
+    });
+});
+
+
+describe('handleContributions', () => {
+    const taskId = 1; // Mock task ID
+    const contributeIds = [2, 3]; // Mock user IDs for contributions
+    const validUsers = [
+        { ...mockUserCreateResponseData,id: 2, name: "User 1" },
+        { ...mockUserCreateResponseData,id: 3, name: "User 2" },
+    ]; // Mock valid users from UserRepo
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('should return BadRequest if there are invalid user IDs', async () => {
+        // Arrange
+        userRepoMock.findUsersByIds.mockResolvedValue(validUsers); // Return only valid users
+        const invalidIds = [5, 6]; // IDs that do not exist
+        const contributeIdsWithInvalid = [...contributeIds, ...invalidIds];
+
+        // Act
+        const result = await taskUseCase.handleContributions(contributeIdsWithInvalid, taskId);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.BadRequest,
+            message: `Contributed users not found for IDs: ${invalidIds.join(', ')}.`
+        });
+        expect(userRepoMock.findUsersByIds).toHaveBeenCalledWith(contributeIdsWithInvalid);
+    });
+
+    it('should return Conflict if all contributed users already exist for the task', async () => {
+        // Arrange
+        userRepoMock.findUsersByIds.mockResolvedValue(validUsers); // Return valid users
+        taskRepoMock.findContributionsByTaskId.mockResolvedValue([
+            {
+                userId: 2,
+                id: 0,
+                taskId: 0,
+                task: new Task,
+                user: new User
+            }, // User already contributed
+            {
+                userId: 3,
+                id: 0,
+                taskId: 0,
+                task: new Task,
+                user: new User
+            }  // User already contributed
+        ]);
+
+        // Act
+        const result = await taskUseCase.handleContributions(contributeIds, taskId);
+
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.Conflict,
+            message: "All contributed users already exist for this task."
+        });
+    });
+
+    it('should save new contributions and return Created if there are new users', async () => {
+        // Arrange
+        userRepoMock.findUsersByIds.mockResolvedValue(validUsers); // Return valid users
+        taskRepoMock.findContributionsByTaskId.mockResolvedValue([
+            {
+                userId: 2, taskId: 1,
+                id: 0,
+                task: new Task,
+                user: new User
+            }, // User 2 already contributed
+            // No contribution from User 3
+        ]);
+        taskRepoMock.saveContributeData.mockResolvedValue(undefined); // Simulate successful save
     
-//         // Directly assert after emitting
-//         clientSocket.on('joinTaskRoomSuccess', () => { // Mock or listen for success event
-//             expect(ioServer.sockets.adapter.rooms.has(taskId)).toBe(true);
-//             done();
-//         });
-//     });
+        // Act
+        const result = await taskUseCase.handleContributions(contributeIds, taskId);
+    
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.Created,
+            message: "Contributions processed successfully."
+        });
+        expect(taskRepoMock.saveContributeData).toHaveBeenCalledWith([{ userId: 3, taskId }]); // Ensure this is being called correctly
+    });
+    
 
-//     test('should emit receiveComment event with the correct data', (done) => {
-//         const commentData = {
-//             taskId: '2',
-//             userId: '123',
-//             content: 'Test comment',
-//             filePaths: ['uploads/test.jpg'],
-//             id: 3,
-//             createdAt: new Date().toISOString(),
-//         };
+    it('should return InternalServerError if an error occurs during processing', async () => {
+        // Arrange
+        userRepoMock.findUsersByIds.mockRejectedValue(new Error("Database error")); // Simulate error in user fetch
 
-//         clientSocket.emit('sendComment', JSON.stringify(commentData));
+        // Act
+        const result = await taskUseCase.handleContributions(contributeIds, taskId);
 
-//         clientSocket.on('receiveComment', (data: any) => {
-//             expect(data).toEqual(commentData);
-//             done();
-//         });
-//     }, 10000);
+        // Assert
+        expect(result).toEqual({
+            status: StatusCode.InternalServerError,
+            message: "An error occurred while processing contributions."
+        });
+    });
+});
 
-//     test('should handle missing token error', (done) => {
-//         const unauthSocket = SocketClient(`http://localhost:${(httpServer.address() as any).port}`, {
-//             query: { token: '' },
-//         });
 
-//         unauthSocket.on('connect_error', (error: any) => {
-//             expect(error.message).toBe('Token missing');
-//             unauthSocket.close();
-//             done();
-//         });
-//     }, 10000);
-// });
