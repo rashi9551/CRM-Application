@@ -13,11 +13,7 @@ import { TaskHistory } from '../src/entity/TaskHistory';
 import { Notification } from '../src/entity/Notification';
 import * as middleware from '../src/middleware/updateMiddleware';
 import TaskValidator from '../src/middleware/validateTaskData';
-import { Server as SocketIOServer } from 'socket.io';
-import { Server as HttpServer } from 'http';
-import socketService from '../src/app/services/socketServices';
-import SocketClient from 'socket.io-client';
-import jwt from 'jsonwebtoken';
+
 
 const taskValidator = new TaskValidator(); // Create an instance
 

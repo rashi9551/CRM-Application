@@ -2452,6 +2452,69 @@ const swaggerOptions = {
         },
       },
     },
+    "/tasks/removeContributes": {
+      delete: {
+        tags: ["Task"],
+        summary: "Remove contributions from a task",
+        description:
+          "Allows a user to remove contributions from a task. Token verification is required.",
+        parameters: [
+          {
+            name: "Authorization",
+            in: "header",
+            description: "Bearer token for user authentication",
+            required: true,
+            type: "string",
+          },
+          {
+            name: "userId",
+            in: "query",
+            description: "ID of the user whose contribution will be removed",
+            required: true,
+            type: "integer",
+          },
+          {
+            name: "taskId",
+            in: "query",
+            description:
+              "ID of the task from which the contribution will be removed",
+            required: true,
+            type: "integer",
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Contribution removed successfully",
+            schema: {
+              type: "object",
+              properties: {
+                status: {
+                  type: "integer",
+                  example: 200,
+                },
+                message: {
+                  type: "string",
+                  example: "Contribution removed successfully.",
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Bad request (e.g., missing fields or invalid IDs)",
+          },
+          "401": {
+            description: "Unauthorized (invalid or missing token)",
+          },
+          "404": {
+            description: "Not found (task or user ID does not exist)",
+          },
+          "500": {
+            description: "Internal server error during contribution removal",
+          },
+        },
+      },
+    },
+    
   },
   securityDefinitions: {
     Bearer: {
