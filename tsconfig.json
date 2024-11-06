@@ -1,16 +1,17 @@
 {
    "compilerOptions": {
       "esModuleInterop": true,
+      "resolveJsonModule": true, // Enables importing JSON modules
       "lib": [
-         "es6"      // Use ES6 or higher as 'es5' may cause issues with modern libraries
+         "es6"
       ],
-      "target": "es6",  // Set target to ES6 or higher for modern syntax and features
-      "module": "commonjs",  // CommonJS for compatibility with Node.js
+      "target": "es6",
+      "module": "commonjs",
       "moduleResolution": "node",
-      "outDir": "./build",  // Output directory for compiled JS files
+      "outDir": "./build",
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,
-      "sourceMap": true  // Enables source maps for debugging
+      "sourceMap": true
    },
    "include": [
       "src/**/*.ts"

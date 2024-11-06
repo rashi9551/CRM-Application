@@ -3,7 +3,7 @@
 import cron from 'node-cron';
 import TaskRepo from '../app/repository/TaskRepo';
 import { Notification } from '../entity/Notification';
-
+import taskServices from '../app/services/taskServices';
 // Create an instance of the notification service
 
 // Schedule the cron job
@@ -37,6 +37,8 @@ export const scheduleTaskNotifications = () => {
                     notification.recipientId = assignedUser.id; // Set the user as the recipient
                     notification.task = task; 
                     notificationsToSave.push(notification); // Add notification to the batch
+                    await taskServices.sendFcmNotificationToMultipleDevices(assignedUser.id, message);
+
                 }
             }
 

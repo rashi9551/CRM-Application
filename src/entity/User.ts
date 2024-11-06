@@ -18,6 +18,7 @@ import { TaskComment } from './TaskComment';
 import { Notification } from './Notification';
 import { TaskHistory } from './TaskHistory';
 import { Contributes } from './Contributes';
+import { FcmToken } from './FcmToken';
 
 @Entity()
 export class User {
@@ -88,4 +89,7 @@ export class User {
 
     @OneToMany(() => Contributes, contributes => contributes.user, { cascade: true })
     contributions: Contributes[];
+
+    @OneToMany(() => FcmToken, fcmToken => fcmToken.user)
+    fcmTokens: FcmToken[]; // Array of FCM tokens associated with this user
 }

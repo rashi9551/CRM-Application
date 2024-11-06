@@ -1,7 +1,7 @@
 import { validateOrReject } from 'class-validator';
 import { User } from '../../entity/User';
 import { StatusCode } from '../../interfaces/enum';
-import { FilterOptions, PromiseReturn,  RemoveContributes,  RoleName,  TaskCommentData,  TaskData, TaskHistoryAction, TaskType, Type } from '../../interfaces/interface';
+import {  FcmData, FilterOptions, PromiseReturn,  RemoveContributes,  RoleName,  TaskCommentData,  TaskData, TaskHistoryAction, TaskType, Type } from '../../interfaces/interface';
 import { Task, TaskStatus} from '../../entity/Task';
 import UserRepo from '../repository/UserRepo';
 import TaskRepo from '../repository/TaskRepo';
@@ -11,6 +11,7 @@ import { TaskComment } from '../../entity/TaskComment';
 import TaskValidator  from '../../middleware/validateTaskData';
 import { checkTaskPermission, handleError, handleHistoryAndNotifications, handleTaskUpdate } from '../../middleware/updateMiddleware';
 import getDateRanges from '../../utils/getDataRange';
+import admin from '../../config/firbaseConfig';
 
 const taskValidator=new TaskValidator()
 
@@ -386,7 +387,7 @@ export default new class TaskUseCase {
         assignedUser: User,
         recipientId: number,
         contributes?: number[],
-        contributorsMessage?:string
+        contributorsMessage?: string
     ): Promise<Notification[] | null> => {
         try {
             // Collect notifications to be saved in bulk
@@ -400,6 +401,9 @@ export default new class TaskUseCase {
                 primaryNotification.isRead = false;
                 primaryNotification.recipientId = recipientId;
                 notificationsToSave.push(primaryNotification);
+    
+                // Send FCM notification to the primary recipient
+                await this.sendFcmNotificationToMultipleDevices(recipientId, message);
             } else {
                 console.log("Notification already exists for primary recipient:", message);
             }
@@ -418,10 +422,13 @@ export default new class TaskUseCase {
                 // Create notifications for contributors without existing notifications
                 for (const contributorId of contributorsWithoutNotification) {
                     const contributorNotification = new Notification();
-                    contributorNotification.message = message;
+                    contributorNotification.message = contributorsMessage || message;
                     contributorNotification.isRead = false;
                     contributorNotification.recipientId = contributorId;
                     notificationsToSave.push(contributorNotification);
+    
+                    // Send FCM notification to each contributor without an existing notification
+                    await this.sendFcmNotificationToMultipleDevices(contributorId, contributorsMessage || message);
                 }
             }
     
@@ -438,6 +445,7 @@ export default new class TaskUseCase {
             throw new Error("Failed to save notifications");
         }
     };
+    
     
     
 
@@ -540,13 +548,13 @@ export default new class TaskUseCase {
     };
 
     
-    async getComment(
+    getComment=async(
         taskId: number,
         loggedUserId?: number,
         roles?: string[],
         page: number = 1,
         pageSize: number = 10
-    ): Promise<PromiseReturn> {
+    ): Promise<PromiseReturn>=> {
         try {
             const existingTask = await TaskRepo.findTaskById(taskId);
             if (!existingTask) {
@@ -757,7 +765,7 @@ export default new class TaskUseCase {
         };
     };
 
-    async removeContributes(removeContributesData: RemoveContributes, loggedUserId: number): Promise<PromiseReturn> {
+    removeContributes=async(removeContributesData: RemoveContributes, loggedUserId: number): Promise<PromiseReturn> =>{
         try {
             // Check if the task exists
             const existingTask = await TaskRepo.findTaskById(removeContributesData.taskId);
@@ -789,6 +797,57 @@ export default new class TaskUseCase {
             };
         }
     }
+
+    addOrUpdateFcmToken=async(FcmData: FcmData): Promise<PromiseReturn> => {
+        const { userId, fcmToken } = FcmData;
+
+        try {
+            // Save or update the FCM token using the repository
+            const data = await TaskRepo.saveToken(userId, fcmToken);
+
+            // Return a success response
+            return {
+                status: StatusCode.OK as number,
+                message: 'FCM token added or updated successfully.',
+                data: data.fcmToken,  // Returning the token object for further use if necessary
+            };
+        } catch (error) {
+            console.error("Error adding or updating FCM token:", error);
+            return {
+                status: StatusCode.InternalServerError as number, // Internal Server Error status
+                message: "An error occurred while adding or updating the FCM token.",
+            };
+        }
+    }
+    
+    sendFcmNotificationToMultipleDevices = async (userId: number, message: string): Promise<void> => {
+        try {
+            // Fetch all FCM tokens for the given user
+            const fcmTokens = await TaskRepo.getFcmTokens(userId);
+    
+            if (fcmTokens.length > 0) {
+                // Prepare the message payload for multiple devices
+                const messagePayload = {
+                    notification: {
+                        title: 'New Notification',
+                        body: message,
+                    },
+                    tokens: fcmTokens,  // Send to all devices that have the token
+                };
+    
+                // Send the notification
+                const response = await admin.messaging().sendMulticast(messagePayload);
+                console.log('Successfully sent multicast message:', response);
+            } else {
+                console.log('No FCM tokens found for user:', userId);
+            }
+        } catch (error) {
+            console.error('Error sending multicast message:', error);
+        }
+    };
+    
+    
+    
     
     
     

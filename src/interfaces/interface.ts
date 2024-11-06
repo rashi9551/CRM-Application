@@ -89,6 +89,10 @@ export interface RemoveContributes{
     taskId:number
 
 }
+export interface FcmData {
+    userId: number;
+    fcmToken: string;
+}
 
 export interface PromiseReturn{
     status: number; 
@@ -119,7 +123,8 @@ export interface PromiseReturn{
     BrandOwnership?:BrandOwnership,
     assignedToUsers?:User[],
     assignedByUsers?:User[],
-    pagination?: Pagination;       // Optional: Pagination data using the updated Pagination interface
+    pagination?: Pagination;       // Optional: Pagination data using the updated Pagination interface,
+    data?:string
 }
 interface Pagination {
     page?: number;                // Optional: The current page number

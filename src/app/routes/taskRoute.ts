@@ -32,6 +32,7 @@ router.get('/filterTask',verifyToken,TaskController.getFilteredAndSortedTasks);
 router.get('/getAnalytics',verifyToken,isAdminOrManagement,TaskController.getAnalytics);
 
 router.delete('/removeContributes',verifyToken,TaskController.removeContributes);
+router.post('/addOrUpdateFcmToken',verifyToken,TaskController.addOrUpdateFcmToken);
 
 
 export default router

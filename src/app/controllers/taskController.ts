@@ -259,7 +259,17 @@ export default new class TaskController{
             const removeContributes=await TaskUseCase.removeContributes(removeContibutesData,req.id)
             return res.status(removeContributes.status).json(removeContributes);
         } catch (error) {
-            console.error("Error fetching analytics of organisation:", error);
+            console.error("Error removing contributes of task:", error);
+            return res.status(500).json({ message: "Failed to fetch tasks" });
+        }
+    }
+    addOrUpdateFcmToken=async(req: Request, res: Response): Promise<Response> =>{
+        console.log("removing contributes from   task...");
+        try {
+            const addOrUpdateFcmToken=await TaskUseCase.addOrUpdateFcmToken(req.body)
+            return res.status(addOrUpdateFcmToken.status).json(addOrUpdateFcmToken);
+        } catch (error) {
+            console.error("Error adding ot updating  fcm  of tokens:", error);
             return res.status(500).json({ message: "Failed to fetch tasks" });
         }
     }

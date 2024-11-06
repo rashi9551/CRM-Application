@@ -15,6 +15,7 @@ import { TaskHistory } from '../../entity/TaskHistory';
 import { TaskComment } from '../../entity/TaskComment';
 import { log } from 'console';
 import { Contributes } from '../../entity/Contributes';
+import { FcmToken } from '../../entity/FcmToken';
 
 export default new class TaskRepo {
 
@@ -24,6 +25,7 @@ export default new class TaskRepo {
     private TaskHistoryRepo: Repository<TaskHistory>;
     private CommentRepo: Repository<TaskComment>;
     private ContributesRepo: Repository<Contributes>;
+    private FcmTokenRepo: Repository<FcmToken>;
 
     constructor() {
         this.UserRepo = AppDataSource.getRepository(User);
@@ -32,6 +34,7 @@ export default new class TaskRepo {
         this.TaskHistoryRepo = AppDataSource.getRepository(TaskHistory);
         this.CommentRepo = AppDataSource.getRepository(TaskComment);
         this.ContributesRepo = AppDataSource.getRepository(Contributes);
+        this.FcmTokenRepo = AppDataSource.getRepository(FcmToken);
     }
 
      // Existing method to find a user by ID
@@ -630,6 +633,38 @@ export default new class TaskRepo {
             };
         }
     }
+
+
+    async saveToken(userId: number, fcmToken: string): Promise<FcmToken> {
+        try {
+            // Create a new instance of the FcmToken entity
+            const token = this.FcmTokenRepo.create({
+                userId,      // User ID
+                fcmToken,    // FCM Token
+            });
+
+            // Save the token (will update existing or create new)
+            return await this.FcmTokenRepo.save(token) 
+        } catch (error) {
+            console.error('Error saving FCM token:', error);
+            throw new Error('Error saving FCM token');
+        }
+    }
     
+
+    async getFcmTokens(userId: number): Promise<string[]> {
+        try {
+            // Find FCM tokens for the given userId
+            const tokens = await this.FcmTokenRepo.find({
+                where: { userId },  // Filter by userId to get all tokens for that user
+            });
+    
+            // Map the results to return an array of FCM tokens (strings)
+            return tokens.map(token => token.fcmToken);
+        } catch (error) {
+            console.error('Error fetching FCM tokens:', error);
+            throw new Error('Error fetching FCM tokens');
+        }
+    }
     
 }
